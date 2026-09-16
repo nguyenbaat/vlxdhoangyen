@@ -25,7 +25,9 @@ export const GET: APIRoute = async () => {
       }
     }
 
-    for (const item of await listMedia()) images.add(`/media/${item.id}`);
+    for (const item of await listMedia()) {
+      if (item.url) images.add(item.url);
+    }
     return Response.json({ success: true, images: [...images] });
   } catch (error) {
     console.error('[Media library]', error);

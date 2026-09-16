@@ -89,8 +89,8 @@ export const POST: APIRoute = async ({ request }) => {
         }
         const fname = (files.length === 1 && customFilename) ? customFilename : file.name.slice(0, 255);
         const data = Buffer.from(await file.arrayBuffer());
-        const id = await saveMedia(fname, file.type, data, defaultAlt);
-        createdItems.push({ id, url: `/media/${id}`, filename: fname, alt_text: defaultAlt });
+        const saved = await saveMedia(fname, file.type, data, defaultAlt);
+        createdItems.push({ id: saved.id, url: saved.url, filename: saved.filename, alt_text: defaultAlt });
       }
 
       return Response.json({ success: true, message: `Đã tải lên ${createdItems.length} hình ảnh thành công!`, items: createdItems });
