@@ -698,6 +698,7 @@ const brands = await BrandRepo.getAll();
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             action: 'generate_product',
+            name: product_name,
             product_name,
             category_name,
             keywords,
@@ -709,7 +710,7 @@ const brands = await BrandRepo.getAll();
         if (res.ok && json.success) {
           aiGeneratedData = json.data;
 
-          if (aiResTitle) aiResTitle.textContent = aiGeneratedData.title || product_name;
+          if (aiResTitle) aiResTitle.textContent = aiGeneratedData.title || aiGeneratedData.name || product_name;
           if (aiResSlug) aiResSlug.textContent = `/${aiGeneratedData.slug}/`;
           if (aiResSeoTitle) aiResSeoTitle.textContent = aiGeneratedData.seo_title;
           if (aiResDesc) aiResDesc.textContent = aiGeneratedData.seo_description || aiGeneratedData.short_description;
@@ -736,10 +737,11 @@ const brands = await BrandRepo.getAll();
     btnApplyAI?.addEventListener('click', () => {
       if (!aiGeneratedData) return;
 
-      if (nameInput && aiGeneratedData.title) nameInput.value = aiGeneratedData.title;
+      const pTitle = aiGeneratedData.title || aiGeneratedData.name || '';
+      if (nameInput && pTitle) nameInput.value = pTitle;
       if (slugInput && aiGeneratedData.slug) slugInput.value = aiGeneratedData.slug;
       if (shortDescInput) shortDescInput.value = aiGeneratedData.short_description || aiGeneratedData.seo_description;
-      if (seoTitleInput) seoTitleInput.value = aiGeneratedData.seo_title || aiGeneratedData.title;
+      if (seoTitleInput) seoTitleInput.value = aiGeneratedData.seo_title || pTitle;
       if (seoDescInput) seoDescInput.value = aiGeneratedData.seo_description || aiGeneratedData.short_description;
 
       // Update Content Editor

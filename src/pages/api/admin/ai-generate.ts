@@ -214,7 +214,15 @@ Trả về kết quả DUY NHẤT dưới định dạng JSON hợp lệ (không
 
     // 4. Generate Product (Mô tả sản phẩm, thông số & SEO)
     if (action === 'generate_product') {
-      const { name, brand_name, category_name, unit, sku, notes, image_url } = data;
+      const name = data.name || data.product_name || data.topic || data.title;
+      const brand_name = data.brand_name || '';
+      const category_name = data.category_name || '';
+      const unit = data.unit || '';
+      const sku = data.sku || '';
+      const notes = data.notes || '';
+      const keywords = data.keywords || '';
+      const image_url = data.image_url;
+
       if (!name) {
         return new Response(JSON.stringify({ success: false, error: 'Vui lòng nhập tên sản phẩm.' }), { status: 400 });
       }
@@ -223,19 +231,28 @@ Trả về kết quả DUY NHẤT dưới định dạng JSON hợp lệ (không
 Tên sản phẩm: "${name}"
 Thương hiệu: ${brand_name || 'Theo nhà sản xuất'}
 Danh mục: ${category_name || 'Vật liệu xây dựng'}
+Từ khóa SEO trọng tâm: ${keywords || name}
 Đơn vị tính: ${unit || 'Cây / Bao / Tấm / Mét'}
 Mã SKU/Quy cách: ${sku || 'Chuẩn'}
-Ghi chú đặc tính: ${notes || 'Không có'}
+Ghi chú đặc tính / thông số kỹ thuật: ${notes || 'Không có'}
 
-Trả về kết quả DUY NHẤT dưới định dạng JSON hợp lệ với cấu trúc sau:
+Cấu trúc nội dung chuẩn:
+1. Short Description (2-3 câu): Nêu ngắn gọn loại vật tư, quy cách và ứng dụng tại công trình.
+2. Specifications: Bảng hoặc danh sách thông số kỹ thuật chuẩn (kích thước, mác, tiêu chuẩn TCVN...).
+3. SEO Title: 50-65 ký tự, chứa tên sản phẩm + Đông Hà Quảng Trị | VLXD Hoàng Yến.
+4. SEO Description: 130-160 ký tự, mô tả sản phẩm và hotline 0946.575.579.
+5. Content HTML: Mô tả chi tiết, gồm các thẻ <h3>Đặc Điểm & Ưu Điểm Nổi Bật</h3>, <h3>Ứng Dụng Thực Tế</h3>, <h3>Hướng Dẫn Bảo Quản & Thi Công</h3>, thông tin liên hệ Siêu Thị VLXD Hoàng Yến tại 299 Lê Duẩn, Đông Hà, Quảng Trị.
+
+Trả về kết quả DUY NHẤT dưới định dạng JSON hợp lệ (không kèm theo markdown thừa) với cấu trúc sau:
 {
-  "name": "Tên sản phẩm chuẩn mực",
+  "name": "${name}",
+  "title": "${name}",
   "slug": "slug-san-pham-khong-dau",
   "short_description": "Mô tả ngắn 2-3 câu làm nổi bật đặc tính và ứng dụng chính",
-  "specifications": "Bảng thông số kỹ thuật dạng text hoặc markdown chuẩn",
-  "seo_title": "Tiêu đề SEO sản phẩm (50-65 ký tự, chứa tên + Quảng Trị + Hoàng Yến)",
-  "seo_description": "Thẻ Meta Description chuẩn (130-160 ký tự)",
-  "content": "Bài viết mô tả chi tiết sản phẩm định dạng HTML chuẩn (gồm <h3>Đặc tính nổi bật</h3>, <ul><li>ưu điểm</li></ul>, <h3>Ứng dụng trong công trình</h3>, <h3>Lưu ý bảo quản & thi công</h3>, hướng dẫn liên hệ hotline)"
+  "specifications": "Bảng thông số kỹ thuật dạng HTML <table> hoặc text",
+  "seo_title": "${name} Tại Đông Hà, Quảng Trị | VLXD Hoàng Yến",
+  "seo_description": "Cung cấp ${name} chính hãng tại Quảng Trị. Báo giá cạnh tranh, hỗ trợ vận chuyển tận công trình. Hotline/Zalo 0946.575.579.",
+  "content": "Bài viết mô tả chi tiết sản phẩm định dạng HTML chuẩn"
 }`;
 
       let rawResponse = '';
@@ -254,14 +271,18 @@ Trả về kết quả DUY NHẤT dưới định dạng JSON hợp lệ với c
       } catch (e) {
         parsed = {
           name,
-          slug: name.toLowerCase().replace(/[^a-z0-9]+/g, '-'),
+          title: name,
+          slug: name.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[đĐ]/g, 'd').replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, ''),
           short_description: '',
           specifications: '',
-          seo_title: `${name} Tại Quảng Trị | VLXD Hoàng Yến`,
-          seo_description: '',
+          seo_title: `${name} Tại Đông Hà, Quảng Trị | VLXD Hoàng Yến`,
+          seo_description: `Mua ${name} tại Quảng Trị. Hotline 0946.575.579 - VLXD Hoàng Yến.`,
           content: rawResponse
         };
       }
+
+      if (!parsed.title && parsed.name) parsed.title = parsed.name;
+      if (!parsed.name && parsed.title) parsed.name = parsed.title;
 
       return new Response(JSON.stringify({ success: true, data: parsed }), {
         status: 200,
