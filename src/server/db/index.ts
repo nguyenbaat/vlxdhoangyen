@@ -393,6 +393,172 @@ async function seedInitialData() {
   }
 }
 
+async function createMySQLSchema() {
+  if (!mysqlPool) return;
+  try {
+    await mysqlPool.query(`
+      CREATE TABLE IF NOT EXISTS users (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        username VARCHAR(255) NOT NULL UNIQUE,
+        email VARCHAR(255) NOT NULL UNIQUE,
+        password_hash TEXT NOT NULL,
+        full_name VARCHAR(255) NOT NULL,
+        role VARCHAR(50) DEFAULT 'admin',
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+    `);
+
+    await mysqlPool.query(`
+      CREATE TABLE IF NOT EXISTS categories (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        parent_id INT DEFAULT NULL,
+        name VARCHAR(255) NOT NULL,
+        slug VARCHAR(255) NOT NULL UNIQUE,
+        group_type VARCHAR(50) DEFAULT 'vlxd',
+        description TEXT,
+        image_url TEXT,
+        seo_title TEXT,
+        seo_description TEXT,
+        sort_order INT DEFAULT 0,
+        is_active INT DEFAULT 1,
+        h1 VARCHAR(500) DEFAULT NULL,
+        content LONGTEXT DEFAULT NULL,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+    `);
+
+    await mysqlPool.query(`
+      CREATE TABLE IF NOT EXISTS brands (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        name VARCHAR(255) NOT NULL,
+        slug VARCHAR(255) NOT NULL UNIQUE,
+        description TEXT,
+        content LONGTEXT DEFAULT NULL,
+        logo_url TEXT,
+        website_url TEXT,
+        seo_title TEXT,
+        seo_description TEXT,
+        is_featured INT DEFAULT 0,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+    `);
+
+    await mysqlPool.query(`
+      CREATE TABLE IF NOT EXISTS products (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        brand_id INT DEFAULT NULL,
+        name VARCHAR(500) NOT NULL,
+        slug VARCHAR(500) NOT NULL UNIQUE,
+        sku VARCHAR(200),
+        price NUMERIC(15, 2) DEFAULT 0,
+        original_price NUMERIC(15, 2) DEFAULT 0,
+        unit VARCHAR(100) DEFAULT 'Bao',
+        short_description TEXT,
+        content LONGTEXT,
+        custom_badge VARCHAR(255) DEFAULT NULL,
+        specifications LONGTEXT,
+        featured_image TEXT,
+        seo_title TEXT,
+        seo_description TEXT,
+        is_featured INT DEFAULT 0,
+        is_in_stock INT DEFAULT 1,
+        status VARCHAR(50) DEFAULT 'published',
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+    `);
+
+    await mysqlPool.query(`
+      CREATE TABLE IF NOT EXISTS product_categories (
+        product_id INT NOT NULL,
+        category_id INT NOT NULL,
+        PRIMARY KEY (product_id, category_id)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+    `);
+
+    await mysqlPool.query(`
+      CREATE TABLE IF NOT EXISTS product_images (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        product_id INT NOT NULL,
+        image_url TEXT NOT NULL,
+        alt_text TEXT,
+        sort_order INT DEFAULT 0
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+    `);
+
+    await mysqlPool.query(`
+      CREATE TABLE IF NOT EXISTS post_categories (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        name VARCHAR(255) NOT NULL,
+        slug VARCHAR(255) NOT NULL UNIQUE,
+        description TEXT
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+    `);
+
+    await mysqlPool.query(`
+      CREATE TABLE IF NOT EXISTS posts (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        author_id INT DEFAULT NULL,
+        title VARCHAR(500) NOT NULL,
+        slug VARCHAR(500) NOT NULL UNIQUE,
+        summary TEXT,
+        content LONGTEXT,
+        featured_image TEXT,
+        seo_title TEXT,
+        seo_description TEXT,
+        category_slug VARCHAR(255),
+        status VARCHAR(50) DEFAULT 'published',
+        published_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+    `);
+
+    await mysqlPool.query(`
+      CREATE TABLE IF NOT EXISTS post_category_rel (
+        post_id INT NOT NULL,
+        category_id INT NOT NULL,
+        PRIMARY KEY (post_id, category_id)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+    `);
+
+    await mysqlPool.query(`
+      CREATE TABLE IF NOT EXISTS inquiries (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        customer_name VARCHAR(255) NOT NULL,
+        customer_phone VARCHAR(50) NOT NULL,
+        customer_email VARCHAR(255),
+        address TEXT,
+        notes TEXT,
+        product_name TEXT,
+        status VARCHAR(50) DEFAULT 'new',
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+    `);
+
+    await mysqlPool.query(`
+      CREATE TABLE IF NOT EXISTS settings (
+        key_name VARCHAR(255) PRIMARY KEY,
+        value_json LONGTEXT,
+        description TEXT
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+    `);
+
+    await mysqlPool.query(`
+      CREATE TABLE IF NOT EXISTS redirects (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        old_path VARCHAR(500) NOT NULL UNIQUE,
+        new_path VARCHAR(500) NOT NULL,
+        status_code INT DEFAULT 301
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+    `);
+
+    console.log('[DB] MySQL schema verified/created successfully.');
+  } catch (err: any) {
+    console.error('[DB] MySQL schema creation warning:', err.message);
+  }
+}
+
 // ── Bootstrap on startup ─────────────────────────────────────────────────────
 let _initialized = false;
 
@@ -404,6 +570,7 @@ export async function initDatabase() {
     if (isMySQL && mysqlPool) {
       await mysqlPool.query('SELECT 1');
       console.log('[DB] Connected to MySQL database successfully.');
+      await createMySQLSchema();
     } else if (pgPool) {
       await pgPool.query('SELECT 1');
       console.log('[DB] Connected to PostgreSQL database');
@@ -415,3 +582,4 @@ export async function initDatabase() {
     _initialized = false;
   }
 }
+
