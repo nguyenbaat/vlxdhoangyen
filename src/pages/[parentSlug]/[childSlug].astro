@@ -1,0 +1,312 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import ProductCard from '../../components/ProductCard.astro';
+import { CategoryRepo, ProductRepo, SettingsRepo } from '../../server/db/repo.js';
+
+const { parentSlug, childSlug } = Astro.params;
+
+// 1. Fetch parent and child categories
+const parentCategory = parentSlug ? await CategoryRepo.getBySlug(parentSlug) : null;
+const childCategory = childSlug ? await CategoryRepo.getBySlug(childSlug) : null;
+
+if (!parentCategory || !childCategory) {
+  return Astro.redirect('/404');
+}
+
+// 2. Fetch sibling subcategories & products
+const settings = await SettingsRepo.getAll();
+const siblingCategories = await CategoryRepo.getChildren(parentCategory.id);
+
+// Products matching child category OR parent category if child has none
+let products = await ProductRepo.getByCategory(childCategory.id);
+if (products.length === 0) {
+  products = await ProductRepo.getByCategory(parentCategory.id);
+}
+
+// SEO & Metadata
+const title = childCategory.seo_title || `${childCategory.name} - ${parentCategory.name} Tại Quảng Trị | VLXD Hoàng Yến`;
+const description = childCategory.seo_description || `Chuyên cung cấp ${childCategory.name} thuộc danh mục ${parentCategory.name} tại Quảng Trị. Liên hệ Hoàng Yến để nhận báo giá theo công trình.`;
+const canonicalUrl = `https://vlxdhoangyen.com/${parentCategory.slug}/${childCategory.slug}/`;
+
+const breadcrumbs = [
+  { name: 'Trang chủ', url: '/' },
+  { name: 'Sản phẩm', url: '/san-pham/' },
+  { name: parentCategory.name, url: `/${parentCategory.slug}/` },
+  { name: childCategory.name, url: `/${parentCategory.slug}/${childCategory.slug}/` }
+];
+---
+
+<Layout
+  title={title}
+  description={description}
+  canonical={canonicalUrl}
+  breadcrumbs={breadcrumbs}
+>
+  <!-- Hero / Category Header -->
+  <section class="cat-hero">
+    <div class="container">
+
+      <div class="hero-content">
+        <span class="badge">{parentCategory.name}</span>
+        <h1>{childCategory.name}</h1>
+        <p class="desc">{childCategory.description || description}</p>
+
+        <div class="hero-actions">
+          <a href={`tel:${settings.hotline_main || '0946575579'}`} class="btn btn-accent btn-lg">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" style="vertical-align: -2px; margin-right: 6px;"><path d="M6.62 10.79a15.05 15.05 0 006.59 6.59l2.2-2.2a1 1 0 011.02-.24 11.72 11.72 0 003.68.59 1 1 0 011 1V20a1 1 0 01-1 1A17 17 0 013 4a1 1 0 011-1h3.5a1 1 0 011 1 11.72 11.72 0 00.59 3.68 1 1 0 01-.24 1.02l-2.23 2.09z"/></svg>
+            Báo Giá {childCategory.name}: {settings.hotline_main || '0946.575.579'}
+          </a>
+          <a href={settings.zalo_url || 'https://zalo.me/0946575579'} target="_blank" rel="noopener noreferrer" class="btn btn-navy btn-lg">
+            <img src="/zalo.png" alt="Zalo" width="22" height="22" style="vertical-align: -4px; margin-right: 6px;" />
+            Nhận Báo Giá Qua Zalo
+          </a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Subcategories Pills / Quick Filter -->
+  {siblingCategories.length > 0 && (
+    <section class="subcat-filter-bar">
+      <div class="container">
+        <div class="filter-wrap">
+          <span class="filter-label">Danh mục {parentCategory.name}:</span>
+          <div class="pills-scroll">
+            <a href={`/${parentCategory.slug}/`} class="pill-btn">
+              Tất cả {parentCategory.name}
+            </a>
+            {siblingCategories.map(sub => (
+              <a
+                href={`/${parentCategory.slug}/${sub.slug}/`}
+                class={`pill-btn ${sub.slug === childCategory.slug ? 'active' : ''}`}
+              >
+                {sub.name}
+              </a>
+            ))}
+          </div>
+        </div>
+      </div>
+    </section>
+  )}
+
+  <!-- Main Content & Products Grid -->
+  <section class="main-content-section">
+    <div class="container">
+      <div class="content-grid">
+        <!-- Main Products -->
+        <main class="products-main">
+          <div class="section-head">
+            <h2>Sản Phẩm {childCategory.name} ({products.length})</h2>
+            <span class="note">Hỗ trợ giao hàng tại TP. Đông Hà & khu vực lân cận</span>
+          </div>
+
+          {products.length > 0 ? (
+            <div class="products-grid">
+              {products.map(prod => (
+                <ProductCard product={prod} />
+              ))}
+            </div>
+          ) : (
+            <div class="empty-state card">
+              <div class="empty-icon">
+                <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" style="color: #94a3b8;"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line></svg>
+              </div>
+              <h3>Đang cập nhật danh sách sản phẩm {childCategory.name}</h3>
+              <p>Quý khách vui lòng liên hệ hotline <strong>{settings.hotline_main}</strong> để nhận thông tin sản phẩm và báo giá theo công trình.</p>
+              <a href={`tel:${settings.hotline_main}`} class="btn btn-primary">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" style="vertical-align: -2px; margin-right: 6px;"><path d="M6.62 10.79a15.05 15.05 0 006.59 6.59l2.2-2.2a1 1 0 011.02-.24 11.72 11.72 0 003.68.59 1 1 0 011 1V20a1 1 0 01-1 1A17 17 0 013 4a1 1 0 011-1h3.5a1 1 0 011 1 11.72 11.72 0 00.59 3.68 1 1 0 01-.24 1.02l-2.23 2.09z"/></svg>
+                Gọi Báo Giá Trực Tiếp
+              </a>
+            </div>
+          )}
+        </main>
+      </div>
+    </div>
+  </section>
+  {childCategory.content && (
+    <section class="section child-cat-custom-content">
+      <div class="container">
+        <div class="seo-content-card block-editor-rendered-content" set:html={childCategory.content} />
+      </div>
+    </section>
+  )}
+</Layout>
+
+<style>
+  .cat-hero {
+    background: #ffffff;
+    color: #0f172a;
+    padding: 2rem 0 2rem;
+    border-bottom: 1px solid #e2e8f0;
+  }
+
+  .breadcrumb-nav {
+    margin-bottom: 1rem;
+  }
+  .breadcrumb-list {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.4rem;
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    font-size: 0.85rem;
+  }
+  .breadcrumb-item a {
+    color: #64748b;
+    text-decoration: none;
+  }
+  .breadcrumb-item a:hover {
+    color: #0284c7;
+    text-decoration: underline;
+  }
+  .breadcrumb-item span[aria-current] {
+    color: #0f172a;
+    font-weight: 700;
+  }
+  .sep {
+    margin-left: 0.4rem;
+    color: #94a3b8;
+  }
+
+  .hero-content {
+    max-width: 800px;
+  }
+  .badge {
+    display: inline-block;
+    background: #c81e1e;
+    color: #ffffff;
+    font-size: 0.75rem;
+    font-weight: 800;
+    padding: 0.25rem 0.6rem;
+    border-radius: var(--radius-sm);
+    margin-bottom: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  .hero-content h1 {
+    font-size: clamp(1.8rem, 4vw, 2.4rem);
+    color: #0f172a;
+    font-weight: 800;
+    margin-bottom: 0.8rem;
+    line-height: 1.2;
+  }
+  .desc {
+    font-size: 1rem;
+    color: rgba(255, 255, 255, 0.85);
+    line-height: 1.6;
+    margin-bottom: 1.8rem;
+  }
+  .hero-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+  }
+
+  .subcat-filter-bar {
+    background: #ffffff;
+    border-bottom: 1px solid var(--border-subtle);
+    padding: 1rem 0;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
+  }
+  .filter-wrap {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+  }
+  .filter-label {
+    font-weight: 700;
+    font-size: 0.88rem;
+    white-space: nowrap;
+    color: var(--color-primary-dark);
+  }
+  .pills-scroll {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    padding-bottom: 0.25rem;
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .pills-scroll::-webkit-scrollbar {
+    display: none;
+  }
+  .pill-btn {
+    display: inline-block;
+    padding: 0.4rem 0.9rem;
+    background: #f1f5f9;
+    color: var(--text-color);
+    border-radius: var(--radius-full);
+    font-size: 0.83rem;
+    font-weight: 600;
+    text-decoration: none;
+    white-space: nowrap;
+    transition: all 0.2s ease;
+  }
+  .pill-btn:hover {
+    background: var(--color-primary);
+    color: #ffffff;
+  }
+  .pill-btn.active {
+    background: var(--color-accent);
+    color: #ffffff;
+  }
+
+  .main-content-section {
+    padding: 3rem 0;
+  }
+  .section-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 1.5rem;
+    border-bottom: 2px solid var(--color-accent);
+    padding-bottom: 0.6rem;
+  }
+  .section-head h2 {
+    font-size: 1.4rem;
+    color: var(--color-primary-dark);
+    margin: 0;
+  }
+  .section-head .note {
+    font-size: 0.82rem;
+    color: var(--text-muted);
+  }
+
+  .products-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1.5rem;
+  }
+
+  .empty-state {
+    text-align: center;
+    padding: 4rem 2rem;
+    background: #ffffff;
+    border-radius: var(--radius-lg);
+    border: 1px dashed var(--border-medium);
+  }
+  .empty-icon {
+    font-size: 3rem;
+    margin-bottom: 1rem;
+  }
+  .empty-state h3 {
+    margin-bottom: 0.5rem;
+  }
+  .empty-state p {
+    color: var(--text-muted);
+    margin-bottom: 1.5rem;
+  }
+
+  @media (max-width: 1024px) {
+    .products-grid { grid-template-columns: repeat(3, 1fr); }
+  }
+  @media (max-width: 768px) {
+    .products-grid { grid-template-columns: repeat(2, 1fr); }
+    .filter-wrap { flex-direction: column; align-items: flex-start; }
+  }
+  @media (max-width: 480px) {
+    .products-grid { grid-template-columns: 1fr; }
+  }
+</style>

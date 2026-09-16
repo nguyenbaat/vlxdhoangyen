@@ -1,0 +1,165 @@
+---
+import '../../styles/global.css';
+import { AuthRepo } from '../../server/db/repo.js';
+import { createAdminSession } from '../../server/auth.js';
+
+let errorMsg = '';
+
+if (Astro.request.method === 'POST') {
+  try {
+    const formData = await Astro.request.formData();
+    const username = formData.get('username')?.toString().trim() || '';
+    const password = formData.get('password')?.toString().trim() || '';
+
+    const user = await AuthRepo.authenticate(username, password);
+    if (user) {
+      Astro.cookies.set('admin_session', createAdminSession(user), {
+        path: '/',
+        httpOnly: true,
+        secure: Astro.url.protocol === 'https:',
+        sameSite: 'lax',
+        maxAge: 60 * 60 * 24 * 7 // 7 days
+      });
+      return Astro.redirect('/admin');
+    } else {
+      errorMsg = 'Tên đăng nhập hoặc mật khẩu không chính xác.';
+    }
+  } catch (err: any) {
+    errorMsg = 'Lỗi xử lý đăng nhập: ' + err.message;
+  }
+}
+---
+
+<!doctype html>
+<html lang="vi">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Đăng Nhập Quản Trị - VLXD Hoàng Yến</title>
+    <meta name="robots" content="noindex, nofollow" />
+  </head>
+  <body class="login-body">
+    <div class="login-card">
+      <div class="login-header">
+        <span class="badge">CMS ADMIN</span>
+        <h1>Siêu Thị VLXD Hoàng Yến</h1>
+        <p>Đăng nhập hệ thống quản trị nội dung website</p>
+      </div>
+
+      {errorMsg && (
+        <div class="error-alert">
+          {errorMsg}
+        </div>
+      )}
+
+      <form method="POST" class="login-form">
+        <div class="form-group">
+          <label for="username">Tên đăng nhập hoặc Email</label>
+          <input 
+            type="text" 
+            id="username" 
+            name="username" 
+            placeholder="admin" 
+            defaultValue="admin"
+            required 
+          />
+        </div>
+
+        <div class="form-group">
+          <label for="password">Mật khẩu</label>
+          <input 
+            type="password" 
+            id="password" 
+            name="password" 
+            placeholder="••••••••" 
+            required 
+          />
+        </div>
+
+        <button type="submit" class="btn btn-primary btn-lg" style="width: 100%; margin-top: 1rem;">
+          Đăng Nhập Quản Trị
+        </button>
+      </form>
+    </div>
+  </body>
+</html>
+
+<style>
+  .login-body {
+    min-height: 100vh;
+    background: linear-gradient(135deg, #0a2d52 0%, #051930 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1.5rem;
+    font-family: var(--font-body);
+  }
+  .login-card {
+    background: #ffffff;
+    border-radius: var(--radius-xl);
+    width: 100%;
+    max-width: 440px;
+    padding: 2.5rem;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.35);
+  }
+  .login-header {
+    text-align: center;
+    margin-bottom: 2rem;
+  }
+  .badge {
+    display: inline-block;
+    background: var(--color-accent);
+    color: #ffffff;
+    font-size: 0.75rem;
+    font-weight: 800;
+    padding: 0.25rem 0.6rem;
+    border-radius: var(--radius-sm);
+    margin-bottom: 0.6rem;
+  }
+  .login-header h1 {
+    font-size: 1.5rem;
+    margin-bottom: 0.3rem;
+  }
+  .login-header p {
+    font-size: 0.88rem;
+    color: var(--text-muted);
+  }
+
+  .error-alert {
+    background: #fee2e2;
+    border: 1px solid #ef4444;
+    color: #b91c1c;
+    padding: 0.75rem 1rem;
+    border-radius: var(--radius-sm);
+    font-size: 0.85rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .login-form .form-group {
+    margin-bottom: 1.25rem;
+  }
+  .login-form label {
+    display: block;
+    font-size: 0.88rem;
+    font-weight: 600;
+    margin-bottom: 0.4rem;
+  }
+  .login-form input {
+    width: 100%;
+    padding: 0.75rem 1rem;
+    border: 1px solid var(--border-medium);
+    border-radius: var(--radius-sm);
+    font-size: 0.95rem;
+    outline: none;
+  }
+  .login-form input:focus {
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 3px var(--color-primary-glow);
+  }
+  .login-hint {
+    margin-top: 1.5rem;
+    text-align: center;
+    font-size: 0.78rem;
+    color: var(--text-muted);
+  }
+</style>

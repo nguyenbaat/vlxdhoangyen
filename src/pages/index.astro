@@ -1,0 +1,1857 @@
+---
+import Layout from '../layouts/Layout.astro';
+import ProductCard from '../components/ProductCard.astro';
+import { CategoryRepo, ProductRepo, BrandRepo, PostRepo, SettingsRepo } from '../server/db/repo.js';
+
+const settings = await SettingsRepo.getAll();
+const vlxdCategories = await CategoryRepo.getMainCategories('vlxd');
+const noiThatCategories = await CategoryRepo.getMainCategories('noi-that');
+const featuredProducts = await ProductRepo.getFeatured(8);
+const brands = (await BrandRepo.getAll()).filter(b => b.is_featured === 1);
+const latestPosts = await PostRepo.getLatest(3);
+
+const siteUrl = 'https://vlxdhoangyen.com';
+
+const websiteSchema = {
+  '@context': 'https://schema.org',
+  '@type': 'WebSite',
+  '@id': `${siteUrl}/#website`,
+  url: siteUrl,
+  name: settings.brand_name || 'Siêu Thị VLXD Hoàng Yến',
+  description: settings.default_seo_desc || 'Siêu Thị VLXD Hoàng Yến cung cấp sắt thép Hòa Phát, xi măng, tôn Đông Á, gạch tuynel và thiết bị vệ sinh tại Quảng Trị.',
+  publisher: {
+    '@id': `${siteUrl}/#organization`
+  },
+  potentialAction: {
+    '@type': 'SearchAction',
+    target: {
+      '@type': 'EntryPoint',
+      urlTemplate: `${siteUrl}/san-pham/?q={search_term_string}`
+    },
+    'query-input': 'required name=search_term_string'
+  },
+  inLanguage: 'vi-VN'
+};
+---
+
+<Layout 
+  title="Vật Liệu Xây Dựng Tại Quảng Trị - Siêu Thị VLXD Hoàng Yến"
+  description="Siêu Thị VLXD Hoàng Yến cung cấp sắt thép Hòa Phát, xi măng, tôn Đông Á, gạch tuynel và thiết bị vệ sinh tại Quảng Trị. Thành lập từ 2003, hơn 20 năm kinh nghiệm đồng hành cùng 1.250+ nhà thầu."
+  currentPath="/"
+  schemas={[websiteSchema]}
+>
+  <section class="hero-industrial">
+    <div class="container hero-inner">
+      <div class="hero-content">
+        <div class="hero-eyebrow">
+          <span class="hero-badge">Nhà Cung Ứng VLXD Uy Tín</span>
+          <span class="hero-location">Đông Hà • Quảng Trị</span>
+        </div>
+
+        <h1 class="hero-title">
+          Siêu Thị Vật Liệu Xây Dựng Hoàng Yến
+        </h1>
+
+        <p class="hero-description">
+          Đại lý cấp 1 cung cấp VLXD tại tỉnh Quảng Trị, thành lập từ năm 2003 với hơn 20 năm kinh nghiệm đồng hành cùng hơn 1.250+ nhà thầu công trình. Cung ứng sắt thép, xi măng, tôn, gạch xây dựng và thiết bị vệ sinh chất lượng cao tận công trình.
+        </p>
+
+        <div class="hero-actions">
+          <a href="#request-quote" class="btn btn-primary btn-lg">
+            <span>Nhận Báo Giá</span>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
+          </a>
+          <a href="/san-pham/" class="btn btn-secondary btn-lg">
+            <span>Xem Sản Phẩm</span>
+          </a>
+        </div>
+
+        <!-- Metric badges -->
+        <div class="hero-metrics">
+          <div class="metric-item">
+            <span class="metric-number">20+</span>
+            <span class="metric-label">Năm Kinh Nghiệm (Từ 2003)</span>
+          </div>
+          <div class="metric-divider"></div>
+          <div class="metric-item">
+            <span class="metric-number">1.250+</span>
+            <span class="metric-label">Nhà Thầu Tin Chọn</span>
+          </div>
+          <div class="metric-divider"></div>
+          <div class="metric-item">
+            <span class="metric-number">Chính Xác</span>
+            <span class="metric-label">Barem &amp; Tiến Độ Giao Nhận</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Hero Visual Industrial Panel -->
+      <div class="hero-visual">
+        <div class="hero-image-frame">
+          <img 
+            src="/images/HoangYen.jpg" 
+            alt="Cửa hàng Siêu Thị VLXD Hoàng Yến tại 299 Lê Duẩn, Đông Hà, Quảng Trị" 
+            width="600"
+            height="400"
+            loading="eager"
+            class="hero-main-img"
+          />
+          <div class="hero-floating-badge">
+            <div class="badge-title-row">
+              <span class="badge-icon">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
+              </span>
+              <strong>Cửa hàng 299 Lê Duẩn, Đông Hà, Quảng Trị</strong>
+            </div>
+            <span class="badge-tagline">Bạn của mọi nhà</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+  <section class="section section-concrete" id="categories-section">
+    <div class="container">
+      <!-- 2.1 GROUP 1: VẬT LIỆU XÂY THÔ & KẾT CẤU -->
+      <div class="section-header">
+        <div class="eyebrow">Nhóm Ngành Hàng 01</div>
+        <h2>VẬT LIỆU XÂY THÔ & KẾT CẤU</h2>
+        <p>Cung ứng các loại sắt thép, xi măng, tôn lợp, gạch tuynel, lưới thép và phụ kiện xây thô chịu lực từ các thương hiệu lớn.</p>
+      </div>
+
+      <div class="categories-showcase-grid vlxd-showcase-grid">
+        {vlxdCategories.map((cat) => (
+          <a href={`/${cat.slug}/`} class="category-showcase-card">
+            <div class="category-showcase-img-box">
+              <img src={cat.image_url || '/anh-sanpham.png'} alt={`${cat.name} xây thô`} width="180" height="135" loading="lazy" />
+            </div>
+            <div class="category-showcase-info">
+              <span class="category-showcase-name">{cat.name}</span>
+              <span class="category-showcase-action">
+                <span>Xem Báo Giá</span>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
+              </span>
+            </div>
+          </a>
+        ))}
+      </div>
+
+      <!-- 2.2 GROUP 2: THIẾT BỊ VỆ SINH & PHÒNG TẮM -->
+      <div class="section-header" style="margin-top: var(--space-14); padding-top: var(--space-12); border-top: 1px solid var(--color-border);">
+        <div class="eyebrow" style="color: var(--color-red);">Nhóm Ngành Hàng 02</div>
+        <h2>THIẾT BỊ VỆ SINH & PHÒNG TẮM</h2>
+        <p>Cung cấp thiết bị phòng tắm từ Caesar, Mowoen với độ bền men sứ cao và thiết kế hiện đại.</p>
+      </div>
+
+      <div class="categories-showcase-grid noi-that-showcase-grid">
+        {noiThatCategories.map((cat) => (
+          <a href={`/${cat.slug}/`} class="category-showcase-card">
+            <div class="category-showcase-img-box">
+              <img src={cat.image_url || '/anh-sanpham.png'} alt={`Thiết bị ${cat.name} hoàn thiện`} width="180" height="135" loading="lazy" />
+            </div>
+            <div class="category-showcase-info">
+              <span class="category-showcase-name">{cat.name}</span>
+              <span class="category-showcase-action">
+                <span>Xem Báo Giá</span>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
+              </span>
+            </div>
+          </a>
+        ))}
+      </div>
+
+    </div>
+  </section>
+  <section class="section section-about">
+    <div class="container">
+      <div class="about-grid">
+        <div class="about-visual">
+          <div class="about-image-stack">
+            <img src="/images/cta-vlxd.png" alt="Cửa hàng Siêu Thị VLXD Hoàng Yến tại Đông Hà Quảng Trị" width="560" height="380" loading="lazy" class="about-img-main" />
+          </div>
+        </div>
+
+        <div class="about-content">
+          <div class="eyebrow">Giới Thiệu Doanh Nghiệp</div>
+          <h2>Siêu Thị VLXD Hoàng Yến — Đối Tác Cung Ứng Vật Liệu Tại Quảng Trị</h2>
+          <p class="about-lead">
+            Tọa lạc tại trung tâm thành phố Đông Hà, <strong>CÔNG TY TNHH MTV VLXD TỔNG HỢP HOÀNG YẾN</strong> là đơn vị cung ứng vật liệu xây dựng cho các công trình nhà ở và dự án tại khu vực tỉnh Quảng Trị.
+          </p>
+
+          <div class="about-pillars">
+            <div class="pillar-item">
+              <div class="pillar-header">
+                <span class="pillar-bullet"></span>
+                <h3 class="pillar-title">Nguồn Hàng Minh Bạch & Rõ Ràng</h3>
+              </div>
+              <p>Nguồn hàng từ các thương hiệu VLXD lớn (Hòa Phát, Nghi Sơn, Bỉm Sơn, Sông Gianh, Tôn Đông Á, Caesar, Mowoen), có thông tin xuất xứ và chứng từ theo từng sản phẩm. Chính sách giá được áp dụng theo chủng loại và khối lượng đơn hàng.</p>
+            </div>
+
+            <div class="pillar-item">
+              <div class="pillar-header">
+                <span class="pillar-bullet"></span>
+                <h3 class="pillar-title">Chuẩn Barem & Hóa Đơn Hợp Lệ</h3>
+              </div>
+              <p>Mọi lô thép cuộn, thép cây và xi măng đều chuẩn barem nhà sản xuất, nguồn gốc rõ ràng và hỗ trợ xuất hóa đơn GTGT đầy đủ.</p>
+            </div>
+
+            <div class="pillar-item">
+              <div class="pillar-header">
+                <span class="pillar-bullet"></span>
+                <h3 class="pillar-title">Hỗ Trợ Giao Hàng An Toàn Tận Nơi</h3>
+              </div>
+              <p>Hỗ trợ vận chuyển và bốc xếp hàng hóa an toàn đến công trình tại khu vực Đông Hà và lân cận theo tiến độ thi công.</p>
+            </div>
+          </div>
+
+          <div class="about-action">
+            <a href="/gioi-thieu/" class="btn btn-dark">
+              <span>Xem Giới Thiệu Chi Tiết</span>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+  <section class="brands-showcase-section">
+    <div class="container">
+      <!-- Centered Header with Line Dividers -->
+      <div class="brands-divider-header">
+        <span class="divider-line"></span>
+        <h2 class="brands-title-heading">THƯƠNG HIỆU VẬT LIỆU XÂY DỰNG</h2>
+        <span class="divider-line"></span>
+      </div>
+    </div>
+
+    <!-- Full-Width Seamless Continuous Logo Marquee -->
+    <div class="marquee-wrapper" aria-label="Danh sách thương hiệu đối tác liên tục">
+      <div class="marquee-track">
+        <!-- Set 1 -->
+        {brands.map(brand => (
+          <a href={`/san-pham/${brand.slug}/`} class="marquee-logo-item" title={brand.name}>
+            <img src={brand.logo_url || '/anh-logo.png'} alt={`Logo đối tác ${brand.name}`} width="140" height="60" class="brand-showcase-img" loading="lazy" />
+          </a>
+        ))}
+        <!-- Set 2 (Continuous marquee loop with unique alt) -->
+        {brands.map(brand => (
+          <a href={`/san-pham/${brand.slug}/`} class="marquee-logo-item" aria-hidden="true" tabindex="-1">
+            <img src={brand.logo_url || '/anh-logo.png'} alt={`Thương hiệu ${brand.name} tại Hoàng Yến`} width="140" height="60" class="brand-showcase-img" loading="lazy" />
+          </a>
+        ))}
+        <!-- Set 3 (Ensure wide screen continuity with unique alt) -->
+        {brands.map(brand => (
+          <a href={`/san-pham/${brand.slug}/`} class="marquee-logo-item" aria-hidden="true" tabindex="-1">
+            <img src={brand.logo_url || '/anh-logo.png'} alt={`Đại lý ${brand.name} tại Quảng Trị`} width="140" height="60" class="brand-showcase-img" loading="lazy" />
+          </a>
+        ))}
+      </div>
+    </div>
+  </section>
+  <section class="section products-section">
+    <div class="container">
+      <div class="section-header-flex">
+        <div>
+          <div class="eyebrow">Sản Phẩm Cốt Lõi</div>
+          <h2>Vật Liệu Xây Dựng & Thiết Bị Sẵn Kho</h2>
+          <p>Đáp ứng số lượng lớn theo nhu cầu công trình với đầy đủ chủng loại chuẩn kỹ thuật.</p>
+        </div>
+        <a href="/san-pham/" class="btn btn-outline">
+          <span>Xem Toàn Bộ Sản Phẩm ({featuredProducts.length}+)</span>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
+        </a>
+      </div>
+
+      <div class="products-grid">
+        {featuredProducts.map(p => (
+          <ProductCard product={p} />
+        ))}
+      </div>
+    </div>
+  </section>
+  <section class="section section-quote-industrial" id="request-quote">
+    <div class="container">
+      <div class="quote-grid">
+        <div class="quote-info">
+          <div class="quote-eyebrow-badge">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"></path></svg>
+            <span>Báo Giá Theo Khối Lượng</span>
+          </div>
+          <h2 class="quote-main-title">Nhận Báo Giá VLXD Theo Khối Lượng Công Trình</h2>
+          <p class="quote-main-desc">
+            Gửi danh sách vật tư, quy cách và số lượng dự kiến để Hoàng Yến kiểm tra hàng và báo giá phù hợp với nhu cầu công trình.
+          </p>
+
+          <div class="quote-benefits">
+            <div class="benefit-row">
+              <div class="benefit-check-icon">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"></polyline></svg>
+              </div>
+              <span>Báo giá theo chủng loại & khối lượng</span>
+            </div>
+            <div class="benefit-row">
+              <div class="benefit-check-icon">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"></polyline></svg>
+              </div>
+              <span>Hỗ trợ kiểm tra quy cách & mác vật tư</span>
+            </div>
+            <div class="benefit-row">
+              <div class="benefit-check-icon">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"></polyline></svg>
+              </div>
+              <span>Tư vấn phương án giao hàng theo công trình</span>
+            </div>
+          </div>
+
+          <div class="direct-call-box">
+            <div class="direct-call-icon">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M6.62 10.79a15.05 15.05 0 006.59 6.59l2.2-2.2a1 1 0 011.02-.24 11.72 11.72 0 003.68.59 1 1 0 011 1V20a1 1 0 01-1 1A17 17 0 013 4a1 1 0 011-1h3.5a1 1 0 011 1 11.72 11.72 0 00.59 3.68 1 1 0 01-.24 1.02l-2.23 2.09z"/></svg>
+            </div>
+            <div class="direct-call-text">
+              <span class="direct-label">Hotline tư vấn & báo giá:</span>
+              <a href={`tel:${settings.hotline_main}`} class="direct-phone">{settings.hotline_main}</a>
+              <span class="direct-name">Tư Vấn & Tiếp Nhận Đơn Hàng</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Form Box -->
+        <div class="quote-form-card">
+          <form id="home-quote-form" class="industrial-form">
+            <h3 class="form-title">Gửi Yêu Cầu Báo Giá Vật Tư</h3>
+            
+            <div class="form-group">
+              <label class="form-label" for="q-name">Họ và tên / Tên đơn vị *</label>
+              <input type="text" id="q-name" name="customer_name" required class="form-input" placeholder="Ví dụ: Nguyễn Văn A / Công ty Xây Dựng ABC" />
+            </div>
+
+            <div class="form-row">
+              <div class="form-group">
+                <label class="form-label" for="q-phone">Số điện thoại / Zalo *</label>
+                <input type="tel" id="q-phone" name="customer_phone" required class="form-input" placeholder="09xx xxx xxx" />
+              </div>
+              <div class="form-group">
+                <label class="form-label" for="q-address">Địa điểm công trình</label>
+                <input type="text" id="q-address" name="address" class="form-input" placeholder="Đông Hà, Triệu Phong..." />
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="q-notes">Vật tư & Khối lượng cần báo giá *</label>
+              <textarea id="q-notes" name="notes" rows="4" required class="form-textarea" placeholder="Ví dụ: Cần 10 tấn thép D14, 200 bao xi măng Nghi Sơn PCB40 giao tại Đông Hà..."></textarea>
+            </div>
+
+            <div class="form-group form-consent-group">
+              <label class="consent-checkbox-label" for="q-consent">
+                <input type="checkbox" id="q-consent" name="consent" required checked />
+                <span>Tôi đồng ý để VLXD Hoàng Yến sử dụng thông tin trên nhằm liên hệ tư vấn và báo giá theo <a href="/chinh-sach-bao-mat/" target="_blank" rel="noopener">Chính sách bảo mật</a>.</span>
+              </label>
+            </div>
+
+            <button type="submit" class="btn btn-primary btn-block btn-lg btn-quote-submit" id="q-submit-btn">
+              <span>Gửi Yêu Cầu Báo Giá Ngay</span>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
+            </button>
+            <p class="form-privacy-note">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" style="display: inline-block; vertical-align: middle; margin-right: 4px; color: #16a34a;"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+              <span>Thông tin của quý khách được bảo mật theo quy định.</span>
+            </p>
+            <div id="q-status-msg" class="status-msg" style="display:none;"></div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </section>
+  <section class="section section-concrete">
+    <div class="container">
+      <div class="section-header text-center">
+        <div class="eyebrow">Thế Mạnh Doanh Nghiệp</div>
+        <h2>Tại Sao Chọn VLXD Hoàng Yến?</h2>
+        <p>4 giá trị cốt lõi làm nên sự tin cậy của khách hàng tại Quảng Trị.</p>
+      </div>
+
+      <div class="why-grid">
+        <div class="why-card">
+          <div class="why-number">01</div>
+          <h3 class="why-title">Nguồn Hàng Rõ Ràng</h3>
+          <p class="why-desc">Sản phẩm có thông tin thương hiệu, quy cách và chứng từ theo từng đơn hàng.</p>
+        </div>
+
+        <div class="why-card">
+          <div class="why-number">02</div>
+          <h3 class="why-title">Minh Bạch Quy Cách & Barem</h3>
+          <p class="why-desc">Thép chuẩn barem nhà máy, cân tải trọng chính xác, xi măng date mới xuất xưởng, gạch ngói đồng đều.</p>
+        </div>
+
+        <div class="why-card">
+          <div class="why-number">03</div>
+          <h3 class="why-title">Hỗ Trợ Giao Hàng Công Trình</h3>
+          <p class="why-desc">Hỗ trợ giao hàng an toàn, điều phối linh hoạt, đáp ứng tiến độ thi công cho mọi công trình.</p>
+        </div>
+
+        <div class="why-card">
+          <div class="why-number">04</div>
+          <h3 class="why-title">Tư Vấn Vật Tư</h3>
+          <p class="why-desc">Hỗ trợ lựa chọn chủng loại, quy cách và khối lượng phù hợp với nhu cầu thực tế.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+  <section class="section service-area-section">
+    <div class="container">
+      <div class="area-box">
+        <div class="area-content">
+          <div class="eyebrow">Phạm Vi Giao Hàng</div>
+          <h2>Hỗ Trợ Giao Hàng Tận Nơi Công Trình</h2>
+          <p>Siêu Thị VLXD Hoàng Yến hỗ trợ phương tiện vận chuyển phục vụ các công trình tại Đông Hà và các địa bàn lân cận:</p>
+          
+          <div class="area-tags">
+            <span class="area-tag">TP. Đông Hà</span>
+            <span class="area-tag">TX. Quảng Trị</span>
+            <span class="area-tag">Huyện Triệu Phong</span>
+            <span class="area-tag">Huyện Gio Linh</span>
+            <span class="area-tag">Huyện Cam Lộ</span>
+            <span class="area-tag">Huyện Hải Lăng</span>
+            <span class="area-tag">Huyện Vĩnh Linh</span>
+            <span class="area-tag">Huyện Hướng Hóa</span>
+            <span class="area-tag">Huyện Đakrông</span>
+          </div>
+        </div>
+
+        <div class="area-side-stats">
+          <div class="area-stat-card">
+            <span class="area-stat-val">Nhanh chóng</span>
+            <span class="area-stat-lbl">Giao hàng khu vực nội thành TP. Đông Hà</span>
+          </div>
+          <div class="area-stat-card">
+            <span class="area-stat-val">Theo tiến độ</span>
+            <span class="area-stat-lbl">Hỗ trợ các địa bàn lân cận tại Quảng Trị</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+  <section class="section section-store-location">
+    <div class="container">
+      <div class="location-header">
+        <h2 class="location-title">Vị trí cửa hàng</h2>
+      </div>
+
+      <div class="map-container-box">
+        <iframe 
+          src={settings.maps_embed_url || "https://maps.google.com/maps?q=Si%C3%AAu+Th%E1%BB%8B+Ho%C3%A0ng+Y%E1%BA%BFn,+299+L%C3%AA+Du%E1%BA%A9n,+%C4%90%C3%B4ng+H%C3%A0,+Qu%E1%BA%A3ng+Tr%E1%BB%8B&t=k&z=17&ie=UTF8&iwloc=&output=embed"} 
+          width="100%" 
+          height="480" 
+          style="border:0;" 
+          allowfullscreen="" 
+          loading="lazy" 
+          referrerpolicy="no-referrer-when-downgrade"
+          title="Bản đồ vị trí Siêu Thị VLXD Hoàng Yến tại 299 Lê Duẩn, TP. Đông Hà, Tỉnh Quảng Trị"
+        ></iframe>
+      </div>
+    </div>
+  </section>
+  <section class="section section-concrete">
+    <div class="container">
+      <div class="section-header-flex">
+        <div>
+          <div class="eyebrow">Thị Trường & Kỹ Thuật</div>
+          <h2>Tin Tức & Cập Nhật Giá VLXD</h2>
+          <p>Thông tin biến động giá sắt thép, xi măng và cẩm nang kinh nghiệm xây nhà.</p>
+        </div>
+        <a href="/tin-tuc/" class="btn btn-outline">
+          <span>Xem Tất Cả Bài Viết</span>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
+        </a>
+      </div>
+
+      <div class="news-grid">
+        {latestPosts.map(post => (
+          <article class="news-industrial-card">
+            <a href={`/tin-tuc/${post.slug}/`} class="news-img-wrap">
+              <img src={post.featured_image || '/anh-sanpham.png'} alt={`${post.title} - Tin Tức Hoàng Yến`} width="360" height="200" loading="lazy" />
+            </a>
+            <div class="news-body">
+              <span class="news-date">{post.category_name || 'Kiến thức VLXD'}</span>
+              <h3 class="news-title">
+                <a href={`/tin-tuc/${post.slug}/`}>{post.title}</a>
+              </h3>
+              <p class="news-summary">{post.summary ? post.summary.slice(0, 110) + '...' : ''}</p>
+              <a href={`/tin-tuc/${post.slug}/`} class="news-read-link">
+                <span>Đọc chi tiết</span>
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
+              </a>
+            </div>
+          </article>
+        ))}
+      </div>
+    </div>
+  </section>
+  <section class="section section-final-cta">
+    <div class="container">
+      <div class="final-cta-inner">
+        <div class="final-cta-content">
+          <h2>Sẵn Sàng Hợp Tác Cùng Nhà Thầu & Chủ Đầu Tư</h2>
+          <p>Liên hệ ngay với Siêu Thị VLXD Hoàng Yến để nhận chính sách giá và hỗ trợ giao hàng tận công trình.</p>
+        </div>
+        <div class="final-cta-btns">
+          <a href={`tel:${settings.hotline_main}`} class="btn btn-primary btn-lg btn-final-call">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>
+            <span>Gọi Hotline: {settings.hotline_main}</span>
+          </a>
+          <a href="/lien-he/" class="btn btn-outline btn-lg btn-final-map">
+            <span>Xem Vị Trí Cửa Hàng & Bản Đồ</span>
+          </a>
+        </div>
+
+      </div>
+    </div>
+  </section>
+</Layout>
+
+<style>
+  /* Hero Industrial */
+  .hero-industrial {
+    background-color: #ffffff;
+    border-bottom: 1px solid var(--color-border);
+    padding-top: var(--space-16);
+    padding-bottom: var(--space-16);
+  }
+
+  .hero-inner {
+    display: grid;
+    grid-template-columns: 1.15fr 0.85fr;
+    gap: var(--space-12);
+    align-items: center;
+  }
+
+  .hero-eyebrow {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    margin-bottom: var(--space-4);
+  }
+
+  .hero-badge {
+    background-color: var(--color-charcoal);
+    color: #ffffff;
+    font-family: var(--font-heading);
+    font-size: 0.75rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    padding: 6px 14px;
+    border-radius: 9999px;
+  }
+
+  .hero-location {
+    font-family: var(--font-heading);
+    font-size: 0.8125rem;
+    font-weight: 700;
+    color: var(--color-red);
+    text-transform: uppercase;
+  }
+
+  .hero-title {
+    margin-bottom: var(--space-5);
+  }
+
+  .hero-description {
+    font-size: 1.125rem;
+    color: var(--color-text-muted);
+    line-height: 1.55;
+    margin-bottom: var(--space-8);
+  }
+
+  .hero-actions {
+    display: flex;
+    align-items: center;
+    gap: var(--space-4);
+    margin-bottom: var(--space-10);
+    flex-wrap: wrap;
+  }
+
+  .hero-metrics {
+    display: flex;
+    align-items: center;
+    gap: var(--space-6);
+    padding-top: var(--space-6);
+    border-top: 1px solid var(--color-border);
+  }
+
+  .metric-item {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .metric-number {
+    font-family: var(--font-heading);
+    font-size: 1.65rem;
+    font-weight: 800;
+    color: var(--color-charcoal);
+    line-height: 1;
+    margin-bottom: 4px;
+  }
+
+  .metric-label {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--color-text-muted);
+  }
+
+  .metric-divider {
+    width: 1px;
+    height: 36px;
+    background-color: var(--color-border);
+  }
+
+  /* Hero Visual Frame */
+  .hero-visual {
+    position: relative;
+  }
+
+  .hero-image-frame {
+    position: relative;
+    border: 1px solid var(--color-border-strong);
+    background-color: var(--color-concrete-light);
+    border-radius: 20px;
+    overflow: hidden;
+    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.08);
+  }
+
+  .hero-main-img {
+    width: 100%;
+    aspect-ratio: 4 / 3;
+    object-fit: cover;
+  }
+
+  .hero-floating-badge {
+    position: absolute;
+    bottom: 16px;
+    left: 16px;
+    right: 16px;
+    background: linear-gradient(135deg, rgba(220, 38, 38, 0.94) 0%, rgba(153, 27, 27, 0.98) 100%);
+    color: #ffffff;
+    padding: 12px 18px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    gap: 3px;
+    border-radius: 14px;
+    border: 1px solid rgba(255, 255, 255, 0.25);
+    box-shadow: 0 8px 24px rgba(220, 38, 38, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.3);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+  }
+
+  .badge-title-row {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    width: 100%;
+  }
+
+  .badge-icon {
+    color: #fef08a;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+
+  .badge-title-row strong {
+    font-family: var(--font-heading);
+    font-size: 0.95rem;
+    font-weight: 800;
+    color: #ffffff;
+    letter-spacing: -0.01em;
+  }
+
+  .badge-tagline {
+    font-size: 0.8125rem;
+    font-weight: 600;
+    color: #fef08a;
+    letter-spacing: 0.03em;
+  }
+
+  /* Section Header Flex */
+  .section-header-flex {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    margin-bottom: var(--space-10);
+    gap: var(--space-6);
+  }
+
+  .section-header-flex h2 {
+    margin-bottom: var(--space-2);
+  }
+
+  .section-header-flex p {
+    color: var(--color-text-muted);
+    font-size: 1.05rem;
+  }
+
+  /* Categories Grid */
+  .categories-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: var(--space-6);
+  }
+
+  /* Categories Showcase Grid (Nhóm Ngành Hàng Cốt Lõi) */
+  .categories-showcase-grid.vlxd-showcase-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: var(--space-6);
+  }
+
+  .categories-showcase-grid.noi-that-showcase-grid {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: var(--space-6);
+  }
+
+  .category-showcase-card {
+    background-color: #ffffff;
+    border: 1px solid var(--color-border);
+    border-radius: 18px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    text-decoration: none;
+    transition: all var(--transition-normal);
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.03);
+  }
+
+  .category-showcase-card:hover {
+    border-color: var(--color-red);
+    box-shadow: 0 10px 28px rgba(0, 0, 0, 0.08);
+    transform: translateY(-4px);
+  }
+
+  .category-showcase-img-box {
+    width: 100%;
+    height: 180px;
+    background-color: #ffffff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 18px;
+  }
+
+  .category-showcase-img-box img {
+    max-width: 100%;
+    max-height: 148px;
+    width: auto;
+    height: auto;
+    object-fit: contain;
+    transition: transform var(--transition-normal);
+  }
+
+  .category-showcase-card:hover .category-showcase-img-box img {
+    transform: scale(1.08);
+  }
+
+  .category-showcase-info {
+    padding: 12px 14px;
+    background-color: #ffffff;
+    border-top: 1px solid var(--color-border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 6px;
+  }
+
+  .category-showcase-name {
+    font-family: var(--font-heading);
+    font-size: clamp(0.85rem, 1.1vw, 0.98rem);
+    font-weight: 800;
+    color: var(--color-charcoal);
+    text-transform: uppercase;
+    letter-spacing: 0.01em;
+    display: block;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    transition: color var(--transition-fast);
+  }
+
+  .category-showcase-card:hover .category-showcase-name {
+    color: var(--color-red);
+  }
+
+  .category-showcase-action {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    font-size: 0.78rem;
+    font-weight: 700;
+    color: var(--color-red);
+    opacity: 0.85;
+    white-space: nowrap;
+    flex-shrink: 0;
+    transition: all var(--transition-fast);
+  }
+
+  .category-showcase-action span {
+    white-space: nowrap;
+  }
+
+  .category-showcase-card:hover .category-showcase-action {
+    opacity: 1;
+    transform: translateX(3px);
+  }
+
+  /* About Grid */
+  .about-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--space-10);
+    align-items: center;
+  }
+
+  .about-image-stack {
+    border: 1px solid var(--color-border);
+    border-radius: 20px;
+    overflow: hidden;
+    background-color: #ffffff;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.06);
+  }
+
+  .about-img-main {
+    width: 100%;
+    height: auto;
+    display: block;
+    object-fit: contain;
+  }
+
+  .about-lead {
+    font-size: 1.05rem;
+    line-height: 1.6;
+    margin-bottom: var(--space-6);
+  }
+
+  .about-pillars {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-4);
+    margin-bottom: var(--space-8);
+  }
+
+  .pillar-item {
+    background-color: var(--color-concrete-light);
+    border: 1px solid var(--color-border);
+    padding: var(--space-4);
+    border-radius: 14px;
+    transition: all var(--transition-fast);
+  }
+
+  .pillar-item:hover {
+    border-color: var(--color-border-strong);
+    transform: translateX(4px);
+  }
+
+  .pillar-header {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    margin-bottom: 4px;
+  }
+
+  .pillar-bullet {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background-color: var(--color-red);
+    flex-shrink: 0;
+  }
+
+  .pillar-header h4 {
+    font-size: 0.9375rem;
+  }
+
+  .pillar-item p {
+    font-size: 0.8125rem;
+    color: var(--color-text-muted);
+    padding-left: 20px;
+  }
+
+  /* Brands Continuous Marquee Showcase */
+  .brands-showcase-section {
+    background-color: #ffffff;
+    border-top: 1px solid var(--color-border);
+    border-bottom: 1px solid var(--color-border);
+    padding: var(--space-8) 0;
+    width: 100%;
+    overflow: hidden;
+  }
+
+  .brands-divider-header {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-4);
+    margin-bottom: var(--space-6);
+  }
+
+  .brands-divider-header .divider-line {
+    flex: 1;
+    height: 1px;
+    background-color: var(--color-border);
+    max-width: 250px;
+  }
+
+  .brands-title-heading {
+    font-family: var(--font-heading);
+    font-size: 1.15rem;
+    font-weight: 800;
+    color: var(--color-charcoal);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    margin: 0;
+    white-space: nowrap;
+  }
+
+  .marquee-wrapper {
+    position: relative;
+    width: 100%;
+    overflow: hidden;
+    padding: var(--space-2) 0;
+    background-color: #ffffff;
+    mask-image: linear-gradient(to right, transparent 0%, black 3%, black 97%, transparent 100%);
+    -webkit-mask-image: linear-gradient(to right, transparent 0%, black 3%, black 97%, transparent 100%);
+  }
+
+  .marquee-track {
+    display: flex;
+    align-items: center;
+    gap: 90px;
+    width: max-content;
+    animation: marqueeScroll 28s linear infinite;
+  }
+
+  .marquee-wrapper:hover .marquee-track {
+    animation-play-state: paused;
+  }
+
+  @keyframes marqueeScroll {
+    0% {
+      transform: translateX(0);
+    }
+    100% {
+      transform: translateX(-33.333333%);
+    }
+  }
+
+  .marquee-logo-item {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 95px;
+    min-width: 220px;
+    padding: 0 20px;
+    transition: transform var(--transition-fast);
+    flex-shrink: 0;
+  }
+
+  .marquee-logo-item:hover {
+    transform: scale(1.1);
+  }
+
+  .brand-showcase-img {
+    height: 80px !important;
+    max-height: 80px !important;
+    max-width: 260px !important;
+    width: auto !important;
+    object-fit: contain !important;
+    display: block;
+  }
+
+  /* Products Grid */
+  .products-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: var(--space-6);
+  }
+
+  /* Request Quote (Clean Light Premium Theme) */
+  .section-quote-industrial {
+    background: #f8fafc;
+    border-top: 1px solid #e2e8f0;
+    border-bottom: 1px solid #e2e8f0;
+    padding-top: var(--space-16);
+    padding-bottom: var(--space-16);
+    color: #0f172a;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .quote-grid {
+    display: grid;
+    grid-template-columns: 1.05fr 0.95fr;
+    gap: var(--space-12);
+    align-items: center;
+  }
+
+  .quote-eyebrow-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: #fef2f2;
+    color: #dc2626;
+    border: 1px solid #fecaca;
+    font-size: 0.8125rem;
+    font-weight: 700;
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
+    padding: 6px 14px;
+    border-radius: 9999px;
+    margin-bottom: var(--space-4);
+  }
+
+  .quote-main-title {
+    font-family: var(--font-heading);
+    font-size: clamp(1.85rem, 3.2vw, 2.5rem);
+    font-weight: 800;
+    color: #0f172a;
+    line-height: 1.25;
+    margin-bottom: var(--space-4);
+    letter-spacing: -0.02em;
+  }
+
+  .quote-main-desc {
+    font-size: 1.05rem;
+    line-height: 1.65;
+    color: #475569;
+    margin-bottom: var(--space-6);
+  }
+
+  .quote-benefits {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+    margin-bottom: var(--space-6);
+  }
+
+  .benefit-row {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    font-size: 0.9375rem;
+    color: #334155;
+    font-weight: 600;
+  }
+
+  .benefit-check-icon {
+    width: 24px;
+    height: 24px;
+    background: #fee2e2;
+    border: 1px solid #fca5a5;
+    color: #dc2626;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+
+  .direct-call-box {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-left: 5px solid #dc2626;
+    padding: 18px 22px;
+    border-radius: 16px;
+    display: flex;
+    align-items: center;
+    gap: var(--space-4);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+  }
+
+  .direct-call-icon {
+    width: 46px;
+    height: 46px;
+    background: #dc2626;
+    color: #ffffff;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    box-shadow: 0 4px 12px rgba(220, 38, 38, 0.3);
+  }
+
+  .direct-label {
+    display: block;
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    color: #64748b;
+  }
+
+  .direct-phone {
+    display: block;
+    font-family: var(--font-heading);
+    font-size: 1.7rem;
+    font-weight: 800;
+    color: #dc2626;
+    margin-top: 1px;
+    margin-bottom: 1px;
+    text-decoration: none;
+    transition: color var(--transition-fast);
+  }
+
+  .direct-phone:hover {
+    color: #b91c1c;
+  }
+
+  .direct-name {
+    font-size: 0.8rem;
+    color: #475569;
+    font-weight: 500;
+  }
+
+  /* Quote Form Card */
+  .quote-form-card {
+    background-color: #ffffff;
+    padding: 2.25rem;
+    border-radius: 20px;
+    box-shadow: 0 10px 35px -5px rgba(15, 23, 42, 0.08);
+    color: var(--color-text);
+    border: 1px solid #e8eef5;
+  }
+
+  .form-title {
+    font-size: 1.35rem;
+    font-weight: 800;
+    color: #0f172a;
+    margin-bottom: var(--space-5);
+    padding-bottom: var(--space-3);
+    border-bottom: 2px solid #f1f5f9;
+  }
+
+  .form-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--space-4);
+  }
+
+  .btn-quote-submit {
+    background: linear-gradient(135deg, #dc2626 0%, #991b1b 100%);
+    font-family: var(--font-heading);
+    font-weight: 700;
+    font-size: 1.025rem;
+    padding: 14px 24px;
+    border-radius: 12px;
+    color: #ffffff;
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.2), 0 6px 18px rgba(220, 38, 38, 0.28);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    width: 100%;
+    cursor: pointer;
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .btn-quote-submit svg {
+    transition: transform 0.2s ease;
+  }
+
+  .btn-quote-submit:hover {
+    background: linear-gradient(135deg, #e11d48 0%, #b91c1c 100%);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.3), 0 10px 25px rgba(220, 38, 38, 0.38);
+    transform: translateY(-2px);
+  }
+
+  .btn-quote-submit:hover svg {
+    transform: translateX(4px);
+  }
+
+  .form-consent-group {
+    margin-bottom: var(--space-4);
+  }
+
+  .consent-checkbox-label {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    font-size: 0.825rem;
+    color: #475569;
+    line-height: 1.5;
+    cursor: pointer;
+  }
+
+  .consent-checkbox-label input[type="checkbox"] {
+    margin-top: 3px;
+    accent-color: #dc2626;
+    width: 16px;
+    height: 16px;
+    flex-shrink: 0;
+    cursor: pointer;
+  }
+
+  .consent-checkbox-label a {
+    color: #dc2626;
+    text-decoration: underline;
+    font-weight: 500;
+  }
+
+  .form-privacy-note {
+    font-size: 0.775rem;
+    color: #15803d;
+    background: #f0fdf4;
+    border: 1px solid #dcfce7;
+    border-radius: 9999px;
+    padding: 6px 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    margin: var(--space-4) auto 0;
+    width: fit-content;
+  }
+
+  .status-msg {
+    margin-top: var(--space-3);
+    padding: 10px;
+    border-radius: 10px;
+    font-size: 0.875rem;
+    text-align: center;
+  }
+
+  .status-msg.success {
+    background-color: #e8f5e9;
+    color: #2e7d32;
+    border: 1px solid #a5d6a7;
+  }
+
+  .status-msg.error {
+    background-color: #ffebee;
+    color: #c62828;
+    border: 1px solid #ef9a9a;
+  }
+
+  /* Why Grid */
+  .why-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: var(--space-6);
+  }
+
+  .why-card {
+    background-color: #ffffff;
+    border: 1px solid var(--color-border);
+    padding: var(--space-6);
+    border-radius: 18px;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
+    transition: all var(--transition-normal);
+  }
+
+  .why-card:hover {
+    border-color: var(--color-red);
+    box-shadow: 0 10px 24px rgba(0, 0, 0, 0.07);
+    transform: translateY(-4px);
+  }
+
+  .why-number {
+    font-family: var(--font-heading);
+    font-size: 1.85rem;
+    font-weight: 800;
+    color: var(--color-red);
+    line-height: 1;
+    margin-bottom: var(--space-4);
+  }
+
+  .why-title {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: var(--color-charcoal);
+    margin-bottom: var(--space-2);
+  }
+
+  .why-desc {
+    font-size: 0.875rem;
+    color: var(--color-text-muted);
+    line-height: 1.5;
+  }
+
+  /* Service Area */
+  .area-box {
+    background-color: var(--color-concrete-light);
+    border: 1px solid var(--color-border-strong);
+    padding: var(--space-8);
+    border-radius: 20px;
+    display: grid;
+    grid-template-columns: 1.3fr 0.7fr;
+    gap: var(--space-8);
+    align-items: center;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.03);
+  }
+
+  .location-title {
+    font-family: var(--font-heading);
+    font-size: clamp(1.4rem, 2.5vw, 1.85rem);
+    font-weight: 800;
+    color: var(--color-charcoal);
+    margin: 0;
+  }
+
+  .map-container-box {
+    background-color: #ffffff;
+    border: 1px solid var(--color-border-strong);
+    border-radius: 20px;
+    overflow: hidden;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.06);
+  }
+
+  .area-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2);
+    margin-top: var(--space-4);
+  }
+
+  .area-tag {
+    background-color: #ffffff;
+    border: 1px solid var(--color-border-strong);
+    padding: 6px 14px;
+    font-family: var(--font-heading);
+    font-size: 0.8125rem;
+    font-weight: 700;
+    color: var(--color-charcoal);
+    border-radius: 9999px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
+    transition: all var(--transition-fast);
+  }
+
+  .area-tag:hover {
+    border-color: var(--color-red);
+    color: var(--color-red);
+    transform: translateY(-1px);
+  }
+
+  .area-side-stats {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-4);
+  }
+
+  .area-stat-card {
+    background-color: #ffffff;
+    border: 1px solid var(--color-border);
+    border-left: 4px solid var(--color-charcoal);
+    padding: var(--space-4);
+    border-radius: 14px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
+  }
+
+  .area-stat-val {
+    display: block;
+    font-family: var(--font-heading);
+    font-size: 1.45rem;
+    font-weight: 800;
+    color: var(--color-charcoal);
+    margin-bottom: 2px;
+  }
+
+  .area-stat-lbl {
+    font-size: 0.8125rem;
+    color: var(--color-text-muted);
+  }
+
+  /* News Grid */
+  .news-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: var(--space-6);
+  }
+
+  .news-industrial-card {
+    background-color: #ffffff;
+    border: 1px solid var(--color-border);
+    border-radius: 18px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
+    transition: all var(--transition-normal);
+  }
+
+  .news-industrial-card:hover {
+    border-color: var(--color-red);
+    box-shadow: 0 10px 28px rgba(0, 0, 0, 0.08);
+    transform: translateY(-4px);
+  }
+
+  .news-img-wrap {
+    width: 100%;
+    aspect-ratio: 16 / 9;
+    background-color: var(--color-concrete-light);
+    overflow: hidden;
+    border-bottom: 1px solid var(--color-border);
+  }
+
+  .news-img-wrap img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform var(--transition-normal);
+  }
+
+  .news-industrial-card:hover .news-img-wrap img {
+    transform: scale(1.05);
+  }
+
+  .news-body {
+    padding: var(--space-5);
+    display: flex;
+    flex-direction: column;
+    flex-grow: 1;
+  }
+
+  .news-date {
+    font-size: 0.6875rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    color: var(--color-red);
+    margin-bottom: 4px;
+  }
+
+  .news-title {
+    font-size: 1.05rem;
+    font-weight: 700;
+    line-height: 1.35;
+    margin-bottom: var(--space-2);
+  }
+
+  .news-title a {
+    color: var(--color-charcoal);
+  }
+
+  .news-title a:hover {
+    color: var(--color-red);
+  }
+
+  .news-summary {
+    font-size: 0.8125rem;
+    color: var(--color-text-muted);
+    line-height: 1.45;
+    margin-bottom: var(--space-4);
+    flex-grow: 1;
+  }
+
+  .news-read-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 0.8125rem;
+    font-weight: 700;
+    color: var(--color-red);
+    transition: transform var(--transition-fast);
+  }
+
+  .news-industrial-card:hover .news-read-link {
+    transform: translateX(3px);
+  }
+
+  /* Final CTA (Clean Premium High-Contrast Banner - Enlarged) */
+  .section-final-cta {
+    background: #f8fafc;
+    color: #0f172a;
+    padding-top: 72px;
+    padding-bottom: 72px;
+    border-top: 4px solid #dc2626;
+    border-bottom: 1px solid #e2e8f0;
+  }
+
+  .final-cta-inner {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: var(--space-8);
+  }
+
+  .final-cta-content h2 {
+    color: #0f172a !important;
+    font-family: var(--font-heading);
+    font-size: clamp(1.85rem, 3.2vw, 2.5rem);
+    font-weight: 800;
+    margin-bottom: 12px;
+    letter-spacing: -0.02em;
+    line-height: 1.2;
+  }
+
+  .final-cta-content p {
+    color: #475569 !important;
+    font-size: 1.125rem;
+    line-height: 1.65;
+    margin: 0;
+    font-weight: 500;
+  }
+
+  .final-cta-btns {
+    display: flex;
+    gap: var(--space-4);
+    flex-shrink: 0;
+  }
+
+  .btn-final-call {
+    background-color: #dc2626 !important;
+    color: #ffffff !important;
+    border: 1px solid #dc2626 !important;
+    font-family: var(--font-heading);
+    font-weight: 800;
+    padding: 16px 32px !important;
+    font-size: 1.05rem !important;
+    border-radius: 14px;
+    box-shadow: 0 6px 18px rgba(220, 38, 38, 0.28);
+    transition: all var(--transition-fast);
+  }
+
+  .btn-final-call:hover {
+    background-color: #b91c1c !important;
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(220, 38, 38, 0.4);
+  }
+
+  .btn-final-map {
+    background-color: #ffffff !important;
+    color: #0f172a !important;
+    border: 1px solid #cbd5e1 !important;
+    font-family: var(--font-heading);
+    font-weight: 700;
+    padding: 16px 28px !important;
+    font-size: 1.05rem !important;
+    border-radius: 14px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.04);
+  }
+
+  .btn-final-map:hover {
+    background-color: #f8fafc !important;
+    border-color: #0f172a !important;
+    color: #dc2626 !important;
+  }
+
+  .btn-final-call:hover {
+    background-color: #1e293b !important;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.35);
+  }
+
+  .btn-final-map {
+    background-color: #ffffff !important;
+    color: #991b1b !important;
+    border: 1px solid #ffffff !important;
+    font-family: var(--font-heading);
+    font-weight: 800;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.15);
+    transition: all var(--transition-fast);
+  }
+
+  .btn-final-map:hover {
+    background-color: #f8fafc !important;
+    color: #7f1d1d !important;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.2);
+  }
+
+  /* Responsive Queries */
+  @media (max-width: 1024px) {
+    .products-grid {
+      grid-template-columns: repeat(2, 1fr);
+    }
+
+    .brands-grid {
+      grid-template-columns: repeat(2, 1fr);
+    }
+
+    .why-grid {
+      grid-template-columns: repeat(2, 1fr);
+    }
+  }
+
+  @media (max-width: 810px) {
+    .hero-inner {
+      grid-template-columns: 1fr;
+      gap: var(--space-8);
+    }
+
+    .categories-grid {
+      grid-template-columns: 1fr;
+    }
+
+    .about-grid {
+      grid-template-columns: 1fr;
+      gap: var(--space-8);
+    }
+
+    .quote-grid {
+      grid-template-columns: 1fr;
+      gap: var(--space-8);
+    }
+
+    .news-grid {
+      grid-template-columns: 1fr;
+    }
+
+    .area-box {
+      grid-template-columns: 1fr;
+    }
+
+    .final-cta-inner {
+      flex-direction: column;
+      text-align: center;
+    }
+
+    .final-cta-btns {
+      flex-direction: column;
+      width: 100%;
+    }
+
+    .section-header-flex {
+      flex-direction: column;
+      align-items: flex-start;
+    }
+
+    .form-row {
+      grid-template-columns: 1fr;
+    }
+  }
+  .section-testimonials {
+    background-color: #ffffff;
+    border-top: 1px solid var(--color-border);
+    padding-top: var(--space-16);
+    padding-bottom: var(--space-16);
+  }
+
+  .testimonials-header-divider {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-4);
+    margin-bottom: var(--space-12);
+  }
+
+  .testimonials-header-divider .divider-line {
+    flex: 1;
+    height: 1px;
+    background-color: var(--color-border-strong);
+    max-width: 320px;
+  }
+
+  .testimonials-title {
+    font-family: var(--font-heading);
+    font-size: clamp(1.25rem, 2.5vw, 1.75rem);
+    font-weight: 800;
+    color: var(--color-charcoal);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin: 0;
+    white-space: nowrap;
+  }
+
+  .testimonials-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: var(--space-8);
+  }
+
+  .testimonial-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    padding: var(--space-4);
+  }
+
+  .stars-row {
+    display: flex;
+    gap: 4px;
+    margin-bottom: var(--space-4);
+  }
+
+  .star-icon {
+    color: #ffb800;
+    font-size: 1.25rem;
+    line-height: 1;
+  }
+
+  .testimonial-quote {
+    font-style: italic;
+    font-size: 0.95rem;
+    color: #4b5563;
+    line-height: 1.7;
+    margin-bottom: var(--space-6);
+    flex-grow: 1;
+  }
+
+  .testimonial-author {
+    font-size: 0.9375rem;
+    color: var(--color-charcoal);
+  }
+
+  .testimonial-author strong {
+    font-family: var(--font-heading);
+    font-weight: 800;
+    color: var(--color-charcoal);
+  }
+
+  .author-role {
+    color: var(--color-text-muted);
+    font-weight: 500;
+  }
+  .section-store-location {
+    background-color: var(--color-concrete-light);
+    border-top: 1px solid var(--color-border);
+    padding-top: var(--space-12);
+    padding-bottom: var(--space-16);
+  }
+
+  .location-header {
+    margin-bottom: var(--space-6);
+  }
+
+  .location-title {
+    font-family: var(--font-heading);
+    font-size: clamp(1.4rem, 2.5vw, 1.85rem);
+    font-weight: 800;
+    color: var(--color-charcoal);
+    margin: 0;
+  }
+
+  .map-container-box {
+    background-color: #ffffff;
+    border: 1px solid var(--color-border-strong);
+    border-radius: var(--radius-sm);
+    overflow: hidden;
+    box-shadow: var(--shadow-card);
+  }
+
+  @media (max-width: 1200px) {
+    .categories-showcase-grid.vlxd-showcase-grid {
+      grid-template-columns: repeat(3, 1fr);
+    }
+
+    .categories-showcase-grid.noi-that-showcase-grid {
+      grid-template-columns: repeat(3, 1fr);
+    }
+  }
+
+  @media (max-width: 992px) {
+    .about-grid {
+      grid-template-columns: 1fr;
+    }
+
+    .categories-showcase-grid.vlxd-showcase-grid {
+      grid-template-columns: repeat(3, 1fr);
+      gap: var(--space-4);
+    }
+
+    .categories-showcase-grid.noi-that-showcase-grid {
+      grid-template-columns: repeat(2, 1fr);
+      gap: var(--space-4);
+    }
+
+    .testimonials-grid {
+      grid-template-columns: 1fr;
+      gap: var(--space-6);
+    }
+
+    .testimonial-card {
+      border-bottom: 1px dashed var(--color-border);
+      padding-bottom: var(--space-6);
+    }
+
+    .testimonial-card:last-child {
+      border-bottom: none;
+    }
+  }
+
+  @media (max-width: 640px) {
+    .categories-showcase-grid.vlxd-showcase-grid {
+      grid-template-columns: repeat(2, 1fr);
+      gap: var(--space-3);
+    }
+
+    .categories-showcase-grid.noi-that-showcase-grid {
+      grid-template-columns: repeat(2, 1fr);
+      gap: var(--space-3);
+    }
+
+    .category-showcase-img-box {
+      height: 130px;
+      padding: 10px;
+    }
+
+    .category-showcase-name {
+      font-size: 0.875rem;
+    }
+
+    .category-showcase-action {
+      display: none;
+    }
+
+    .category-showcase-info {
+      padding: 10px 12px;
+      justify-content: center;
+      text-align: center;
+    }
+  }
+
+</style>
+
+<script>
+  // Industrial Quote Form Handling
+  const quoteForm = document.getElementById('home-quote-form') as HTMLFormElement;
+  const submitBtn = document.getElementById('q-submit-btn') as HTMLButtonElement;
+  const statusMsg = document.getElementById('q-status-msg');
+
+  if (quoteForm && submitBtn && statusMsg) {
+    quoteForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      submitBtn.disabled = true;
+      submitBtn.innerHTML = '<span>Đang gửi yêu cầu...</span>';
+
+      const formData = new FormData(quoteForm);
+      const payload = {
+        customer_name: formData.get('customer_name'),
+        customer_phone: formData.get('customer_phone'),
+        address: formData.get('address'),
+        notes: formData.get('notes'),
+        product_name: 'Báo Giá Tổng Hợp Dự Án'
+      };
+
+      try {
+        const res = await fetch('/api/inquiry', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+
+        const data = await res.json();
+        if (res.ok && data.success) {
+          statusMsg.className = 'status-msg success';
+          statusMsg.style.display = 'block';
+          statusMsg.textContent = 'Đã gửi yêu cầu thành công! Kỹ sư Hoàng Yến sẽ gọi lại báo giá ngay.';
+          quoteForm.reset();
+        } else {
+          throw new Error(data.error || 'Có lỗi xảy ra.');
+        }
+      } catch (err: any) {
+        statusMsg.className = 'status-msg error';
+        statusMsg.style.display = 'block';
+        statusMsg.textContent = 'Lỗi: ' + err.message;
+      } finally {
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = '<span>Gửi Yêu Cầu Báo Giá Ngay</span>';
+      }
+    });
+  }
+</script>

@@ -1,0 +1,496 @@
+---
+import Layout from '../layouts/Layout.astro';
+import { SettingsRepo } from '../server/db/repo.js';
+
+const settings = await SettingsRepo.getAll();
+const breadcrumbs = [
+  { name: 'Trang Chủ', url: '/' },
+  { name: 'Liên Hệ', url: '/lien-he/' }
+];
+---
+
+<Layout
+  title="Liên Hệ & Bản Đồ Cửa Hàng | Siêu Thị VLXD Hoàng Yến Quảng Trị"
+  description="Thông tin liên hệ, hotline tư vấn kỹ thuật và vị trí cửa hàng VLXD Hoàng Yến tại 299 Lê Duẩn, TP. Đông Hà, Quảng Trị."
+  breadcrumbs={breadcrumbs}
+  currentPath="/lien-he/"
+>
+  <div class="contact-page-wrapper">
+    <!-- Header -->
+    <section class="contact-hero">
+      <div class="container">
+        <div class="eyebrow">Kênh Kết Nối Doanh Nghiệp</div>
+        <h1>Liên Hệ & Cửa Hàng Vật Tư</h1>
+        <p>Phục vụ quý khách hàng và nhà thầu xây dựng tại Đông Hà & khắp các huyện thị tỉnh Quảng Trị.</p>
+      </div>
+    </section>
+
+    <!-- Main Grid -->
+    <section class="section">
+      <div class="container">
+        <div class="contact-main-grid">
+          <!-- Left: Contact Details -->
+          <div class="contact-info-col">
+            <h2>Thông Tin Trực Tiếp</h2>
+            
+            <div class="info-card">
+              <div class="info-icon icon-address">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>
+              </div>
+              <div class="info-content">
+                <strong>Địa Chỉ Trụ Sở & Cửa Hàng:</strong>
+                <p>{settings.address}</p>
+                <span class="info-sub">(Nằm ngay mặt tiền trục đường huyết mạch Lê Duẩn, xe tải giao nhận ra vào thuận tiện 24/7)</span>
+              </div>
+            </div>
+
+            <div class="info-card">
+              <div class="info-icon icon-hotline">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>
+              </div>
+              <div class="info-content">
+                <strong>Hotline Báo Giá & Đặt Hàng:</strong>
+                <p><a href={`tel:${settings.hotline_main}`} class="phone-link">{settings.hotline_main}</a> (Hotline / Zalo)</p>
+                <p><a href={`tel:${settings.hotline_alt}`} class="phone-link">{settings.hotline_alt}</a> (Điện thoại)</p>
+              </div>
+            </div>
+
+            <div class="info-card">
+              <div class="info-icon icon-email">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path><polyline points="22,6 12,13 2,6"></polyline></svg>
+              </div>
+              <div class="info-content">
+                <strong>Email Nhận Báo Giá & Dự Toán:</strong>
+                <p><a href={`mailto:${settings.email}`}>{settings.email}</a></p>
+              </div>
+            </div>
+
+            <div class="info-card">
+              <div class="info-icon icon-hours">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+              </div>
+              <div class="info-content">
+                <strong>Thời Gian Hoạt Động:</strong>
+                <p>7:30 – 22:00 (Tất cả các ngày)</p>
+              </div>
+            </div>
+
+            <!-- Social & Direct Channels Card -->
+            <div class="info-card social-channels-card">
+              <div class="social-header-wrap">
+                <div class="info-icon icon-social">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"></circle><circle cx="6" cy="12" r="3"></circle><circle cx="18" cy="19" r="3"></circle><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line></svg>
+                </div>
+                <div class="info-content">
+                  <strong>Kênh Kết Nối & Mạng Xã Hội:</strong>
+                  <p class="social-subtext">Theo dõi & kết nối qua các kênh chính thức</p>
+                </div>
+              </div>
+              
+              <div class="social-btn-grid">
+                <!-- Facebook -->
+                <a href={settings.facebook_url || "https://www.facebook.com/sieuthivlxdhoangyen"} target="_blank" rel="noopener noreferrer" class="social-action-btn btn-fb" title="Trang Facebook Siêu Thị VLXD Hoàng Yến">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>
+                  <span>Facebook</span>
+                </a>
+
+                <!-- Zalo -->
+                <a href={`https://zalo.me/${(settings.hotline_main || '0946575579').replace(/\./g, '')}`} target="_blank" rel="noopener noreferrer" class="social-action-btn btn-zalo" title="Chat Zalo Báo Giá">
+                  <span class="zalo-tag-text">Zalo</span>
+                  <span>Chat Zalo</span>
+                </a>
+
+                <!-- YouTube -->
+                <a href={settings.youtube_url || "https://www.youtube.com/@sieuthivlxdhoangyen"} target="_blank" rel="noopener noreferrer" class="social-action-btn btn-yt" title="Kênh YouTube VLXD Hoàng Yến">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/></svg>
+                  <span>YouTube</span>
+                </a>
+
+                <!-- Instagram -->
+                <a href={settings.instagram_url || "https://www.instagram.com/vlxdhoangyen"} target="_blank" rel="noopener noreferrer" class="social-action-btn btn-insta" title="Instagram VLXD Hoàng Yến">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line></svg>
+                  <span>Instagram</span>
+                </a>
+              </div>
+            </div>
+          </div>
+
+          <!-- Right: Contact Form -->
+          <div class="contact-form-col">
+            <div class="form-wrapper-box">
+              <h3>Tiếp Nhận Bản Vẽ & Báo Giá Dự Toán</h3>
+              <p class="form-subtext">Điền khối lượng hoặc thông số vật tư để nhân viên tiếp nhận và gửi báo giá.</p>
+              <form id="contact-page-form" class="industrial-form">
+                <div class="form-group">
+                  <label class="form-label" for="c-name">Họ và tên / Nhà thầu thi công *</label>
+                  <input type="text" id="c-name" name="customer_name" required class="form-input" placeholder="Ví dụ: Kỹ sư Nguyễn Văn A / Đội thi công..." />
+                </div>
+
+                <div class="form-row">
+                  <div class="form-group">
+                    <label class="form-label" for="c-phone">Số điện thoại / Zalo nhận báo giá *</label>
+                    <input type="tel" id="c-phone" name="customer_phone" required class="form-input" placeholder="09xx xxx xxx" />
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label" for="c-email">Email nhận bảng dự toán file Excel</label>
+                    <input type="email" id="c-email" name="customer_email" class="form-input" placeholder="email@example.com" />
+                  </div>
+                </div>
+
+                <div class="form-group">
+                  <label class="form-label" for="c-address">Địa điểm công trình nhận hàng</label>
+                  <input type="text" id="c-address" name="address" class="form-input" placeholder="Ví dụ: Phường Đông Hà, Triệu Phong, Gio Linh..." />
+                </div>
+
+                <div class="form-group">
+                  <label class="form-label" for="c-notes">Chi tiết chủng loại vật tư, quy cách & mác thép *</label>
+                  <textarea id="c-notes" name="notes" rows="4" required class="form-textarea" placeholder="Ví dụ: Thép Hòa Phát D10-D20 mác CB300-V (15 tấn), Xi măng Nghi Sơn PCB40 (400 bao), gạch Tuynel 6 lỗ (20.000 viên)..."></textarea>
+                </div>
+
+                <button type="submit" class="btn btn-primary btn-block btn-lg" id="c-submit-btn">
+                  <span>Gửi Yêu Cầu Báo Giá Khối Lượng</span>
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
+                </button>
+
+                <div id="c-status-msg" class="status-msg" style="display: none;"></div>
+              </form>
+            </div>
+          </div>
+        </div>
+
+        <!-- Google Maps Embed -->
+        <div class="maps-wrapper">
+          <h3>Vị Trí Cửa Hàng Trên Bản Đồ</h3>
+          <div class="map-frame">
+            <iframe 
+              src={settings.maps_embed_url || "https://maps.google.com/maps?q=Si%C3%AAu+Th%E1%BB%8B+Ho%C3%A0ng+Y%E1%BA%BFn,+299+L%C3%AA+Du%E1%BA%A9n,+%C4%90%C3%B4ng+H%C3%A0,+Qu%E1%BA%A3ng+Tr%E1%BB%8B&t=k&z=17&ie=UTF8&iwloc=&output=embed"} 
+              width="100%" 
+              height="450" 
+              style="border:0;" 
+              allowfullscreen="" 
+              loading="lazy" 
+              referrerpolicy="no-referrer-when-downgrade"
+              title="Bản đồ vệ tinh cửa hàng VLXD Hoàng Yến"
+            ></iframe>
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
+</Layout>
+
+<style>
+  .contact-hero {
+    background-color: var(--color-concrete-light);
+    border-bottom: 1px solid var(--color-border);
+    padding-top: var(--space-12);
+    padding-bottom: var(--space-12);
+  }
+
+  .contact-hero p {
+    font-size: 1.15rem;
+    color: var(--color-text-muted);
+    margin-top: var(--space-2);
+  }
+
+  .contact-main-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--space-12);
+    margin-bottom: var(--space-16);
+  }
+
+  .contact-info-col h2 {
+    margin-bottom: var(--space-6);
+  }
+
+  .info-card {
+    display: flex;
+    align-items: flex-start;
+    gap: 1.15rem;
+    background-color: #ffffff;
+    border: 1px solid #e2e8f0;
+    padding: 1.05rem 1.35rem;
+    border-radius: 12px;
+    margin-bottom: 0.85rem;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.03);
+    transition: all 0.2s ease;
+  }
+  .info-card:hover {
+    border-color: #cbd5e1;
+    transform: translateY(-2px);
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.06);
+  }
+
+  .info-card:last-child {
+    margin-bottom: 0;
+  }
+
+  .info-icon {
+    width: 42px;
+    height: 42px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    border-radius: 10px;
+    transition: transform 0.2s ease;
+  }
+  .info-card:hover .info-icon {
+    transform: scale(1.06);
+  }
+
+  .icon-address {
+    background: #fef2f2;
+    color: #c81e1e;
+    border: 1px solid #fecaca;
+  }
+  .icon-hotline {
+    background: #f0f9ff;
+    color: #0284c7;
+    border: 1px solid #bae6fd;
+  }
+  .icon-email {
+    background: #ecfdf5;
+    color: #059669;
+    border: 1px solid #a7f3d0;
+  }
+  .icon-hours {
+    background: #fffbeb;
+    color: #d97706;
+    border: 1px solid #fde68a;
+  }
+  .icon-social {
+    background: #fef2f2;
+    color: #eb212e;
+    border: 1px solid #fecaca;
+  }
+
+  .info-content strong {
+    display: block;
+    font-family: var(--font-heading);
+    font-size: 0.9375rem;
+    color: var(--color-charcoal);
+    margin-bottom: 2px;
+  }
+
+  .info-content p {
+    font-size: 0.9rem;
+    color: var(--color-text);
+  }
+
+  .info-sub {
+    display: block;
+    font-size: 0.75rem;
+    color: var(--color-text-muted);
+    margin-top: 3px;
+  }
+
+  .phone-link {
+    font-family: var(--font-heading);
+    font-size: 1.05rem;
+    font-weight: 800;
+    color: var(--color-red);
+  }
+
+  /* Social Connection Compact Card */
+  .social-channels-card {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.65rem;
+  }
+
+  .social-header-wrap {
+    display: flex;
+    align-items: center;
+    gap: 0.85rem;
+  }
+
+  .social-subtext {
+    font-size: 0.8rem !important;
+    color: var(--color-text-muted) !important;
+    margin: 0 !important;
+  }
+
+  .social-btn-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 0.45rem;
+    margin-top: 0.15rem;
+  }
+
+  @media (max-width: 600px) {
+    .social-btn-grid {
+      grid-template-columns: repeat(2, 1fr);
+    }
+  }
+
+  .social-action-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.35rem;
+    height: 32px;
+    padding: 0.25rem 0.45rem;
+    border-radius: 6px;
+    font-size: 0.76rem;
+    font-weight: 600;
+    text-decoration: none;
+    transition: all 0.2s ease;
+    border: 1px solid transparent;
+    box-sizing: border-box;
+    white-space: nowrap;
+    width: 100%;
+  }
+
+  .btn-fb {
+    background-color: #1877f2;
+    color: #ffffff;
+  }
+  .btn-fb:hover {
+    background-color: #0d65d9;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 10px rgba(24, 119, 242, 0.25);
+  }
+
+  .btn-zalo {
+    background-color: #0068ff;
+    color: #ffffff;
+  }
+  .btn-zalo:hover {
+    background-color: #0052cc;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 10px rgba(0, 104, 255, 0.25);
+  }
+  .zalo-tag-text {
+    font-weight: 900;
+    font-size: 0.72rem;
+    letter-spacing: -0.5px;
+    background: #ffffff;
+    color: #0068ff;
+    padding: 1px 3px;
+    border-radius: 3px;
+    line-height: 1;
+  }
+
+  .btn-yt {
+    background-color: #ff0000;
+    color: #ffffff;
+  }
+  .btn-yt:hover {
+    background-color: #cc0000;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 10px rgba(255, 0, 0, 0.25);
+  }
+
+  .btn-insta {
+    background: linear-gradient(45deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%);
+    color: #ffffff;
+  }
+  .btn-insta:hover {
+    opacity: 0.92;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 10px rgba(220, 39, 67, 0.25);
+  }
+
+  /* Form */
+  .form-wrapper-box {
+    background-color: #ffffff;
+    border: 1px solid var(--color-border);
+    border-top: 3px solid var(--color-red);
+    padding: var(--space-8);
+    border-radius: var(--radius-xs);
+    box-shadow: var(--shadow-card);
+  }
+
+  .form-wrapper-box h3 {
+    margin-bottom: var(--space-2);
+  }
+
+  .form-subtext {
+    font-size: 0.875rem;
+    color: var(--color-text-muted);
+    margin-bottom: var(--space-6);
+  }
+
+  .form-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--space-4);
+  }
+
+  /* Maps */
+  .maps-wrapper {
+    border-top: 2px solid var(--color-charcoal);
+    padding-top: var(--space-8);
+  }
+
+  .maps-wrapper h3 {
+    margin-bottom: var(--space-4);
+  }
+
+  .map-frame {
+    border: 1px solid var(--color-border-strong);
+    border-radius: var(--radius-xs);
+    overflow: hidden;
+  }
+
+  @media (max-width: 992px) {
+    .contact-main-grid {
+      grid-template-columns: 1fr;
+    }
+
+    .form-row {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>
+
+<script>
+  const contactForm = document.getElementById('contact-page-form') as HTMLFormElement;
+  const cSubmitBtn = document.getElementById('c-submit-btn') as HTMLButtonElement;
+  const cStatusMsg = document.getElementById('c-status-msg');
+
+  if (contactForm && cSubmitBtn && cStatusMsg) {
+    contactForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      cSubmitBtn.disabled = true;
+      cSubmitBtn.innerHTML = '<span>Đang gửi thông tin...</span>';
+
+      const formData = new FormData(contactForm);
+      const payload = {
+        customer_name: formData.get('customer_name'),
+        customer_phone: formData.get('customer_phone'),
+        customer_email: formData.get('customer_email'),
+        address: formData.get('address'),
+        notes: formData.get('notes'),
+        product_name: 'Liên Hệ Trực Tiếp Website'
+      };
+
+      try {
+        const res = await fetch('/api/inquiry', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+
+        const data = await res.json();
+        if (res.ok && data.success) {
+          cStatusMsg.className = 'status-msg success';
+          cStatusMsg.style.display = 'block';
+          cStatusMsg.textContent = 'Đã gửi thông tin liên hệ thành công! Hoàng Yến sẽ phản hồi nhanh chóng.';
+          contactForm.reset();
+        } else {
+          throw new Error(data.error || 'Có lỗi xảy ra.');
+        }
+      } catch (err: any) {
+        cStatusMsg.className = 'status-msg error';
+        cStatusMsg.style.display = 'block';
+        cStatusMsg.textContent = 'Lỗi: ' + err.message;
+      } finally {
+        cSubmitBtn.disabled = false;
+        cSubmitBtn.innerHTML = '<span>Gửi Thông Tin Yêu Cầu</span>';
+      }
+    });
+  }
+</script>

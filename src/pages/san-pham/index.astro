@@ -1,0 +1,693 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import ProductCard from '../../components/ProductCard.astro';
+import { CategoryRepo, ProductRepo, BrandRepo } from '../../server/db/repo.js';
+
+const url = Astro.url;
+const search = url.searchParams.get('q') || '';
+const categorySlug = url.searchParams.get('danh-muc') || '';
+const brandSlug = url.searchParams.get('thuong-hieu') || '';
+
+// 301 Permanent Redirects for query parameters to clean SEO URLs
+if (categorySlug) {
+  return Astro.redirect(`/${categorySlug}/`, 301);
+}
+if (brandSlug) {
+  return Astro.redirect(`/san-pham/${brandSlug}/`, 301);
+}
+
+const brands = await BrandRepo.getAll();
+const vlxdCategories = await CategoryRepo.getMainCategories('vlxd');
+const noiThatCategories = await CategoryRepo.getMainCategories('noi-that');
+
+const vlxdWithCounts = await Promise.all(vlxdCategories.map(async cat => ({
+  ...cat,
+  count: (await ProductRepo.getByCategory(cat.id)).length
+})));
+const noiThatWithCounts = await Promise.all(noiThatCategories.map(async cat => ({
+  ...cat,
+  count: (await ProductRepo.getByCategory(cat.id)).length
+})));
+
+// Filter products using search
+const result = await ProductRepo.getAll({
+  search: search || undefined,
+  limit: 100
+});
+const products = result.products;
+const totalProducts = (await ProductRepo.getAll()).total;
+
+const pageTitle = "Danh Mục Sản Phẩm & Vật Liệu Xây Dựng | VLXD Hoàng Yến Quảng Trị";
+const pageDesc = "Cung cấp vật liệu xây thô và thiết bị vệ sinh tại Quảng Trị. Thép Hòa Phát, xi măng Sông Gianh, Bỉm Sơn, tôn Đông Á, gạch tuynel. Hơn 20 năm kinh nghiệm đồng hành cùng 1.250+ nhà thầu.";
+const canonicalUrl = "https://vlxdhoangyen.com/san-pham/";
+
+const breadcrumbs = [
+  { name: 'Trang Chủ', url: '/' },
+  { name: 'Sản Phẩm', url: '/san-pham/' }
+];
+
+// General Catalog FAQs
+const generalFaqs = [
+  {
+    question: "Siêu Thị VLXD Hoàng Yến có năng lực và kinh nghiệm như thế nào tại Quảng Trị?",
+    answer: "Siêu Thị VLXD Hoàng Yến là Đại lý cấp 1 cung cấp VLXD tại tỉnh Quảng Trị, thành lập từ năm 2003 với hơn 20 năm kinh nghiệm trong ngành và được hơn 1.250+ nhà thầu tin chọn trong suốt 20+ năm qua. Chúng tôi cung ứng vật tư xây thô (thép Hòa Phát, xi măng Sông Gianh/Bỉm Sơn/Nghi Sơn, gạch tuynel, tôn Đông Á, xà gồ, lưới thép) và thiết bị vệ sinh chất lượng cao."
+  },
+  {
+    question: "Chính sách giá và chiết khấu cho nhà thầu, công trình số lượng lớn thế nào?",
+    answer: "VLXD Hoàng Yến cung cấp vật tư từ các nhà máy với mức giá cạnh tranh. Với các đơn hàng công trình, nhà thầu hoặc khối lượng lớn, quý khách có thể liên hệ trực tiếp để trao đổi báo giá và phương thức thanh toán phù hợp."
+  },
+  {
+    question: "Phương thức vận chuyển và giao nhận hàng hóa tại công trình ra sao?",
+    answer: "Cửa hàng có phương tiện vận chuyển hỗ trợ giao hàng đến công trình tại khu vực Đông Hà và các vùng lân cận tại Quảng Trị. Khách hàng vui lòng liên hệ trước để xác nhận lộ trình và lịch xe."
+  },
+  {
+    question: "Hàng hóa tại Hoàng Yến có hóa đơn GTGT không?",
+    answer: "Sản phẩm do Hoàng Yến cung ứng có nguồn gốc rõ ràng từ các đơn vị sản xuất uy tín, có thông số kỹ thuật tiêu chuẩn và xuất đầy đủ hóa đơn GTGT điện tử (VAT) hợp pháp cho khách hàng khi có nhu cầu."
+  }
+];
+
+const faqSchema = {
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": generalFaqs.map(f => ({
+    "@type": "Question",
+    "name": f.question,
+    "acceptedAnswer": {
+      "@type": "Answer",
+      "text": f.answer
+    }
+  }))
+};
+---
+
+<Layout
+  title={pageTitle}
+  description={pageDesc}
+  breadcrumbs={breadcrumbs}
+  canonical={canonicalUrl}
+  currentPath="/san-pham/"
+  schema={faqSchema}
+>
+  <div class="container catalog-page">
+    <header class="catalog-header">
+      <div class="eyebrow">
+        Nhà Cung Ứng Vật Liệu Xây Dựng Tại Quảng Trị
+      </div>
+      <h1>
+        Sản Phẩm &amp; Vật Liệu Xây Dựng
+      </h1>
+      <p>
+        Thành lập từ năm 2003 với hơn 20 năm kinh nghiệm, Siêu Thị VLXD Hoàng Yến cung cấp đầy đủ vật tư xây thô và thiết bị hoàn thiện cho hơn 1.250+ nhà thầu tại Quảng Trị với báo giá cạnh tranh theo công trình.
+      </p>
+    </header>
+
+    <!-- Filters & Search Bar -->
+    <div class="catalog-toolbar">
+      <form action="/san-pham/" method="get" class="toolbar-search">
+        <input 
+          type="text" 
+          name="q" 
+          value={search} 
+          placeholder="Tìm tên sản phẩm, quy cách, mác thép..." 
+          class="form-input"
+        />
+        <button type="submit" class="btn btn-dark">Tìm Kiếm</button>
+        {search && (
+          <a href="/san-pham/" class="btn btn-outline">Xem Tất Cả</a>
+        )}
+      </form>
+
+      <div class="toolbar-stats">
+        Hiển thị <strong>{products.length}</strong> sản phẩm sẵn kho
+      </div>
+    </div>
+
+    <div class="catalog-layout">
+      <!-- Sidebar Categories & Brands -->
+      <aside class="catalog-sidebar">
+        <!-- VLXD Group -->
+        <div class="sidebar-box">
+          <h3 class="sidebar-title">Vật Liệu Xây Dựng</h3>
+          <ul class="sidebar-list">
+            <li>
+              <a href="/san-pham/" class="active">
+                <span>Tất Cả Sản Phẩm</span>
+                <span class="count-badge">{totalProducts}</span>
+              </a>
+            </li>
+            {vlxdWithCounts.map(cat => (
+              <li>
+                <a href={`/${cat.slug}/`}>
+                  <span>{cat.name}</span>
+                  <span class="count-badge">{cat.count}</span>
+                </a>
+              </li>
+            ))}
+          </ul>
+
+          <!-- Thiet Bi Ve Sinh Group -->
+          <h3 class="sidebar-title" style="margin-top: var(--space-6);">Thiết Bị Vệ Sinh & Nội Thất</h3>
+          <ul class="sidebar-list">
+            {noiThatWithCounts.map(cat => (
+              <li>
+                <a href={`/${cat.slug}/`}>
+                  <span>{cat.name}</span>
+                  <span class="count-badge">{cat.count}</span>
+                </a>
+              </li>
+            ))}
+          </ul>
+        </div>
+
+        <!-- Brands Box -->
+        <div class="sidebar-box">
+          <h3 class="sidebar-title">Thương Hiệu Phân Phối</h3>
+          <ul class="sidebar-list">
+            {brands.map(b => (
+              <li>
+                <a href={`/san-pham/${b.slug}/`}>
+                  <span>{b.name}</span>
+                </a>
+              </li>
+            ))}
+          </ul>
+        </div>
+
+        <!-- Direct Assistance Box -->
+        <div class="sidebar-assistance">
+          <div class="assistance-icon">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" style="color: #ffffff;"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>
+          </div>
+          <h4>Báo Giá Khối Lượng Lớn?</h4>
+          <p>Nhận chiết khấu trực tiếp theo hợp đồng dự án và hỗ trợ giao hàng tận nơi tại Quảng Trị.</p>
+          <a href="tel:0946575579" class="btn btn-primary btn-sm btn-block">Hotline: 0946.575.579</a>
+        </div>
+      </aside>
+
+      <!-- Products Main Content -->
+      <main class="catalog-main">
+        {products.length > 0 ? (
+          <div class="products-grid">
+            {products.map(p => (
+              <ProductCard product={p} />
+            ))}
+          </div>
+        ) : (
+          <div class="empty-state">
+            <div class="empty-icon">
+              <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" style="color: #94a3b8;"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line></svg>
+            </div>
+            <h3>Không tìm thấy sản phẩm phù hợp</h3>
+            <p>Hiện không có sản phẩm nào khớp với từ khóa tìm kiếm của bạn. Vui lòng liên hệ hotline để được kiểm tra tồn kho tại xưởng.</p>
+            <a href="/san-pham/" class="btn btn-dark">Xem Tất Cả Sản Phẩm</a>
+          </div>
+        )}
+
+
+        <section class="catalog-seo-section">
+          <div class="seo-catalog-general">
+            <div class="seo-header-badge">
+              <span class="badge-tag">Danh Mục Sản Phẩm</span>
+              <h2>Cung Ứng Vật Liệu Xây Dựng & Thiết Bị Vệ Sinh Hoàng Yến</h2>
+            </div>
+            <p class="seo-lead-text">
+              <strong>Siêu Thị VLXD Hoàng Yến</strong> (Địa chỉ: 299 Lê Duẩn, Phường Đông Hà, Tỉnh Quảng Trị) chuyên cung ứng các giải pháp vật liệu xây dựng phần thô và thiết bị hoàn thiện cho các công trình nhà ở, dự án dân dụng tại Quảng Trị.
+            </p>
+
+            <!-- Supply Matrix Table -->
+            <div class="seo-guide-card">
+              <h3>Bảng Phân Nhóm & Năng Lực Cung Ứng Vật Tư Tại Hoàng Yến</h3>
+              <p class="guide-intro">Tổng hợp các dòng vật liệu xây dựng và thiết bị hoàn thiện chủ lực sẵn sàng giao nhanh:</p>
+              <div class="table-responsive">
+                <table class="seo-spec-table">
+                  <thead>
+                    <tr>
+                      <th>Nhóm Sản Phẩm</th>
+                      <th>Chủng Loại & Quy Cách Sẵn Kho</th>
+                      <th>Thương Hiệu Phân Phối</th>
+                      <th>Ưu Điểm Nổi Bật</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td class="highlight-cell"><strong>Thép Xây Dựng</strong></td>
+                      <td>Thép cuộn Phi 6, Phi 8; Thép cây Phi 10 đến Phi 32 (CB300, CB400, CB500)</td>
+                      <td>Hòa Phát, TISCO</td>
+                      <td>Chuẩn barem nhà máy, gờ vằn dập nổi rõ nét, chịu kéo uốn cực tốt</td>
+                    </tr>
+                    <tr>
+                      <td class="highlight-cell"><strong>Xi Măng</strong></td>
+                      <td>Xi măng bao 50kg PCB40, PCB50, xi măng Poóc lăng bền sunfat kháng mặn</td>
+                      <td>Sông Gianh, Hà Tiên, Công Thanh, Bỉm Sơn, Nghi Sơn</td>
+                      <td>Cường độ phát triển nhanh, độ mịn cao, chống nứt xé bề mặt tường</td>
+                    </tr>
+                    <tr>
+                      <td class="highlight-cell"><strong>Tôn & Xà Gồ</strong></td>
+                      <td>Tôn lạnh mạ màu, tôn cách nhiệt xốp PU 5 sóng, 9 sóng, 11 sóng; Xà gồ C mạ kẽm</td>
+                      <td>Tôn Đông Á, Tôn Hoa Sen</td>
+                      <td>Lớp mạ nhôm kẽm, lớp sơn bảo vệ theo tiêu chuẩn của nhà sản xuất</td>
+                    </tr>
+                    <tr>
+                      <td class="highlight-cell"><strong>Gạch Xây Dựng</strong></td>
+                      <td>Gạch tuynel 6 lỗ, gạch 2 lỗ, gạch đặc đỏ nung chất lượng cao</td>
+                      <td>Tuynel Đất Việt, Gạch Miền Trung</td>
+                      <td>Vuông vắn góc cạnh, chịu lực nén cao, không hút ẩm ngấm nước</td>
+                    </tr>
+                    <tr>
+                      <td class="highlight-cell"><strong>Lưới Thép & Phụ Kiện</strong></td>
+                      <td>Lưới B40 bọc nhựa/mạ kẽm, lưới thép hàn, kẽm buộc 1 ly, đinh bê tông, đinh vít</td>
+                      <td></td>
+                      <td>Sợi thép dẻo dai, chống oxy hóa, đầy đủ kích cỡ mắt lưới</td>
+                    </tr>
+                    <tr>
+                      <td class="highlight-cell"><strong>Thiết Bị Vệ Sinh</strong></td>
+                      <td>Bồn cầu 1 khối men Nano, chậu lavabo đặt bàn/âm bàn, sen cây nóng lạnh, bồn tắm ngâm</td>
+                      <td>Mowoen, Caesar</td>
+                      <td>Men sứ Nano kháng khuẩn nung 1280°C, củ đồng mạ Crom sáng bóng</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <!-- 4 Pillars -->
+            <div class="general-pillars-grid">
+              <div class="pillar-card">
+                <div class="pillar-num">01</div>
+                <h4>Báo Giá Cạnh Tranh</h4>
+                <p>Cung ứng vật tư từ các nhà máy sản xuất, mức giá phù hợp cho các nhà thầu và công trình tại Quảng Trị.</p>
+              </div>
+              <div class="pillar-card">
+                <div class="pillar-num">02</div>
+                <h4>Đúng Quy Cách & Tiêu Chuẩn</h4>
+                <p>Vật tư đúng quy cách barem nhà sản xuất, nguồn gốc minh bạch và hỗ trợ xuất hóa đơn GTGT đầy đủ.</p>
+              </div>
+              <div class="pillar-card">
+                <div class="pillar-num">03</div>
+                <h4>Đội Xe Giao Nhận Linh Hoạt</h4>
+                <p>Phương tiện vận chuyển hỗ trợ giao hàng đến công trình tại khu vực Đông Hà và vùng lân cận theo tiến độ thỏa thuận.</p>
+              </div>
+              <div class="pillar-card">
+                <div class="pillar-num">04</div>
+                <h4>Tư Vấn Sản Phẩm Phù Hợp</h4>
+                <p>Hỗ trợ thông tin kỹ thuật, quy cách và khối lượng vật tư phù hợp với nhu cầu thi công thực tế.</p>
+              </div>
+            </div>
+
+            <!-- General FAQs -->
+            <div class="seo-faqs-container">
+              <h3>Câu Hỏi Thường Gặp Về Mua Hàng & Báo Giá Tại Hoàng Yến</h3>
+              <div class="faqs-grid">
+                {generalFaqs.map(faq => (
+                  <div class="faq-item">
+                    <h4 class="faq-q">
+                      <span style="display: inline-flex; align-items: center; justify-content: center; width: 20px; height: 20px; background: #fee2e2; color: #dc2626; border-radius: 4px; font-size: 0.75rem; font-weight: 800; margin-right: 6px;">Q</span>
+                      <span>{faq.question}</span>
+                    </h4>
+                    <p class="faq-a">{faq.answer}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+          </div>
+        </section>
+      </main>
+    </div>
+  </div>
+</Layout>
+
+<style>
+  .catalog-page {
+    padding-top: var(--space-8);
+    padding-bottom: var(--space-16);
+  }
+
+  .catalog-header {
+    margin-bottom: var(--space-6);
+    border-bottom: 1px solid var(--color-border);
+    padding-bottom: var(--space-6);
+  }
+
+  .catalog-header h1 {
+    font-size: clamp(1.75rem, 3vw, 2.35rem);
+    font-weight: 800;
+    margin-top: 4px;
+    margin-bottom: var(--space-2);
+    color: var(--color-charcoal);
+  }
+
+  .catalog-header p {
+    font-size: 1.05rem;
+    color: var(--color-text-muted);
+    max-width: 850px;
+    line-height: 1.6;
+  }
+
+  .catalog-toolbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background-color: var(--color-concrete-light);
+    border: 1px solid var(--color-border);
+    padding: var(--space-4) var(--space-6);
+    border-radius: var(--radius-xs);
+    margin-bottom: var(--space-8);
+    gap: var(--space-4);
+  }
+
+  .toolbar-search {
+    display: flex;
+    gap: var(--space-2);
+    flex: 1;
+    max-width: 550px;
+  }
+
+  .toolbar-search .form-input {
+    flex: 1;
+    background-color: #fff;
+    border-radius: var(--radius-xs);
+  }
+
+  .toolbar-stats {
+    font-size: 0.875rem;
+    color: var(--color-text-muted);
+    white-space: nowrap;
+  }
+
+  .toolbar-stats strong {
+    color: var(--color-charcoal);
+  }
+
+  .catalog-layout {
+    display: grid;
+    grid-template-columns: 280px 1fr;
+    gap: var(--space-8);
+    align-items: start;
+  }
+
+  .catalog-sidebar {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-6);
+    position: sticky;
+    top: 100px;
+  }
+
+  .sidebar-box {
+    background-color: #fff;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-xs);
+    padding: var(--space-5);
+  }
+
+  .sidebar-title {
+    font-size: 0.9375rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--color-charcoal);
+    margin-bottom: var(--space-3);
+    padding-bottom: var(--space-2);
+    border-bottom: 2px solid var(--color-red);
+  }
+
+  .sidebar-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .sidebar-list a {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 10px;
+    border-radius: var(--radius-xs);
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--color-text);
+    text-decoration: none;
+    transition: all var(--transition-fast);
+  }
+
+  .sidebar-list a:hover {
+    background-color: var(--color-concrete-light);
+    color: var(--color-red);
+  }
+
+  .sidebar-list a.active {
+    background-color: var(--color-charcoal);
+    color: #fff;
+  }
+
+  .count-badge {
+    font-size: 0.75rem;
+    background-color: var(--color-concrete-light);
+    color: var(--color-text-muted);
+    padding: 2px 6px;
+    border-radius: 10px;
+    font-weight: 700;
+  }
+
+  .sidebar-list a.active .count-badge {
+    background-color: var(--color-red);
+    color: #fff;
+  }
+
+  .badge-tier1-mini {
+    font-size: 0.65rem;
+    background-color: #dc2626;
+    color: #fff;
+    padding: 2px 5px;
+    border-radius: 2px;
+    font-weight: 800;
+  }
+
+  .sidebar-assistance {
+    background: linear-gradient(135deg, #09111e, #111e33);
+    border: 1px solid #1e293b;
+    border-radius: var(--radius-xs);
+    padding: var(--space-5);
+    color: #fff;
+    text-align: center;
+  }
+
+  .assistance-icon {
+    font-size: 1.75rem;
+    margin-bottom: var(--space-2);
+  }
+
+  .sidebar-assistance h4 {
+    color: #fff;
+    font-size: 1rem;
+    margin-bottom: var(--space-2);
+  }
+
+  .sidebar-assistance p {
+    font-size: 0.78125rem;
+    color: #94a3b8;
+    line-height: 1.45;
+    margin-bottom: var(--space-4);
+  }
+
+  .catalog-main {
+    min-width: 0;
+  }
+
+  .products-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: var(--space-6);
+  }
+
+  .empty-state {
+    text-align: center;
+    padding: var(--space-12) var(--space-6);
+    background-color: #fff;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-xs);
+  }
+
+  .empty-icon {
+    font-size: 3rem;
+    margin-bottom: var(--space-4);
+  }
+
+  .empty-state h3 {
+    font-size: 1.25rem;
+    margin-bottom: var(--space-2);
+  }
+
+  .empty-state p {
+    color: var(--color-text-muted);
+    max-width: 450px;
+    margin: 0 auto var(--space-6) auto;
+  }
+
+  /* Catalog SEO Matrix */
+  .catalog-seo-section {
+    margin-top: var(--space-16);
+    padding-top: var(--space-12);
+    border-top: 1px solid var(--color-border);
+  }
+
+  .seo-header-badge {
+    margin-bottom: var(--space-4);
+  }
+
+  .seo-header-badge h2 {
+    font-size: clamp(1.4rem, 2.2vw, 1.85rem);
+    font-weight: 800;
+    color: var(--color-charcoal);
+  }
+
+  .seo-lead-text {
+    font-size: 1rem;
+    line-height: 1.7;
+    color: var(--color-text);
+    margin-bottom: var(--space-8);
+  }
+
+  .seo-guide-card {
+    background-color: #fff;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-xs);
+    padding: var(--space-6);
+    margin-bottom: var(--space-8);
+  }
+
+  .seo-guide-card h3 {
+    font-size: 1.25rem;
+    color: var(--color-charcoal);
+    margin-bottom: var(--space-2);
+  }
+
+  .guide-intro {
+    font-size: 0.875rem;
+    color: var(--color-text-muted);
+    margin-bottom: var(--space-4);
+  }
+
+  .seo-spec-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.875rem;
+  }
+
+  .seo-spec-table th, .seo-spec-table td {
+    padding: 10px 14px;
+    border: 1px solid var(--color-border);
+    text-align: left;
+  }
+
+  .seo-spec-table th {
+    background-color: var(--color-concrete-light);
+    font-weight: 700;
+  }
+
+  .highlight-cell {
+    background-color: #fafafa;
+    color: var(--color-red);
+  }
+
+  .general-pillars-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: var(--space-6);
+    margin-bottom: var(--space-10);
+  }
+
+  .pillar-card {
+    background-color: #fff;
+    border: 1px solid var(--color-border);
+    padding: var(--space-6);
+    border-radius: var(--radius-xs);
+  }
+
+  .pillar-num {
+    font-family: var(--font-heading);
+    font-size: 1.75rem;
+    font-weight: 900;
+    color: var(--color-red);
+    line-height: 1;
+    margin-bottom: var(--space-3);
+  }
+
+  .pillar-card h4 {
+    font-size: 1.05rem;
+    font-weight: 700;
+    margin-bottom: var(--space-2);
+  }
+
+  .pillar-card p {
+    font-size: 0.875rem;
+    color: var(--color-text-muted);
+    line-height: 1.5;
+  }
+
+  .seo-faqs-container h3 {
+    font-size: 1.35rem;
+    margin-bottom: var(--space-6);
+    padding-bottom: var(--space-2);
+    border-bottom: 2px solid var(--color-charcoal);
+  }
+
+  .faqs-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--space-6);
+  }
+
+  .faq-item {
+    background-color: #fff;
+    border: 1px solid var(--color-border);
+    padding: var(--space-5);
+    border-radius: var(--radius-xs);
+  }
+
+  .faq-q {
+    font-size: 0.9375rem;
+    font-weight: 700;
+    color: var(--color-charcoal);
+    margin-bottom: var(--space-2);
+    line-height: 1.4;
+  }
+
+  .faq-a {
+    font-size: 0.875rem;
+    color: var(--color-text-muted);
+    line-height: 1.55;
+  }
+
+  @media (max-width: 1024px) {
+    .catalog-layout {
+      grid-template-columns: 1fr;
+    }
+    .catalog-sidebar {
+      position: static;
+    }
+    .products-grid {
+      grid-template-columns: repeat(2, 1fr);
+    }
+    .faqs-grid, .general-pillars-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  @media (max-width: 640px) {
+    .products-grid {
+      grid-template-columns: 1fr;
+    }
+    .catalog-toolbar {
+      flex-direction: column;
+      align-items: stretch;
+    }
+    .toolbar-search {
+      max-width: 100%;
+    }
+  }
+</style>

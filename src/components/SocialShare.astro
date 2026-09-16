@@ -1,0 +1,185 @@
+---
+interface Props {
+  url?: string;
+  title?: string;
+  description?: string;
+}
+
+const { 
+  url = Astro.url.href, 
+  title = 'Siêu Thị VLXD Hoàng Yến Quảng Trị',
+  description = ''
+} = Astro.props;
+
+const shareUrl = url.startsWith('http') ? url : `https://vlxdhoangyen.com${url.startsWith('/') ? url : '/' + url}`;
+const fbShareUrl = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareUrl)}`;
+const zaloShareUrl = `https://zalo.me/share?url=${encodeURIComponent(shareUrl)}`;
+---
+
+<div class="social-share-widget" aria-label="Chia sẻ nội dung">
+  <div class="share-label-wrap">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" class="share-icon-lead"><circle cx="18" cy="5" r="3"></circle><circle cx="6" cy="12" r="3"></circle><circle cx="18" cy="19" r="3"></circle><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line></svg>
+    <span class="share-lead-text">Chia sẻ bài viết & bảng giá:</span>
+  </div>
+
+  <div class="share-actions-group">
+    <!-- Facebook Share -->
+    <a 
+      href={fbShareUrl} 
+      target="_blank" 
+      rel="noopener noreferrer" 
+      class="share-btn share-facebook"
+      title="Chia sẻ lên Facebook"
+      aria-label="Chia sẻ bài viết lên Facebook"
+    >
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>
+      <span>Facebook</span>
+    </a>
+
+    <!-- Zalo Share -->
+    <a 
+      href={zaloShareUrl} 
+      target="_blank" 
+      rel="noopener noreferrer" 
+      class="share-btn share-zalo"
+      title="Chia sẻ qua Zalo"
+      aria-label="Chia sẻ bài viết qua Zalo"
+    >
+      <img src="/zalo.png" alt="Biểu tượng chia sẻ Zalo" width="16" height="16" style="border-radius: 3px;" />
+      <span>Zalo</span>
+    </a>
+
+    <!-- Copy Link -->
+    <button 
+      type="button" 
+      class="share-btn share-copy js-copy-share-link" 
+      data-url={shareUrl}
+      title="Sao chép đường dẫn"
+      aria-label="Sao chép liên kết bài viết"
+    >
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" class="copy-svg"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+      <span class="copy-text">Sao chép link</span>
+    </button>
+  </div>
+</div>
+
+<script>
+  function setupCopyButtons() {
+    const copyBtns = document.querySelectorAll('.js-copy-share-link');
+    copyBtns.forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const url = btn.getAttribute('data-url') || window.location.href;
+        try {
+          await navigator.clipboard.writeText(url);
+          const textSpan = btn.querySelector('.copy-text');
+          if (textSpan) {
+            const oldText = textSpan.textContent;
+            textSpan.textContent = 'Đã sao chép liên kết!';
+            btn.classList.add('copied');
+            setTimeout(() => {
+              textSpan.textContent = oldText;
+              btn.classList.remove('copied');
+            }, 2500);
+          }
+        } catch (err) {
+          console.error('Không thể sao chép liên kết:', err);
+        }
+      });
+    });
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', setupCopyButtons);
+  } else {
+    setupCopyButtons();
+  }
+</script>
+
+<style>
+  .social-share-widget {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 12px;
+    padding: 12px 18px;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    margin: 1.5rem 0;
+  }
+
+  .share-label-wrap {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    color: #334155;
+    font-size: 0.875rem;
+    font-weight: 600;
+  }
+
+  .share-icon-lead {
+    color: #0284c7;
+  }
+
+  .share-actions-group {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
+  .share-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 14px;
+    border-radius: 6px;
+    font-size: 0.8125rem;
+    font-weight: 600;
+    text-decoration: none;
+    border: 1px solid transparent;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    background: #ffffff;
+    color: #1e293b;
+    border-color: #cbd5e1;
+    font-family: inherit;
+  }
+
+  .share-facebook {
+    background: #1877f2;
+    color: #ffffff;
+    border-color: #1877f2;
+  }
+  .share-facebook:hover {
+    background: #166fe5;
+    color: #ffffff;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 6px rgba(24, 119, 242, 0.3);
+  }
+
+  .share-zalo {
+    background: #0068ff;
+    color: #ffffff;
+    border-color: #0068ff;
+  }
+  .share-zalo:hover {
+    background: #0056d6;
+    color: #ffffff;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 6px rgba(0, 104, 255, 0.3);
+  }
+
+  .share-copy:hover {
+    background: #f1f5f9;
+    border-color: #94a3b8;
+    transform: translateY(-1px);
+  }
+
+  .share-copy.copied {
+    background: #15803d;
+    color: #ffffff;
+    border-color: #15803d;
+  }
+</style>

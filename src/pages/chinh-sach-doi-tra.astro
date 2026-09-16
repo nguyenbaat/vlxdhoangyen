@@ -1,0 +1,100 @@
+---
+import Layout from '../layouts/Layout.astro';
+import { SettingsRepo } from '../server/db/repo.js';
+
+const settings = await SettingsRepo.getAll();
+const breadcrumbs = [
+  { name: 'Trang Chủ', url: '/' },
+  { name: 'Chính Sách Đổi Trả', url: '/chinh-sach-doi-tra/' }
+];
+---
+
+<Layout
+  title="Chính Sách Đổi Trả & Barem Vật Liệu | VLXD Hoàng Yến Quảng Trị"
+  description="Quy định đổi trả hàng hóa, thu hồi bao bì xi măng và kiểm tra barem sắt thép xây dựng tại Siêu Thị VLXD Hoàng Yến."
+  breadcrumbs={breadcrumbs}
+  currentPath="/chinh-sach-doi-tra/"
+>
+  <div class="policy-page">
+    <header class="policy-header">
+      <div class="container">
+        <div class="eyebrow">Quy Định Chất Lượng</div>
+        <h1>Chính Sách Đổi Trả & Kiểm Định Barem</h1>
+        <p>Bảo vệ quyền lợi khách hàng với chính sách đổi trả minh bạch và chuẩn mực kỹ thuật.</p>
+      </div>
+    </header>
+
+    <div class="container policy-body-container">
+      <div class="policy-content prose-industrial">
+        <h2>1. Điều Kiện Đổi Trả Hàng Hóa</h2>
+        <p>Siêu Thị VLXD Hoàng Yến sẵn sàng tiếp nhận đổi trả hoặc bù hàng trong các trường hợp sau:</p>
+        <ul>
+          <li>Hàng hóa bị sai quy cách, sai mác thép, sai thương hiệu so với đơn đặt hàng.</li>
+          <li>Sản phẩm có lỗi từ nhà sản xuất (xi măng vón cục do khâu đóng gói, thép bị cong vẹo bất thường khi chưa sử dụng, thiết bị vệ sinh nứt vỡ trong bao bì nguyên seal).</li>
+          <li>Số lượng dư thừa sau khi hoàn thành công trình (áp dụng cho gạch ngói nguyên hộp, sắt thép nguyên cây 11.7m chưa cắt gọt, tôn nguyên cuộn).</li>
+        </ul>
+
+        <h2>2. Quy Trình Xử Lý Đổi Trả</h2>
+        <ol>
+          <li>Khách hàng thông báo cho nhân viên bán hàng hoặc hotline <strong>{settings.hotline_main}</strong> khi phát hiện có sự sai lệch về hàng hóa.</li>
+          <li>Đại diện Hoàng Yến sẽ phối hợp kiểm tra hiện trạng thực tế của sản phẩm.</li>
+          <li>Thống nhất phương án đổi trả hoặc bổ sung hàng hóa theo thỏa thuận để thuận tiện cho tiến độ thi công.</li>
+        </ol>
+
+        <div class="callout-box">
+          <h3 style="font-size: 1.15rem; margin-top: 0; margin-bottom: 0.5rem; font-weight: 700;">Mọi Thắc Mắc & Hỗ Trợ Đơn Hàng:</h3>
+          <p>
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" style="display: inline-block; vertical-align: middle; margin-right: 4px; color: #dc2626;"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>
+            <span>Hotline hỗ trợ: <strong>{settings.hotline_main}</strong> — <strong>{settings.hotline_alt}</strong></span>
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+</Layout>
+
+<style>
+  .policy-header {
+    background-color: var(--color-concrete-light);
+    border-bottom: 1px solid var(--color-border);
+    padding-top: var(--space-12);
+    padding-bottom: var(--space-12);
+  }
+
+  .policy-header p {
+    font-size: 1.1rem;
+    color: var(--color-text-muted);
+    margin-top: var(--space-2);
+  }
+
+  .policy-body-container {
+    padding-top: var(--space-10);
+    padding-bottom: var(--space-20);
+    max-width: 900px;
+  }
+
+  .policy-content h2 {
+    font-size: 1.45rem;
+    margin-top: var(--space-8);
+    margin-bottom: var(--space-3);
+    padding-bottom: var(--space-2);
+    border-bottom: 2px solid var(--color-charcoal);
+  }
+
+  .policy-content p {
+    font-size: 1.05rem;
+    line-height: 1.7;
+    margin-bottom: var(--space-4);
+  }
+
+  .policy-content ul, .policy-content ol {
+    margin-left: var(--space-6);
+    margin-bottom: var(--space-6);
+    font-size: 1rem;
+    line-height: 1.7;
+  }
+
+  .policy-content li {
+    margin-bottom: var(--space-2);
+  }
+</style>

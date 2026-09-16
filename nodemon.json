@@ -1,0 +1,6 @@
+{
+  "watch": ["src"],
+  "ext": "astro,ts,js,mjs,css",
+  "ignore": ["src/**/*.test.*", "dist/**"],
+  "exec": "npm.cmd run dev"
+}

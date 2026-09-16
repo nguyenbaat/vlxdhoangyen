@@ -1,0 +1,483 @@
+---
+interface Props {
+  initialContent?: string;
+  name?: string;
+  id?: string;
+  label?: string;
+}
+
+const {
+  initialContent = '',
+  name = 'content',
+  id = 'editor_content',
+  label = 'Nội Dung Bài Viết & Thông Số Chi Tiết'
+} = Astro.props;
+---
+
+<div class="block-editor-wrapper" id={`block_editor_${id}`}>
+  <!-- Editor Header -->
+  <div class="editor-header">
+    <label for={id} class="editor-label">
+      <span>{label}</span>
+      <span class="editor-mode-toggle">
+        <button type="button" class="mode-btn active" id={`btn_visual_${id}`}>Trực Quan (Visual)</button>
+        <button type="button" class="mode-btn" id={`btn_html_${id}`}>Mã HTML</button>
+      </span>
+    </label>
+  </div>
+
+  <!-- Rich WYSIWYG Toolbar -->
+  <div class="editor-toolbar" id={`toolbar_${id}`}>
+    <div class="toolbar-group">
+      <select class="tb-select" id={`tb_format_${id}`} title="Định dạng đoạn văn">
+        <option value="p">¶ Đoạn văn (Paragraph)</option>
+        <option value="h2">H2 Tiêu đề chính</option>
+        <option value="h3">H3 Tiêu đề phụ</option>
+        <option value="h4">H4 Tiêu đề nhỏ</option>
+      </select>
+    </div>
+
+    <div class="toolbar-divider"></div>
+
+    <div class="toolbar-group">
+      <button type="button" class="tb-btn" data-cmd="bold" title="In đậm (Ctrl+B)"><strong>B</strong></button>
+      <button type="button" class="tb-btn" data-cmd="italic" title="In nghiêng (Ctrl+I)"><em>I</em></button>
+      <button type="button" class="tb-btn" data-cmd="underline" title="Gạch chân (Ctrl+U)"><u>U</u></button>
+      <button type="button" class="tb-btn" data-cmd="strikeThrough" title="Gạch ngang"><s>S</s></button>
+    </div>
+
+    <div class="toolbar-divider"></div>
+
+    <div class="toolbar-group">
+      <button type="button" class="tb-btn" data-cmd="justifyLeft" title="Căn trái">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="17" y1="10" x2="3" y2="10"></line><line x1="21" y1="6" x2="3" y2="6"></line><line x1="21" y1="14" x2="3" y2="14"></line><line x1="17" y1="18" x2="3" y2="18"></line></svg>
+      </button>
+      <button type="button" class="tb-btn" data-cmd="justifyCenter" title="Căn giữa">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="10" x2="6" y2="10"></line><line x1="21" y1="6" x2="3" y2="6"></line><line x1="21" y1="14" x2="3" y2="14"></line><line x1="18" y1="18" x2="6" y2="18"></line></svg>
+      </button>
+      <button type="button" class="tb-btn" data-cmd="justifyRight" title="Căn phải">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="21" y1="10" x2="7" y2="10"></line><line x1="21" y1="6" x2="3" y2="6"></line><line x1="21" y1="14" x2="3" y2="14"></line><line x1="21" y1="18" x2="7" y2="18"></line></svg>
+      </button>
+    </div>
+
+    <div class="toolbar-divider"></div>
+
+    <div class="toolbar-group">
+      <button type="button" class="tb-btn" data-cmd="insertUnorderedList" title="Danh sách chấm">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><line x1="3" y1="6" x2="3.01" y2="6"></line><line x1="3" y1="12" x2="3.01" y2="12"></line><line x1="3" y1="18" x2="3.01" y2="18"></line></svg>
+      </button>
+      <button type="button" class="tb-btn" data-cmd="insertOrderedList" title="Danh sách số">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="10" y1="6" x2="21" y2="6"></line><line x1="10" y1="12" x2="21" y2="12"></line><line x1="10" y1="18" x2="21" y2="18"></line><path d="M4 6h1v4"></path><path d="M4 10h2"></path><path d="M6 18H4c0-1 2-2 2-3s-1-1.5-2-1"></path></svg>
+      </button>
+      <button type="button" class="tb-btn" id={`tb_link_${id}`} title="Chèn liên kết">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg>
+      </button>
+    </div>
+
+    <div class="toolbar-divider"></div>
+
+    <!-- Insert Rich Elements -->
+    <div class="toolbar-group">
+      <input type="file" id={`tb_img_file_${id}`} accept="image/*" style="display:none;" />
+      <button type="button" class="tb-btn tb-btn-badge" id={`tb_img_btn_${id}`} title="Chèn / Tải hình ảnh" style="display: inline-flex; align-items: center; gap: 4px;">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+        Chèn Ảnh
+      </button>
+      <button type="button" class="tb-btn tb-btn-badge" id={`tb_table_${id}`} title="Chèn Bảng Thông Số" style="display: inline-flex; align-items: center; gap: 4px;">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M3 15h18M9 3v18M15 3v18"/></svg>
+        Bảng Dữ Liệu
+      </button>
+      <button type="button" class="tb-btn tb-btn-badge" id={`tb_callout_${id}`} title="Chèn Khối Ghi Chú" style="display: inline-flex; align-items: center; gap: 4px;">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+        Hộp Ghi Chú
+      </button>
+      <button type="button" class="tb-btn tb-btn-badge" id={`tb_faq_${id}`} title="Chèn Khối FAQ" style="display: inline-flex; align-items: center; gap: 4px;">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+        Khối FAQ
+      </button>
+    </div>
+  </div>
+
+  <!-- Single Unified Content Editable Container -->
+  <div 
+    class="wysiwyg-editor-canvas" 
+    id={`canvas_${id}`} 
+    contenteditable="true"
+    placeholder="Nhập nội dung bài viết chi tiết tại đây..."
+  ></div>
+
+  <!-- Hidden Raw HTML Field (For Form Submission) -->
+  <textarea name={name} id={id} class="raw-html-textarea" rows="12" style="display: none;">{initialContent}</textarea>
+</div>
+
+<style>
+  .block-editor-wrapper {
+    background: #ffffff;
+    border: 1px solid #cbd5e1;
+    border-radius: 8px;
+    overflow: hidden;
+    margin-bottom: 1.5rem;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+  }
+
+  .editor-header {
+    background: #f8fafc;
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid #e2e8f0;
+  }
+  .editor-label {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-weight: 700;
+    font-size: 0.9rem;
+    color: #0f172a;
+    margin: 0;
+  }
+  .editor-mode-toggle {
+    display: flex;
+    gap: 4px;
+    background: #e2e8f0;
+    padding: 2px;
+    border-radius: 6px;
+  }
+  .mode-btn {
+    padding: 3px 10px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    border: none;
+    background: transparent;
+    border-radius: 4px;
+    cursor: pointer;
+    color: #64748b;
+  }
+  .mode-btn.active {
+    background: #ffffff;
+    color: #0f172a;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+  }
+
+  /* WYSIWYG Toolbar Styling */
+  .editor-toolbar {
+    background: #ffffff;
+    padding: 0.5rem 0.75rem;
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    flex-wrap: wrap;
+    border-bottom: 1px solid #e2e8f0;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.02);
+  }
+  .toolbar-group {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+  }
+  .toolbar-divider {
+    width: 1px;
+    height: 20px;
+    background: #cbd5e1;
+    margin: 0 4px;
+  }
+
+  .tb-select {
+    padding: 4px 8px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    border: 1px solid #cbd5e1;
+    border-radius: 4px;
+    background: #ffffff;
+    color: #334155;
+    outline: none;
+    cursor: pointer;
+  }
+  .tb-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 28px;
+    height: 28px;
+    padding: 0 6px;
+    background: #ffffff;
+    border: 1px solid #cbd5e1;
+    border-radius: 4px;
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: #334155;
+    cursor: pointer;
+    transition: all 0.15s ease;
+  }
+  .tb-btn:hover {
+    background: #0284c7;
+    color: #ffffff;
+    border-color: #0284c7;
+  }
+  .tb-btn-badge {
+    font-size: 0.76rem;
+    font-weight: 600;
+    padding: 0 8px;
+  }
+
+  /* Single Unified Editable Box */
+  .wysiwyg-editor-canvas {
+    padding: 1.25rem;
+    min-height: 280px;
+    background: #ffffff;
+    outline: none;
+    font-size: 0.95rem;
+    line-height: 1.6;
+    color: #0f172a;
+  }
+  .wysiwyg-editor-canvas:empty:before {
+    content: attr(placeholder);
+    color: #94a3b8;
+  }
+
+  .wysiwyg-editor-canvas h2 { font-size: 1.4rem; font-weight: 800; margin: 1.2rem 0 0.6rem; color: #0f172a; }
+  .wysiwyg-editor-canvas h3 { font-size: 1.2rem; font-weight: 700; margin: 1rem 0 0.5rem; color: #0369a1; }
+  .wysiwyg-editor-canvas h4 { font-size: 1.05rem; font-weight: 700; margin: 0.8rem 0 0.4rem; color: #334155; }
+  .wysiwyg-editor-canvas table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 1.25rem 0;
+    font-size: 0.9rem;
+    border: 1px solid #cbd5e1;
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  }
+  .wysiwyg-editor-canvas th, .wysiwyg-editor-canvas td {
+    border: 1px solid #cbd5e1;
+    padding: 0.75rem 1rem;
+    line-height: 1.5;
+  }
+  .wysiwyg-editor-canvas th {
+    background: #0f172a;
+    color: #ffffff;
+    font-weight: 700;
+    text-align: left;
+    border: 1px solid #1e293b;
+  }
+  .wysiwyg-editor-canvas tbody tr:nth-child(even) {
+    background: #f8fafc;
+  }
+  .wysiwyg-editor-canvas tbody tr:hover {
+    background: #eff6ff;
+  }
+  .wysiwyg-editor-canvas .callout-box { background: #f0f9ff; border-left: 4px solid #0284c7; padding: 1rem; margin: 1rem 0; border-radius: 4px; }
+  .wysiwyg-editor-canvas figure { margin: 1rem 0; text-align: center; }
+  .wysiwyg-editor-canvas figure img { max-width: 100%; height: auto; border-radius: 6px; }
+  .wysiwyg-editor-canvas figcaption { font-size: 0.8rem; color: #64748b; margin-top: 0.4rem; }
+
+  .raw-html-textarea {
+    width: 100%;
+    padding: 1rem;
+    font-family: monospace;
+    font-size: 0.88rem;
+    border: none;
+    outline: none;
+    background: #0f172a;
+    color: #f8fafc;
+    line-height: 1.5;
+  }
+</style>
+
+<script is:inline define:vars={{ id }}>
+  (function () {
+    const wrapper = document.getElementById(`block_editor_${id}`);
+    if (!wrapper) return;
+
+    const textarea = document.getElementById(id);
+    const canvas = document.getElementById(`canvas_${id}`);
+    const toolbar = document.getElementById(`toolbar_${id}`);
+    const btnVisual = document.getElementById(`btn_visual_${id}`);
+    const btnHtml = document.getElementById(`btn_html_${id}`);
+
+    let isHtmlMode = false;
+
+    // Load initial content into Canvas
+    canvas.innerHTML = textarea.value || '<p><br></p>';
+
+    // Sync Canvas -> Textarea
+    function syncContent() {
+      if (!isHtmlMode) {
+        textarea.value = canvas.innerHTML;
+      }
+    }
+
+    canvas.addEventListener('input', syncContent);
+    canvas.addEventListener('keyup', syncContent);
+    canvas.addEventListener('blur', syncContent);
+
+    // Mode Toggle
+    btnVisual.addEventListener('click', () => {
+      isHtmlMode = false;
+      btnVisual.classList.add('active');
+      btnHtml.classList.remove('active');
+      textarea.style.display = 'none';
+      canvas.style.display = 'block';
+      toolbar.style.display = 'flex';
+      canvas.innerHTML = textarea.value;
+    });
+
+    btnHtml.addEventListener('click', () => {
+      syncContent();
+      isHtmlMode = true;
+      btnHtml.classList.add('active');
+      btnVisual.classList.remove('active');
+      canvas.style.display = 'none';
+      toolbar.style.display = 'none';
+      textarea.style.display = 'block';
+    });
+
+    // Formatting Commands via document.execCommand
+    toolbar.addEventListener('click', (e) => {
+      const btn = e.target.closest('[data-cmd]');
+      if (!btn) return;
+      const cmd = btn.dataset.cmd;
+      document.execCommand(cmd, false, null);
+      syncContent();
+      canvas.focus();
+    });
+
+    // Paragraph / Heading Select
+    const formatSelect = document.getElementById(`tb_format_${id}`);
+    if (formatSelect) {
+      formatSelect.addEventListener('change', () => {
+        const val = formatSelect.value;
+        document.execCommand('formatBlock', false, `<${val}>`);
+        syncContent();
+        canvas.focus();
+      });
+    }
+
+    // Insert Link
+    const linkBtn = document.getElementById(`tb_link_${id}`);
+    if (linkBtn) {
+      linkBtn.addEventListener('click', () => {
+        const url = prompt('Nhập URL liên kết (https://...):');
+        if (url) {
+          document.execCommand('createLink', false, url);
+          syncContent();
+        }
+      });
+    }
+
+    // Insert Image via Upload or URL
+    const imgFileInput = document.getElementById(`tb_img_file_${id}`);
+    const imgBtn = document.getElementById(`tb_img_btn_${id}`);
+    if (imgBtn && imgFileInput) {
+      imgBtn.addEventListener('click', () => {
+        const titleFallback = (document.getElementById('post_title') as HTMLInputElement)?.value || 
+                              (document.getElementById('name') as HTMLInputElement)?.value || 
+                              'Vật liệu xây dựng Hoàng Yến Quảng Trị';
+
+        const choice = confirm('Bấm OK để TẢI ẢNH TỪ MÁY TÍNH, hoặc bấm CANCEL để NHẬP URL HÌNH ẢNH.');
+        if (choice) {
+          imgFileInput.click();
+        } else {
+          const url = prompt('Nhập URL hình ảnh (https://...):');
+          if (url) {
+            const defaultAlt = `${titleFallback} - VLXD Hoàng Yến`;
+            const alt = prompt('Nhập thẻ ALT Text chuẩn SEO cho hình ảnh:', defaultAlt) || defaultAlt;
+            const html = `<figure class="article-img-figure"><img src="${url}" alt="${alt}" loading="lazy" /><figcaption>${alt}</figcaption></figure><p><br></p>`;
+            document.execCommand('insertHTML', false, html);
+            syncContent();
+          }
+        }
+      });
+
+      imgFileInput.addEventListener('change', async () => {
+        if (!imgFileInput.files || imgFileInput.files.length === 0) return;
+        const file = imgFileInput.files[0];
+        const formData = new FormData();
+        formData.append('files', file);
+
+        const titleFallback = (document.getElementById('post_title') as HTMLInputElement)?.value || 
+                              (document.getElementById('name') as HTMLInputElement)?.value || 
+                              file.name.replace(/\.[^/.]+$/, '').replace(/[-_]/g, ' ');
+
+        const defaultAlt = `${titleFallback} - Siêu Thị VLXD Hoàng Yến`;
+        const alt = prompt('Nhập thẻ ALT Text chuẩn SEO cho hình ảnh tải lên:', defaultAlt) || defaultAlt;
+
+        try {
+          const res = await fetch('/api/upload', { method: 'POST', body: formData });
+          const data = await res.json();
+          if (data.success && data.urls && data.urls.length > 0) {
+            const url = data.urls[0];
+            const html = `<figure class="article-img-figure"><img src="${url}" alt="${alt}" loading="lazy" /><figcaption>${alt}</figcaption></figure><p><br></p>`;
+            document.execCommand('insertHTML', false, html);
+            syncContent();
+          } else {
+            alert('Lỗi tải ảnh: ' + (data.error || 'Thất bại'));
+          }
+        } catch (err) {
+          alert('Lỗi kết nối khi tải ảnh');
+        }
+      });
+    }
+
+    // Insert Spec Table
+    const tableBtn = document.getElementById(`tb_table_${id}`);
+    if (tableBtn) {
+      tableBtn.addEventListener('click', () => {
+        const html = `
+          <table>
+            <thead>
+              <tr>
+                <th>Hạng Mục Thi Công</th>
+                <th>Mác Đề Xuất</th>
+                <th>Quy Cách / Đặc Tính Kỹ Thuật</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>Đổ móng, dầm, cột, sàn</td>
+                <td>PCB40 / M300</td>
+                <td>Cường độ nén 28 ngày >= 40 N/mm2</td>
+              </tr>
+              <tr>
+                <td>Xây trát tường trong ngoài</td>
+                <td>PCB30 / M75</td>
+                <td>Độ mịn cao, vữa dẻo miết bay êm</td>
+              </tr>
+            </tbody>
+          </table>
+          <p><br></p>
+        `;
+        document.execCommand('insertHTML', false, html);
+        syncContent();
+      });
+    }
+
+    // Insert Callout Box
+    const calloutBtn = document.getElementById(`tb_callout_${id}`);
+    if (calloutBtn) {
+      calloutBtn.addEventListener('click', () => {
+        const note = prompt('Nhập nội dung ghi chú nổi bật:') || 'Lưu ý kỹ thuật quan trọng khi bảo quản và thi công...';
+        const html = `<div class="callout-box"><strong>Lưu ý kỹ thuật:</strong> ${note}</div><p><br></p>`;
+        document.execCommand('insertHTML', false, html);
+        syncContent();
+      });
+    }
+
+    // Insert FAQ Block
+    const faqBtn = document.getElementById(`tb_faq_${id}`);
+    if (faqBtn) {
+      faqBtn.addEventListener('click', () => {
+        const q = prompt('Nhập câu hỏi FAQ:') || 'Nên chọn xi măng mác bao nhiêu khi xây nhà?';
+        const a = prompt('Nhập câu trả lời:') || 'Đối với phần kết cấu chịu lực, nên chọn mác PCB40...';
+        const html = `
+          <div class="faq-card-item" style="border:1px solid #e2e8f0; padding:1rem; margin:1rem 0; border-radius:6px; background:#f8fafc;">
+            <h4 style="margin:0 0 0.5rem; color:#0f172a; font-size:1rem;"><strong>Q: ${q}</strong></h4>
+            <p style="margin:0; color:#475569; font-size:0.9rem;">A: ${a}</p>
+          </div>
+          <p><br></p>
+        `;
+        document.execCommand('insertHTML', false, html);
+        syncContent();
+      });
+    }
+
+  })();
+</script>

@@ -1,0 +1,188 @@
+---
+import '../styles/global.css';
+import Header from '../components/Header.astro';
+import Footer from '../components/Footer.astro';
+import FloatingContact from '../components/FloatingContact.astro';
+import { SettingsRepo } from '../server/db/repo.js';
+import { initDatabase } from '../server/db/index.js';
+
+// Initialize Supabase connection on first request
+await initDatabase();
+
+interface Props {
+  title?: string;
+  description?: string;
+  canonical?: string;
+  ogImage?: string;
+  ogType?: string;
+  currentPath?: string;
+  breadcrumbs?: Array<{ name: string; url: string }>;
+  schemas?: any[];
+  noindex?: boolean;
+}
+
+const settings = await SettingsRepo.getAll();
+const {
+  title = settings.default_seo_title,
+  description = settings.default_seo_desc,
+  canonical = Astro.url.href,
+  ogImage = settings.banner_url || 'https://vlxdhoangyen.com/wp-content/uploads/2025/07/BANNER-VLXD-HOANG-YEN-2-1400x533.png',
+  ogType = 'website',
+  currentPath = Astro.url.pathname,
+  breadcrumbs = [],
+  schemas = [],
+  noindex = false
+} = Astro.props;
+
+const siteUrl = 'https://vlxdhoangyen.com';
+
+const normalizedCanonical = canonical && !canonical.includes('localhost')
+  ? (canonical.startsWith('http') ? canonical : `${siteUrl}${canonical.startsWith('/') ? canonical : '/' + canonical}`)
+  : `${siteUrl}${currentPath.startsWith('/') ? currentPath : '/' + currentPath}`;
+
+// LocalBusiness Schema
+const organizationSchema = {
+  '@context': 'https://schema.org',
+  '@type': 'LocalBusiness',
+  '@id': `${siteUrl}/#organization`,
+  name: settings.brand_name,
+  legalName: settings.company_name,
+  url: siteUrl,
+  logo: settings.logo_url ? `${siteUrl}${settings.logo_url.startsWith('/') ? settings.logo_url : '/' + settings.logo_url}` : `${siteUrl}/logo.png`,
+  image: ogImage.startsWith('http') ? ogImage : `${siteUrl}${ogImage.startsWith('/') ? ogImage : '/' + ogImage}`,
+  description: description,
+  taxID: settings.tax_id,
+  foundingDate: '2003',
+  telephone: settings.hotline_main,
+  email: settings.email,
+  address: {
+    '@type': 'PostalAddress',
+    streetAddress: '299 Lê Duẩn',
+    addressLocality: 'Đông Hà',
+    addressRegion: 'Quảng Trị',
+    addressCountry: 'VN'
+  },
+  geo: {
+    '@type': 'GeoCoordinates',
+    latitude: 16.804104,
+    longitude: 107.091763
+  },
+  openingHoursSpecification: [
+    {
+      '@type': 'OpeningHoursSpecification',
+      dayOfWeek: [
+        'Monday',
+        'Tuesday',
+        'Wednesday',
+        'Thursday',
+        'Friday',
+        'Saturday',
+        'Sunday'
+      ],
+      opens: '07:30',
+      closes: '22:00'
+    }
+  ],
+  sameAs: [
+    settings.facebook_url || 'https://www.facebook.com/sieuthivlxdhoangyen/',
+    settings.youtube_url,
+    settings.twitter_url,
+    settings.zalo_url || 'https://zalo.me/0946575579',
+    'https://maps.app.goo.gl/QUX1w34xfjRMcyW87'
+  ].filter(Boolean)
+};
+
+// Breadcrumb Schema
+const breadcrumbSchema = breadcrumbs.length > 0 ? {
+  '@context': 'https://schema.org',
+  '@type': 'BreadcrumbList',
+  itemListElement: breadcrumbs.map((item, idx) => ({
+    '@type': 'ListItem',
+    position: idx + 1,
+    name: item.name,
+    item: item.url.startsWith('http') ? item.url : `${siteUrl}${item.url.startsWith('/') ? item.url : '/' + item.url}`
+  }))
+} : null;
+---
+
+<!doctype html>
+<html lang="vi">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>{title}</title>
+    <meta name="description" content={description} />
+    <meta name="robots" content={noindex ? "noindex, nofollow" : "index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1"} />
+    <link rel="canonical" href={normalizedCanonical} />
+
+    <!-- Google Fonts Preconnect -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Manrope:wght@600;700;800&family=Archivo:wght@700;800&display=swap" rel="stylesheet" />
+
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content={ogType} />
+    <meta property="og:url" content={normalizedCanonical} />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    <meta property="og:image" content={ogImage.startsWith('http') ? ogImage : `${siteUrl}${ogImage.startsWith('/') ? ogImage : '/' + ogImage}`} />
+    <meta property="og:locale" content="vi_VN" />
+    <meta property="og:site_name" content={settings.brand_name} />
+
+    <!-- Twitter -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:url" content={normalizedCanonical} />
+    <meta name="twitter:title" content={title} />
+    <meta name="twitter:description" content={description} />
+    <meta name="twitter:image" content={ogImage.startsWith('http') ? ogImage : `${siteUrl}${ogImage.startsWith('/') ? ogImage : '/' + ogImage}`} />
+
+    <!-- Favicons -->
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon.png" />
+    <link rel="icon" type="image/png" sizes="192x192" href="/favicon.png" />
+    <link rel="icon" href="/favicon.ico" />
+    <link rel="apple-touch-icon" href="/favicon.png" />
+
+    <!-- Structured Data JSON-LD -->
+    <script type="application/ld+json" set:html={JSON.stringify(organizationSchema)} />
+    {breadcrumbSchema && (
+      <script type="application/ld+json" set:html={JSON.stringify(breadcrumbSchema)} />
+    )}
+    {schemas.map(s => (
+      <script type="application/ld+json" set:html={JSON.stringify(s)} />
+    ))}
+  </head>
+  <body>
+    <Header currentPath={currentPath} />
+
+    {breadcrumbs.length > 1 && (
+      <nav class="breadcrumbs breadcrumb-nav" aria-label="breadcrumb">
+        <div class="container">
+          <ol class="breadcrumb-list" itemscope itemtype="https://schema.org/BreadcrumbList">
+            {breadcrumbs.map((b, idx) => (
+              <li class="breadcrumb-item" itemprop="itemListElement" itemscope itemtype="https://schema.org/ListItem">
+                {idx < breadcrumbs.length - 1 ? (
+                  <>
+                    <a href={b.url} itemprop="item">
+                      <span itemprop="name">{b.name}</span>
+                    </a>
+                    <span class="breadcrumb-separator">/</span>
+                  </>
+                ) : (
+                  <span itemprop="name" class="current-page">{b.name}</span>
+                )}
+                <meta itemprop="position" content={String(idx + 1)} />
+              </li>
+            ))}
+          </ol>
+        </div>
+      </nav>
+    )}
+
+    <main id="main-content">
+      <slot />
+    </main>
+
+    <Footer />
+    <FloatingContact />
+  </body>
+</html>

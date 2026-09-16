@@ -1,0 +1,680 @@
+---
+import { CategoryRepo, SettingsRepo } from '../server/db/repo.js';
+
+const settings = await SettingsRepo.getAll();
+const vlxdCategories = await CategoryRepo.getMainCategories('vlxd');
+const noiThatCategories = await CategoryRepo.getMainCategories('noi-that');
+const currentYear = new Date().getFullYear();
+---
+
+<footer class="site-footer">
+  <div class="container">
+    <!-- 1. Top Industrial Trust Bar -->
+    <div class="footer-trust-bar">
+      <div class="trust-item">
+        <div class="trust-icon-box">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
+        </div>
+        <div class="trust-text">
+          <strong class="trust-title">Vật Liệu Xây Dựng Tiêu Chuẩn</strong>
+          <p class="trust-desc">Hóa đơn GTGT hợp lệ, thông tin xuất xứ rõ ràng minh bạch</p>
+        </div>
+      </div>
+      <div class="trust-item">
+        <div class="trust-icon-box">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="1" y="3" width="15" height="13"></rect><polygon points="16 8 20 8 23 11 23 16 16 8"></polygon><circle cx="5.5" cy="18.5" r="2.5"></circle><circle cx="18.5" cy="18.5" r="2.5"></circle></svg>
+        </div>
+        <div class="trust-text">
+          <strong class="trust-title">Hỗ Trợ Vận Chuyển Công Trình</strong>
+          <p class="trust-desc">Hỗ trợ bốc xếp và phương tiện giao nhận linh hoạt đến công trình</p>
+        </div>
+      </div>
+      <div class="trust-item">
+        <div class="trust-icon-box">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 14 14"></polyline></svg>
+        </div>
+        <div class="trust-text">
+          <strong class="trust-title">Đại Lý Phân Phối Uy Tín</strong>
+          <p class="trust-desc">Thành lập từ năm 2003, hơn 20 năm kinh nghiệm đồng hành cùng hơn 1.250+ nhà thầu</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- 2. Main Footer Grid (4 Columns) -->
+    <div class="footer-main-grid">
+      <!-- Col 1: Company Profile -->
+      <div class="footer-col col-brand">
+        <a href="/" class="footer-logo" title="Trang chủ VLXD Hoàng Yến">
+          <img 
+            src={settings.logo_url || "/logo.png"} 
+            alt="Logo chân trang Siêu Thị VLXD Hoàng Yến" 
+            width="168"
+            height="48"
+            class="footer-logo-img"
+          />
+        </a>
+        <p class="company-legal-name">{settings.company_name}</p>
+        <p class="company-desc">
+          Đại lý cấp 1 cung cấp VLXD tại tỉnh Quảng Trị. Thành lập từ năm 2003 với hơn 20 năm kinh nghiệm, được hơn 1.250+ nhà thầu tin chọn trong suốt 20+ năm qua.
+        </p>
+        <p class="company-tax-info">
+          <span class="tax-label">Mã số thuế:</span>
+          <strong class="tax-code">{settings.tax_id || '3200165533'}</strong>
+        </p>
+
+        <!-- Social Media Icons -->
+        <div class="footer-social-wrap">
+          <span class="social-title">Mạng xã hội & Kênh liên hệ:</span>
+          <div class="social-icon-row">
+            <!-- Facebook -->
+            <a 
+              href={settings.facebook_url || "https://www.facebook.com/sieuthivlxdhoangyen/"} 
+              target="_blank" 
+              rel="noopener noreferrer" 
+              class="social-link-btn fb-btn" 
+              title="Fanpage Facebook VLXD Hoàng Yến"
+              aria-label="Facebook"
+            >
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
+              </svg>
+            </a>
+
+            <!-- Zalo -->
+            <a 
+              href={settings.zalo_url || `https://zalo.me/${settings.hotline_main?.replace(/\./g, '')}`} 
+              target="_blank" 
+              rel="noopener noreferrer" 
+              class="social-link-btn zalo-btn" 
+              title="Chat Zalo Tư Vấn Báo Giá"
+              aria-label="Zalo"
+            >
+              <img src="/zalo.png" alt="Zalo tư vấn VLXD Hoàng Yến" width="22" height="22" class="zalo-thumb" />
+            </a>
+
+            <!-- YouTube -->
+            <a 
+              href={settings.youtube_url || "https://www.youtube.com/@vlxdhoangyen"} 
+              target="_blank" 
+              rel="noopener noreferrer" 
+              class="social-link-btn yt-btn" 
+              title="Kênh YouTube VLXD Hoàng Yến"
+              aria-label="YouTube"
+            >
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/>
+              </svg>
+            </a>
+
+            <!-- Instagram -->
+            <a 
+              href={settings.instagram_url || "https://www.instagram.com/vlxdhoangyen"} 
+              target="_blank" 
+              rel="noopener noreferrer" 
+              class="social-link-btn ins-btn" 
+              title="Instagram VLXD Hoàng Yến"
+              aria-label="Instagram"
+            >
+              <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect>
+                <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path>
+                <line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line>
+              </svg>
+            </a>
+          </div>
+        </div>
+      </div>
+
+      <!-- Col 2: Vật Liệu Xây Dựng -->
+      <div class="footer-col">
+        <p class="footer-heading">Vật Liệu Xây Dựng</p>
+        <ul class="footer-links">
+          {vlxdCategories.map(cat => (
+            <li>
+              <a href={`/${cat.slug}/`}>{cat.name}</a>
+            </li>
+          ))}
+        </ul>
+      </div>
+
+      <!-- Col 3: Nội Thất & Thiết Bị Vệ Sinh -->
+      <div class="footer-col">
+        <p class="footer-heading">Nội Thất & Thiết Bị Vệ Sinh</p>
+        <ul class="footer-links">
+          {noiThatCategories.map(cat => (
+            <li>
+              <a href={`/${cat.slug}/`}>{cat.name}</a>
+            </li>
+          ))}
+        </ul>
+
+        <p class="footer-heading secondary-heading">Chính Sách & Hỗ Trợ</p>
+        <ul class="footer-links">
+          <li><a href="/chinh-sach-van-chuyen/">Chính sách giao nhận & vận chuyển</a></li>
+          <li><a href="/chinh-sach-thanh-toan/">Chính sách thanh toán & VAT</a></li>
+          <li><a href="/chinh-sach-doi-tra/">Chính sách bảo hành & đổi trả hàng</a></li>
+          <li><a href="/cau-hoi-thuong-gap/">Câu hỏi thường gặp</a></li>
+          <li><a href="/lien-he/">Liên hệ hỗ trợ</a></li>
+        </ul>
+      </div>
+
+      <!-- Col 4: Trụ Sở & Cửa Hàng (Không đóng khung) -->
+      <div class="footer-col col-contact">
+        <p class="footer-heading">Trụ Sở & Cửa Hàng</p>
+        
+        <div class="contact-list">
+          <!-- Địa chỉ -->
+          <div class="contact-item">
+            <div class="contact-icon">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>
+            </div>
+            <div class="contact-info">
+              <span class="contact-label">Địa chỉ cửa hàng:</span>
+              <p class="contact-val">299 Lê Duẩn, Phường Đông Hà, Tỉnh Quảng Trị</p>
+              <a 
+                href="https://maps.app.goo.gl/QUX1w34xfjRMcyW87" 
+                target="_blank" 
+                rel="noopener noreferrer" 
+                class="footer-direction-btn"
+                title="Mở Google Maps chỉ đường đến VLXD Hoàng Yến"
+              >
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="3 11 22 2 13 21 11 13 3 11"></polygon></svg>
+                <span>Chỉ đường trên Google Maps →</span>
+              </a>
+            </div>
+          </div>
+
+          <!-- Hotline -->
+          <div class="contact-item contact-item-hotline">
+            <div class="contact-icon hotline-icon">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>
+            </div>
+            <div class="contact-info">
+              <span class="contact-label">Hotline Kỹ Thuật & Báo Giá:</span>
+              <div class="hotline-numbers">
+                <div class="hotline-row">
+                  <a href={`tel:${settings.hotline_main}`} class="footer-hotline-link">{settings.hotline_main}</a>
+                </div>
+                <div class="hotline-row">
+                  <a href={`tel:${settings.hotline_alt}`} class="footer-hotline-link">{settings.hotline_alt}</a>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Email -->
+          <div class="contact-item">
+            <div class="contact-icon">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path><polyline points="22,6 12,13 2,6"></polyline></svg>
+            </div>
+            <div class="contact-info">
+              <span class="contact-label">Email tiếp nhận hồ sơ & báo giá:</span>
+              <a href={`mailto:${settings.email}`} class="footer-email-link">{settings.email}</a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 3. Bottom Legal & Payment Trust Bar -->
+    <div class="footer-bottom-bar">
+      <div class="copyright-text">
+        © {currentYear} <strong class="legal-brand">{settings.company_name}</strong>. Bảo lưu mọi quyền.
+      </div>
+      <div class="footer-trust-badges-strip">
+        <span class="trust-pill">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" class="pill-svg"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"></rect><line x1="1" y1="10" x2="23" y2="10"></line></svg>
+          <span>Tiền mặt / Chuyển khoản</span>
+        </span>
+        <span class="trust-pill">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" class="pill-svg"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line></svg>
+          <span>Hóa đơn VAT điện tử</span>
+        </span>
+        <span class="trust-pill">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" class="pill-svg"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path><polyline points="9 12 11 14 15 10"></polyline></svg>
+          <span>Hàng chuẩn nhà máy</span>
+        </span>
+        <span class="trust-pill">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" class="pill-svg"><rect x="1" y="3" width="15" height="13"></rect><polygon points="16 8 20 8 23 11 23 16 16 16 8"></polygon><circle cx="5.5" cy="18.5" r="2.5"></circle><circle cx="18.5" cy="18.5" r="2.5"></circle></svg>
+          <span>Giao tận công trình</span>
+        </span>
+      </div>
+    </div>
+  </div>
+</footer>
+
+<style>
+  .site-footer {
+    background: #f8fafc;
+    color: #1e293b;
+    margin-top: auto;
+    border-top: 4px solid #dc2626;
+  }
+
+  .site-footer p {
+    color: #475569;
+  }
+
+  /* 1. Trust Bar - Thiết kế thoáng, không đóng khung hộp */
+  .footer-trust-bar {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: var(--space-8);
+    padding-top: var(--space-8);
+    padding-bottom: var(--space-8);
+    border-bottom: 1px solid #e2e8f0;
+  }
+
+  .trust-item {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--space-3);
+  }
+
+  .trust-icon-box {
+    width: 38px;
+    height: 38px;
+    background: #fee2e2;
+    color: #dc2626;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    border-radius: 50%;
+  }
+
+  .trust-title {
+    display: block;
+    font-family: var(--font-heading);
+    font-size: 0.9375rem;
+    font-weight: 800;
+    color: #0f172a !important;
+    margin-bottom: 3px;
+  }
+
+  .trust-desc {
+    font-size: 0.8125rem;
+    color: #64748b !important;
+    line-height: 1.45;
+    margin: 0;
+  }
+
+  /* 2. Main Grid */
+  .footer-main-grid {
+    display: grid;
+    grid-template-columns: 1.35fr 0.95fr 1.05fr 1.35fr;
+    gap: var(--space-8);
+    padding-top: var(--space-10);
+    padding-bottom: var(--space-10);
+    border-bottom: 1px solid #e2e8f0;
+  }
+
+  /* Col 1: Brand */
+  .footer-logo {
+    display: inline-block;
+    margin-bottom: var(--space-4);
+    text-decoration: none;
+  }
+
+  .footer-logo-img {
+    height: 52px;
+    width: auto;
+    object-fit: contain;
+    display: block;
+  }
+
+  .company-legal-name {
+    font-family: var(--font-heading);
+    font-size: 0.875rem;
+    font-weight: 800;
+    color: #0f172a !important;
+    margin-bottom: var(--space-2);
+    line-height: 1.4;
+    letter-spacing: 0.01em;
+    text-transform: uppercase;
+  }
+
+  .company-desc {
+    font-size: 0.8125rem;
+    color: #64748b !important;
+    line-height: 1.6;
+    margin-bottom: var(--space-3);
+  }
+
+  .company-tax-info {
+    font-size: 0.8125rem;
+    color: #64748b;
+    margin: 0;
+    line-height: 1.5;
+  }
+
+  .tax-label {
+    color: #64748b;
+    margin-right: 4px;
+  }
+
+  .tax-code {
+    color: #dc2626 !important;
+    font-weight: 700;
+    letter-spacing: 0.03em;
+  }
+
+  /* Social Media Icon Row */
+  .footer-social-wrap {
+    margin-top: var(--space-4);
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .social-title {
+    font-size: 0.8125rem;
+    color: #64748b;
+    font-weight: 600;
+  }
+
+  .social-icon-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .social-link-btn {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    text-decoration: none;
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
+  }
+
+  /* Facebook */
+  .fb-btn {
+    background: #e7f0fd;
+    color: #1877f2;
+  }
+  .fb-btn:hover {
+    background: #1877f2;
+    color: #ffffff;
+    transform: translateY(-3px);
+    box-shadow: 0 5px 14px rgba(24, 119, 242, 0.35);
+  }
+
+  /* Zalo */
+  .zalo-btn {
+    background: #e0f2fe;
+  }
+  .zalo-thumb {
+    width: 20px;
+    height: 20px;
+    object-fit: contain;
+    border-radius: 4px;
+    transition: transform 0.2s ease;
+  }
+  .zalo-btn:hover {
+    background: #0068ff;
+    transform: translateY(-3px);
+    box-shadow: 0 5px 14px rgba(0, 104, 255, 0.35);
+  }
+  .zalo-btn:hover .zalo-thumb {
+    transform: scale(1.1);
+  }
+
+  /* YouTube */
+  .yt-btn {
+    background: #fee2e2;
+    color: #dc2626;
+  }
+  .yt-btn:hover {
+    background: #ff0000;
+    color: #ffffff;
+    transform: translateY(-3px);
+    box-shadow: 0 5px 14px rgba(255, 0, 0, 0.35);
+  }
+
+  /* Instagram */
+  .ins-btn {
+    background: #fce7f3;
+    color: #db2777;
+  }
+  .ins-btn:hover {
+    background: radial-gradient(circle at 30% 107%, #fdf497 0%, #fdf497 5%, #fd5949 45%, #d6249f 60%, #285AEB 90%);
+    color: #ffffff;
+    transform: translateY(-3px);
+    box-shadow: 0 5px 14px rgba(219, 39, 119, 0.35);
+  }
+
+  /* Headings */
+  .footer-heading {
+    font-family: var(--font-heading);
+    font-size: 0.9375rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: #0f172a !important;
+    margin-bottom: var(--space-4);
+    position: relative;
+    padding-bottom: var(--space-2);
+  }
+
+  .secondary-heading {
+    margin-top: var(--space-6);
+  }
+
+  .footer-heading::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 28px;
+    height: 3px;
+    background: #dc2626;
+    border-radius: 2px;
+  }
+
+  /* Link Lists */
+  .footer-links {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 9px;
+    padding: 0;
+    margin: 0;
+  }
+
+  .footer-links a {
+    color: #475569 !important;
+    font-size: 0.875rem;
+    font-weight: 500;
+    transition: all var(--transition-fast);
+    display: inline-block;
+    text-decoration: none;
+  }
+
+  .footer-links a:hover {
+    color: #dc2626 !important;
+    transform: translateX(4px);
+  }
+
+  /* Col 4: Contact - Hoàn toàn không đóng khung, liền mạch và thoáng đãng */
+  .contact-list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-4);
+  }
+
+  .contact-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+  }
+
+  .contact-icon {
+    color: #dc2626;
+    flex-shrink: 0;
+    margin-top: 2px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .contact-info {
+    flex: 1;
+  }
+
+  .contact-label {
+    display: block;
+    font-size: 0.8125rem;
+    color: #64748b;
+    margin-bottom: 2px;
+    font-weight: 600;
+  }
+
+  .contact-val {
+    color: #1e293b !important;
+    font-size: 0.875rem !important;
+    font-weight: 500;
+    line-height: 1.5;
+    margin: 0;
+  }
+
+  .footer-direction-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: 6px;
+    padding: 4px 10px;
+    background: #eff6ff;
+    color: #1d4ed8 !important;
+    border: 1px solid #bfdbfe;
+    border-radius: 6px;
+    font-size: 0.78125rem !important;
+    font-weight: 600;
+    text-decoration: none;
+    transition: all var(--transition-fast);
+  }
+
+  .footer-direction-btn:hover {
+    background: #1d4ed8;
+    color: #ffffff !important;
+    border-color: #1d4ed8;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 6px rgba(29, 78, 216, 0.25);
+  }
+
+  .hotline-numbers {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .hotline-row {
+    display: flex;
+    align-items: baseline;
+    gap: 6px;
+    flex-wrap: wrap;
+  }
+
+  .footer-hotline-link {
+    color: #dc2626 !important;
+    font-weight: 800;
+    font-size: 1.0625rem;
+    text-decoration: none;
+    letter-spacing: 0.02em;
+    transition: color var(--transition-fast);
+  }
+
+  .footer-hotline-link:hover {
+    color: #991b1b !important;
+    text-decoration: underline;
+  }
+
+  .hotline-note {
+    color: #64748b !important;
+    font-size: 0.8125rem;
+    font-weight: 500;
+  }
+
+  .footer-email-link {
+    color: #0284c7 !important;
+    font-weight: 600;
+    font-size: 0.875rem !important;
+    text-decoration: none;
+    transition: color var(--transition-fast);
+    word-break: break-all;
+  }
+
+  .footer-email-link:hover {
+    color: #0369a1 !important;
+    text-decoration: underline;
+  }
+
+  /* 3. Bottom Legal Bar */
+  .footer-bottom-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-top: var(--space-6);
+    padding-bottom: var(--space-6);
+    font-size: 0.8125rem;
+    color: #64748b;
+  }
+
+  .copyright-text {
+    color: #64748b;
+  }
+
+  .legal-brand {
+    color: #1e293b;
+    font-weight: 700;
+  }
+
+  .footer-trust-badges-strip {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: center;
+  }
+
+  .trust-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    padding: 5px 10px;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: #334155;
+    white-space: nowrap;
+  }
+
+  .pill-svg {
+    color: #0284c7;
+    flex-shrink: 0;
+  }
+
+  /* Responsive */
+  @media (max-width: 992px) {
+    .footer-trust-bar {
+      grid-template-columns: 1fr;
+      gap: var(--space-5);
+    }
+
+    .footer-main-grid {
+      grid-template-columns: 1fr;
+      gap: var(--space-8);
+    }
+
+    .footer-bottom-bar {
+      flex-direction: column;
+      gap: var(--space-3);
+      text-align: center;
+    }
+  }
+</style>

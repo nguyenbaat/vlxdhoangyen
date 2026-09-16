@@ -1,0 +1,253 @@
+---
+import { SettingsRepo } from '../server/db/repo.js';
+const settings = await SettingsRepo.getAll();
+---
+
+<aside id="chat-widget" class="industrial-floating-widget chat-widget" aria-label="Hộp chat và liên hệ nhanh" data-chat-widget="true">
+  <!-- Facebook Fanpage Button -->
+  <a 
+    href={settings.facebook_url || "https://www.facebook.com/sieuthivlxdhoangyen/"} 
+    target="_blank" 
+    rel="noopener noreferrer" 
+    class="float-btn float-fb"
+    title="Fanpage Facebook VLXD Hoàng Yến"
+    aria-label="Fanpage Facebook VLXD Hoàng Yến"
+  >
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+      <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
+    </svg>
+    <span class="float-tooltip">Fanpage Facebook</span>
+  </a>
+
+  <!-- Zalo Official Chat Button -->
+  <a 
+    href={settings.zalo_url || `https://zalo.me/${settings.hotline_main.replace(/\./g, '')}`} 
+    target="_blank" 
+    rel="noopener noreferrer" 
+    class="float-btn float-zalo chat-trigger"
+    title="Nhắn tin Zalo báo giá nhanh"
+    aria-label="Chat Zalo Báo Giá Ngay"
+    data-widget-type="chat"
+  >
+    <img src="/zalo.png" alt="Biểu tượng chat Zalo nhanh" width="34" height="34" class="zalo-official-img" />
+    <span class="float-tooltip">Chat Zalo Báo Giá Ngay</span>
+  </a>
+
+  <!-- Google Maps Directions Button -->
+  <a
+    href="https://maps.app.goo.gl/QUX1w34xfjRMcyW87"
+    target="_blank"
+    rel="noopener noreferrer"
+    class="float-btn float-maps"
+    title="Chỉ đường đến VLXD Hoàng Yến"
+    aria-label="Chỉ đường Google Maps"
+    style="background: linear-gradient(135deg, #16a34a 0%, #15803d 100%);"
+  >
+    <svg width="22" height="22" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+      <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z" fill="white"/>
+    </svg>
+    <span class="float-tooltip">Chỉ Đường Đến Cửa Hàng</span>
+  </a>
+
+  <!-- Hotline Call Button -->
+  <a 
+    href={`tel:${settings.hotline_main.replace(/\./g, '')}`} 
+    class="float-btn float-call"
+    title="Gọi Hotline đặt hàng"
+    aria-label={`Gọi ngay ${settings.hotline_main}`}
+  >
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" class="call-svg-icon"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>
+    <span class="float-tooltip">Gọi Ngay: {settings.hotline_main}</span>
+  </a>
+</aside>
+
+<style>
+  .industrial-floating-widget {
+    position: fixed;
+    right: 22px;
+    bottom: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    z-index: 999;
+  }
+
+  .float-btn {
+    position: relative;
+    width: 52px;
+    height: 52px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    box-shadow: 0 4px 18px rgba(0, 0, 0, 0.25);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    text-decoration: none;
+    color: #ffffff;
+  }
+
+  .float-btn::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    border-radius: 50%;
+    z-index: -1;
+    pointer-events: none;
+  }
+
+  /* Facebook Floating Button Styling */
+  .float-fb {
+    background: linear-gradient(135deg, #1877f2 0%, #0d65d9 100%);
+  }
+
+  .float-fb::after {
+    box-shadow: 0 0 0 0 rgba(24, 119, 242, 0.7);
+    animation: pulseFb 2s infinite 1.5s;
+  }
+
+  @keyframes pulseFb {
+    0% {
+      box-shadow: 0 0 0 0 rgba(24, 119, 242, 0.7);
+    }
+    70% {
+      box-shadow: 0 0 0 16px rgba(24, 119, 242, 0);
+    }
+    100% {
+      box-shadow: 0 0 0 0 rgba(24, 119, 242, 0);
+    }
+  }
+
+  /* Zalo Floating Button Styling */
+  .float-zalo {
+    background: linear-gradient(135deg, #0068ff 0%, #0052cc 100%);
+  }
+
+  .float-zalo::after {
+    box-shadow: 0 0 0 0 rgba(0, 104, 255, 0.7);
+    animation: pulseZalo 2s infinite;
+  }
+
+  @keyframes pulseZalo {
+    0% {
+      box-shadow: 0 0 0 0 rgba(0, 104, 255, 0.7);
+    }
+    70% {
+      box-shadow: 0 0 0 16px rgba(0, 104, 255, 0);
+    }
+    100% {
+      box-shadow: 0 0 0 0 rgba(0, 104, 255, 0);
+    }
+  }
+
+  .zalo-official-img {
+    width: 30px;
+    height: 30px;
+    object-fit: contain;
+    border-radius: 6px;
+  }
+
+  /* Google Maps Button Styling */
+  .float-maps {
+    background: linear-gradient(135deg, #16a34a 0%, #15803d 100%);
+  }
+
+  .float-maps::after {
+    box-shadow: 0 0 0 0 rgba(22, 163, 74, 0.7);
+    animation: pulseMaps 2s infinite 1s;
+  }
+
+  @keyframes pulseMaps {
+    0%   { box-shadow: 0 0 0 0 rgba(22, 163, 74, 0.7); }
+    70%  { box-shadow: 0 0 0 16px rgba(22, 163, 74, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(22, 163, 74, 0); }
+  }
+
+  /* Hotline Call Button Styling */
+  .float-call {
+    background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+  }
+
+  .float-call::after {
+    box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7);
+    animation: pulseCall 2s infinite 0.5s;
+  }
+
+  @keyframes pulseCall {
+    0% {
+      box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7);
+    }
+    70% {
+      box-shadow: 0 0 0 16px rgba(239, 68, 68, 0);
+    }
+    100% {
+      box-shadow: 0 0 0 0 rgba(239, 68, 68, 0);
+    }
+  }
+
+  .call-svg-icon {
+    animation: phoneWobble 2.5s infinite;
+  }
+
+  @keyframes phoneWobble {
+    0%, 100% { transform: rotate(0deg); }
+    10%, 30% { transform: rotate(-12deg); }
+    20%, 40% { transform: rotate(12deg); }
+    50% { transform: rotate(0deg); }
+  }
+
+  .float-btn:hover {
+    transform: scale(1.08) translateY(-2px);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+  }
+
+  /* Tooltip on hover */
+  .float-tooltip {
+    position: absolute;
+    right: 64px;
+    background-color: #0f172a;
+    color: #ffffff;
+    font-family: var(--font-heading);
+    font-size: 0.8125rem;
+    font-weight: 700;
+    padding: 6px 12px;
+    border-radius: var(--radius-xs);
+    white-space: nowrap;
+    opacity: 0;
+    visibility: hidden;
+    transform: translateX(10px);
+    transition: all var(--transition-fast);
+    pointer-events: none;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.2);
+  }
+
+  .float-tooltip::after {
+    content: '';
+    position: absolute;
+    right: -6px;
+    top: 50%;
+    transform: translateY(-50%);
+    border-width: 6px 0 6px 6px;
+    border-style: solid;
+    border-color: transparent transparent transparent #0f172a;
+  }
+
+  .float-btn:hover .float-tooltip {
+    opacity: 1;
+    visibility: visible;
+    transform: translateX(0);
+  }
+
+  @media (max-width: 640px) {
+    .industrial-floating-widget {
+      right: 14px;
+      bottom: 16px;
+    }
+
+    .float-tooltip {
+      display: none;
+    }
+  }
+</style>

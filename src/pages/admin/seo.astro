@@ -1,0 +1,1510 @@
+---
+import AdminLayout from '../../layouts/AdminLayout.astro';
+import { CategoryRepo, BrandRepo, ProductRepo, PostRepo, SettingsRepo } from '../../server/db/repo.js';
+
+// Fetch all data for SEO management
+const categories = await CategoryRepo.getAll();
+const brands = await BrandRepo.getAll();
+const posts = await PostRepo.getAll('all');
+const productsResult = await ProductRepo.getAll({ limit: 500, status: 'all' });
+const products = productsResult.products || [];
+const settings = await SettingsRepo.getAll();
+
+// Static Pages list
+const staticPages = [
+  {
+    id: 'home',
+    type: 'setting',
+    name: 'Trang Chủ',
+    slug: '/',
+    url: '/',
+    seo_title: settings.default_seo_title || 'Siêu Thị VLXD Hoàng Yến | Vật Liệu Xây Dựng & Thiết Bị Vệ Sinh Tại Quảng Trị',
+    seo_description: settings.default_seo_desc || 'Siêu Thị Vật Liệu Xây Dựng Hoàng Yến tại 299 Lê Duẩn, TP. Đông Hà, Quảng Trị. Cung cấp xi măng, sắt thép, gạch ngói, tôn, thiết bị vệ sinh.'
+  },
+  {
+    id: 'san-pham',
+    type: 'setting',
+    name: 'Tất Cả Sản Phẩm',
+    slug: 'san-pham',
+    url: '/san-pham/',
+    seo_title: 'Sản Phẩm Vật Liệu Xây Dựng Tại Quảng Trị | Báo Giá - VLXD Hoàng Yến',
+    seo_description: 'Danh mục vật liệu xây dựng thô và thiết bị vệ sinh tại Quảng Trị. Báo giá sắt thép, xi măng, tôn lợp, gạch ốp lát tại Đông Hà.'
+  },
+  {
+    id: 'lien-he',
+    type: 'setting',
+    name: 'Liên Hệ & Bản Đồ Cửa Hàng',
+    slug: 'lien-he',
+    url: '/lien-he/',
+    seo_title: 'Liên Hệ & Bản Đồ Cửa Hàng | Siêu Thị VLXD Hoàng Yến Quảng Trị',
+    seo_description: 'Thông tin liên hệ, hotline tư vấn kỹ thuật và vị trí cửa hàng VLXD Hoàng Yến tại 299 Lê Duẩn, TP. Đông Hà, Quảng Trị.'
+  },
+  {
+    id: 'gioi-thieu',
+    type: 'setting',
+    name: 'Giới Thiệu Doanh Nghiệp',
+    slug: 'gioi-thieu',
+    url: '/gioi-thieu/',
+    seo_title: 'Giới Thiệu Siêu Thị VLXD Hoàng Yến | Hơn 20 Năm Đồng Hành Cùng Quảng Trị',
+    seo_description: 'Tìm hiểu về Siêu Thị VLXD Hoàng Yến - Đơn vị cung ứng vật liệu xây dựng và thiết bị vệ sinh hàng đầu tại Đông Hà, Quảng Trị từ năm 2003.'
+  },
+  {
+    id: 'tin-tuc',
+    type: 'setting',
+    name: 'Tin Tức & Báo Giá',
+    slug: 'tin-tuc',
+    url: '/tin-tuc/',
+    seo_title: 'Tin Tức & Cập Nhật Giá Vật Liệu Xây Dựng Quảng Trị | VLXD Hoàng Yến',
+    seo_description: 'Cập nhật bản tin thị trường vật tư xây dựng, xu hướng thiết bị vệ sinh và kinh nghiệm chọn mua vật liệu tại Quảng Trị.'
+  },
+  {
+    id: 'cau-hoi-thuong-gap',
+    type: 'setting',
+    name: 'Câu Hỏi Thường Gặp (FAQ)',
+    slug: 'cau-hoi-thuong-gap',
+    url: '/cau-hoi-thuong-gap/',
+    seo_title: 'Câu Hỏi Thường Gặp Khi Mua VLXD Tại Quảng Trị | Hoàng Yến',
+    seo_description: 'Giải đáp các thắc mắc phổ biến về quy cách vật liệu, phương thức đặt hàng, giao nhận và thanh toán tại VLXD Hoàng Yến.'
+  },
+  {
+    id: 'chinh-sach-van-chuyen',
+    type: 'setting',
+    name: 'Chính Sách Vận Chuyển',
+    slug: 'chinh-sach-van-chuyen',
+    url: '/chinh-sach-van-chuyen/',
+    seo_title: 'Chính Sách Giao Nhận & Vận Chuyển | VLXD Hoàng Yến Quảng Trị',
+    seo_description: 'Thông tin phương thức giao nhận vật liệu xây dựng tận chân công trình tại Đông Hà và các huyện lân cận thuộc tỉnh Quảng Trị.'
+  },
+  {
+    id: 'chinh-sach-thanh-toan',
+    type: 'setting',
+    name: 'Chính Sách Thanh Toán',
+    slug: 'chinh-sach-thanh-toan',
+    url: '/chinh-sach-thanh-toan/',
+    seo_title: 'Chính Sách Thanh Toán | Siêu Thị VLXD Hoàng Yến Quảng Trị',
+    seo_description: 'Quy trình thanh toán an toàn, minh bạch bằng tiền mặt hoặc chuyển khoản ngân hàng có xuất hóa đơn GTGT đầy đủ.'
+  },
+  {
+    id: 'chinh-sach-doi-tra',
+    type: 'setting',
+    name: 'Chính Sách Đổi Trả & Kiểm Hàng',
+    slug: 'chinh-sach-doi-tra',
+    url: '/chinh-sach-doi-tra/',
+    seo_title: 'Chính Sách Đổi Trả & Kiểm Hàng | VLXD Hoàng Yến',
+    seo_description: 'Quy định kiểm tra số lượng, quy cách hàng hóa khi giao nhận và quy trình xử lý đổi trả vật tư hợp lệ.'
+  }
+];
+
+// Unified item list
+const allItems = [
+  ...staticPages.map(p => ({
+    type: 'setting' as const,
+    typeName: 'Trang Cố Định',
+    typeBadgeClass: 'badge-page',
+    id: p.id,
+    name: p.name,
+    slug: p.slug,
+    url: p.url,
+    seo_title: p.seo_title,
+    seo_description: p.seo_description,
+    h1: ''
+  })),
+  ...categories.map(c => ({
+    type: 'category' as const,
+    typeName: c.parent_id ? 'Danh Mục Con' : 'Danh Mục Chính',
+    typeBadgeClass: c.parent_id ? 'badge-subcat' : 'badge-cat',
+    id: c.id,
+    name: c.name,
+    slug: c.slug,
+    url: `/${c.slug}/`,
+    seo_title: c.seo_title || c.name,
+    seo_description: c.seo_description || c.description || '',
+    h1: c.h1 || c.name
+  })),
+  ...brands.map(b => ({
+    type: 'brand' as const,
+    typeName: 'Thương Hiệu',
+    typeBadgeClass: 'badge-brand',
+    id: b.id,
+    name: b.name,
+    slug: b.slug,
+    url: `/san-pham/${b.slug}/`,
+    seo_title: b.seo_title || `${b.name} Tại Quảng Trị | Báo Giá - VLXD Hoàng Yến`,
+    seo_description: b.seo_description || b.description || '',
+    h1: ''
+  })),
+  ...posts.map(p => ({
+    type: 'post' as const,
+    typeName: 'Bài Viết',
+    typeBadgeClass: 'badge-post',
+    id: p.id,
+    name: p.title,
+    slug: p.slug,
+    url: `/tin-tuc/${p.slug}/`,
+    seo_title: p.seo_title || p.title,
+    seo_description: p.seo_description || p.summary || '',
+    h1: p.title
+  })),
+  ...products.map(pr => ({
+    type: 'product' as const,
+    typeName: 'Sản Phẩm',
+    typeBadgeClass: 'badge-product',
+    id: pr.id,
+    name: pr.name,
+    slug: pr.slug,
+    url: `/${pr.slug}/`,
+    seo_title: pr.seo_title || `${pr.name} Tại Quảng Trị - Báo Giá | VLXD Hoàng Yến`,
+    seo_description: pr.seo_description || pr.short_description || '',
+    h1: pr.name
+  }))
+];
+
+// Pre-calculate lengths & statuses in frontmatter
+const preparedItems = allItems.map(item => {
+  const titleLen = item.seo_title ? item.seo_title.length : 0;
+  const descLen = item.seo_description ? item.seo_description.length : 0;
+  const isTitleGood = titleLen >= 40 && titleLen <= 65;
+  const isDescGood = descLen >= 110 && descLen <= 165;
+  return {
+    ...item,
+    titleLen,
+    descLen,
+    isTitleGood,
+    isDescGood
+  };
+});
+
+// Stats
+const totalItems = allItems.length;
+const totalCats = categories.length;
+const totalBrands = brands.length;
+const totalPages = staticPages.length;
+const totalPosts = posts.length;
+const totalProducts = products.length;
+---
+
+<AdminLayout title="Quản Lý Tiêu Đề & Meta SEO" activeNav="seo">
+  <div class="seo-admin-page">
+    
+    <!-- Page Header -->
+    <div class="page-header-seo">
+      <div class="header-left">
+        <div class="header-eyebrow">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+          Tối Ưu Hóa Công Cụ Tìm Kiếm
+        </div>
+        <h1>Quản Lý Tiêu Đề & Meta SEO (Quick Edit)</h1>
+        <p class="header-subtitle">
+          Xem và chỉnh sửa trực tiếp <strong>Thẻ Tiêu Đề (Title Tag)</strong> và <strong>Thẻ Mô Tả (Meta Description)</strong> của toàn bộ Danh mục, Thương hiệu, Trang tĩnh, Bài viết và Sản phẩm mà không cần mở từng trang chi tiết.
+        </p>
+      </div>
+
+      <div class="header-actions">
+        <a href="/sitemap.xml" target="_blank" class="btn-sitemap-link">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>
+          <span>Xem Sitemap XML ↗</span>
+        </a>
+      </div>
+    </div>
+
+    <!-- Quick Stats Cards -->
+    <div class="seo-stats-grid">
+      <div class="seo-stat-card active" data-tab-trigger="all">
+        <div class="stat-number">{totalItems}</div>
+        <div class="stat-label">Tổng Số Trang Quản Lý</div>
+      </div>
+      <div class="seo-stat-card" data-tab-trigger="category">
+        <div class="stat-number">{totalCats}</div>
+        <div class="stat-label">Danh Mục Sản Phẩm</div>
+      </div>
+      <div class="seo-stat-card" data-tab-trigger="brand">
+        <div class="stat-number">{totalBrands}</div>
+        <div class="stat-label">Thương Hiệu</div>
+      </div>
+      <div class="seo-stat-card" data-tab-trigger="setting">
+        <div class="stat-number">{totalPages}</div>
+        <div class="stat-label">Trang Tĩnh Cố Định</div>
+      </div>
+      <div class="seo-stat-card" data-tab-trigger="post">
+        <div class="stat-number">{totalPosts}</div>
+        <div class="stat-label">Bài Viết Tin Tức</div>
+      </div>
+      <div class="seo-stat-card" data-tab-trigger="product">
+        <div class="stat-number">{totalProducts}</div>
+        <div class="stat-label">Sản Phẩm Đang Bán</div>
+      </div>
+    </div>
+
+    <!-- Main Content Container -->
+    <div class="seo-table-card">
+      
+      <!-- Filter Toolbar -->
+      <div class="seo-toolbar">
+        <!-- Tab Buttons -->
+        <div class="seo-tabs-bar" role="tablist">
+          <button type="button" class="tab-btn-pill active" data-type="all">Tất Cả ({totalItems})</button>
+          <button type="button" class="tab-btn-pill" data-type="category">Danh Mục ({totalCats})</button>
+          <button type="button" class="tab-btn-pill" data-type="brand">Thương Hiệu ({totalBrands})</button>
+          <button type="button" class="tab-btn-pill" data-type="setting">Trang Cố Định ({totalPages})</button>
+          <button type="button" class="tab-btn-pill" data-type="post">Bài Viết ({totalPosts})</button>
+          <button type="button" class="tab-btn-pill" data-type="product">Sản Phẩm ({totalProducts})</button>
+        </div>
+
+        <!-- Search & Length Filter -->
+        <div class="seo-filter-controls">
+          <div class="search-input-wrap">
+            <svg class="search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+            <input type="text" id="seo-search-input" placeholder="Tìm kiếm theo tên trang, slug, tiêu đề..." class="search-input" />
+            <button type="button" id="clear-search-btn" class="clear-btn" style="display: none;">&times;</button>
+          </div>
+
+          <select id="seo-status-filter" class="filter-select">
+            <option value="all">Tất Cả Trạng Thái</option>
+            <option value="good">✓ Chuẩn SEO (Title 45-65 kt, Meta 120-160 kt)</option>
+            <option value="title_long">⚠️ Tiêu đề quá dài (trên 65 ký tự)</option>
+            <option value="title_short">⚠️ Tiêu đề quá ngắn (dưới 40 ký tự)</option>
+            <option value="meta_missing">⚠️ Thiếu thẻ Meta Description</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- SEO Items Table -->
+      <div class="table-responsive">
+        <table class="seo-table" id="seo-items-table">
+          <thead>
+            <tr>
+              <th style="width: 280px;">Trang & Đường Dẫn</th>
+              <th>Tiêu Đề Trang (Title Tag)</th>
+              <th>Thẻ Mô Tả (Meta Description)</th>
+              <th style="width: 140px; text-align: center;">Thao Tác</th>
+            </tr>
+          </thead>
+          <tbody id="seo-tbody">
+            {preparedItems.map((item) => (
+              <tr 
+                class="seo-row" 
+                data-type={item.type}
+                data-id={item.id}
+                data-name={item.name.toLowerCase()}
+                data-slug={item.slug.toLowerCase()}
+                data-title={item.seo_title.toLowerCase()}
+                data-title-len={item.titleLen}
+                data-desc-len={item.descLen}
+              >
+                  <!-- Col 1: Page & URL -->
+                  <td class="col-page">
+                    <div class="page-meta-box">
+                      <div class="page-title-row">
+                        <span class={`type-badge ${item.typeBadgeClass}`}>{item.typeName}</span>
+                        <strong class="item-name">{item.name}</strong>
+                      </div>
+                      <div class="page-slug-row">
+                        <span class="slug-text">{item.url}</span>
+                        <a href={item.url} target="_blank" rel="noopener noreferrer" class="view-live-btn" title="Mở xem trang thực tế">
+                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>
+                        </a>
+                      </div>
+                    </div>
+                  </td>
+
+                  <!-- Col 2: SEO Title -->
+                  <td class="col-title">
+                    <div class="title-cell-wrap">
+                      <div class="title-text" id={`title-display-${item.type}-${item.id}`}>{item.seo_title}</div>
+                      <div class="counter-badge-wrap">
+                        <span class={`len-badge ${item.isTitleGood ? 'good' : (item.titleLen > 65 ? 'warning' : 'info')}`} id={`title-count-${item.type}-${item.id}`}>
+                          {item.titleLen} ký tự {item.isTitleGood ? '✓' : (item.titleLen > 65 ? '⚠️ Quá dài' : '')}
+                        </span>
+                      </div>
+                    </div>
+                  </td>
+
+                  <!-- Col 3: Meta Description -->
+                  <td class="col-desc">
+                    <div class="desc-cell-wrap">
+                      <div class="desc-text" id={`desc-display-${item.type}-${item.id}`}>
+                        {item.seo_description ? item.seo_description : <em class="empty-meta-text">Chưa cấu hình Meta Description</em>}
+                      </div>
+                      <div class="counter-badge-wrap">
+                        <span class={`len-badge ${item.isDescGood ? 'good' : (item.descLen > 165 ? 'warning' : 'info')}`} id={`desc-count-${item.type}-${item.id}`}>
+                          {item.descLen} ký tự {item.isDescGood ? '✓' : (item.descLen === 0 ? '⚠️ Thiếu' : '')}
+                        </span>
+                      </div>
+                    </div>
+                  </td>
+
+                  <!-- Col 4: Action -->
+                  <td class="col-actions">
+                    <button 
+                      type="button" 
+                      class="btn-quick-edit"
+                      data-edit-type={item.type}
+                      data-edit-id={item.id}
+                      data-edit-name={item.name}
+                      data-edit-url={item.url}
+                      data-edit-title={item.seo_title}
+                      data-edit-desc={item.seo_description}
+                      data-edit-h1={item.h1 || ''}
+                    >
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
+                      <span>Sửa Nhanh</span>
+                    </button>
+                  </td>
+                </tr>
+            ))}
+          </tbody>
+        </table>
+
+        <div id="no-results-msg" class="no-results-box" style="display: none;">
+          <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+          <p>Không tìm thấy trang nào phù hợp với từ khóa hoặc bộ lọc đã chọn.</p>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Quick Edit Modal -->
+    <div id="quick-edit-modal" class="modal-overlay" style="display: none;">
+      <div class="modal-card">
+        <div class="modal-header">
+          <div class="modal-header-info">
+            <div class="modal-eyebrow">
+              <span id="modal-type-badge" class="type-badge badge-cat">Danh Mục</span>
+              <span id="modal-url-slug" class="modal-url-text">/xi-mang/</span>
+            </div>
+            <h3 id="modal-page-name">Chỉnh Sửa SEO: Xi Măng</h3>
+          </div>
+          <button type="button" id="modal-close-btn" class="modal-close-icon">&times;</button>
+        </div>
+
+        <form id="quick-seo-form" class="modal-body">
+          <input type="hidden" id="modal-input-type" />
+          <input type="hidden" id="modal-input-id" />
+
+          <!-- Field 1: SEO Title -->
+          <div class="form-group-seo">
+            <div class="label-row">
+              <label for="modal-input-title"><strong>Tiêu Đề Trang (Title Tag) *</strong></label>
+              <span id="modal-title-counter" class="char-meter good">0 / 60 ký tự</span>
+            </div>
+            <input 
+              type="text" 
+              id="modal-input-title" 
+              required 
+              class="seo-input" 
+              placeholder="Nhập tiêu đề trang hiển thị trên tab trình duyệt & Google..." 
+            />
+            <div class="progress-bar-wrap">
+              <div id="modal-title-bar" class="progress-bar-inner good" style="width: 80%;"></div>
+            </div>
+            <small class="field-hint">💡 Độ dài lý tưởng: <strong>50 – 65 ký tự</strong>. Chứa từ khóa chính + thương hiệu Hoàng Yến.</small>
+          </div>
+
+          <!-- Field 2: Meta Description -->
+          <div class="form-group-seo">
+            <div class="label-row">
+              <label for="modal-input-desc"><strong>Thẻ Mô Tả (Meta Description) *</strong></label>
+              <span id="modal-desc-counter" class="char-meter good">0 / 155 ký tự</span>
+            </div>
+            <textarea 
+              id="modal-input-desc" 
+              rows="3" 
+              class="seo-textarea" 
+              placeholder="Nhập đoạn tóm tắt hấp dẫn hiển thị bên dưới tiêu đề trên Google Search..."
+            ></textarea>
+            <div class="progress-bar-wrap">
+              <div id="modal-desc-bar" class="progress-bar-inner good" style="width: 80%;"></div>
+            </div>
+            <small class="field-hint">💡 Độ dài lý tưởng: <strong>125 – 160 ký tự</strong>. Tóm tắt súc tích, trung thực, có địa danh Quảng Trị.</small>
+          </div>
+
+          <!-- Field 3 (Conditional for categories): H1 tag -->
+          <div class="form-group-seo" id="modal-h1-group" style="display: none;">
+            <div class="label-row">
+              <label for="modal-input-h1"><strong>Thẻ Tiêu Đề H1 Chính Của Trang</strong></label>
+            </div>
+            <input 
+              type="text" 
+              id="modal-input-h1" 
+              class="seo-input" 
+              placeholder="Tiêu đề H1 lớn nhất trên đầu trang danh mục..." 
+            />
+          </div>
+
+          <!-- Live Google Search Result Preview (Google SERP Snippet) -->
+          <div class="google-preview-box">
+            <div class="preview-header">
+              <div class="preview-title-wrap">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>
+                <span>Xem Trước Hiển Thị Trên Google Tìm Kiếm (SERP Preview)</span>
+              </div>
+              <span class="preview-device-tag">Google Desktop & Mobile</span>
+            </div>
+
+            <div class="google-snippet-card">
+              <div class="snippet-source">
+                <div class="google-favicon">
+                  <img src="/favicon.ico" alt="Favicon" width="16" height="16" onerror="this.style.display='none'" />
+                </div>
+                <div class="snippet-url-group">
+                  <span class="snippet-domain">vlxdhoangyen.com</span>
+                  <span class="snippet-path" id="preview-slug-text">https://vlxdhoangyen.com/xi-mang/</span>
+                </div>
+              </div>
+              <div class="snippet-title" id="preview-title-text">
+                Xi Măng Xây Dựng Tại Quảng Trị | Báo Giá Xi Măng - Hoàng Yến
+              </div>
+              <div class="snippet-desc" id="preview-desc-text">
+                Mua xi măng xây dựng tại Quảng Trị. Tham khảo các loại xi măng dùng xây tô, đổ bê tông và thi công công trình. Liên hệ VLXD Hoàng Yến để nhận báo giá.
+              </div>
+            </div>
+          </div>
+
+          <!-- Modal Footer Actions -->
+          <div class="modal-footer">
+            <button type="button" id="modal-cancel-btn" class="btn-cancel">Hủy Bỏ</button>
+            <button type="submit" id="modal-submit-btn" class="btn-save-seo">
+              <span>Lưu Cập Nhật SEO</span>
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div id="seo-toast" class="seo-toast-msg" style="display: none;"></div>
+
+  </div>
+</AdminLayout>
+
+<style>
+  .seo-admin-page {
+    padding: 1.5rem 0;
+    max-width: 1400px;
+    margin: 0 auto;
+  }
+
+  .page-header-seo {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 1.5rem;
+    margin-bottom: 1.5rem;
+    flex-wrap: wrap;
+  }
+
+  .header-eyebrow {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: #e0f2fe;
+    color: #0369a1;
+    font-size: 0.8rem;
+    font-weight: 700;
+    padding: 4px 10px;
+    border-radius: 9999px;
+    margin-bottom: 0.5rem;
+  }
+
+  .page-header-seo h1 {
+    font-size: 1.65rem;
+    font-weight: 800;
+    color: #0f172a;
+    margin-bottom: 0.45rem;
+    line-height: 1.25;
+  }
+
+  .header-subtitle {
+    font-size: 0.925rem;
+    color: #475569;
+    max-width: 860px;
+    line-height: 1.6;
+  }
+
+  .btn-sitemap-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 0.55rem 1rem;
+    background: #ffffff;
+    border: 1px solid #cbd5e1;
+    border-radius: 8px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #334155;
+    text-decoration: none;
+    transition: all 0.2s ease;
+  }
+  .btn-sitemap-link:hover {
+    background: #f8fafc;
+    border-color: #94a3b8;
+    color: #0f172a;
+  }
+
+  /* Stats Grid */
+  .seo-stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+    gap: 0.85rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .seo-stat-card {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    padding: 1rem 1.15rem;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.02);
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+  .seo-stat-card:hover, .seo-stat-card.active {
+    border-color: #3b82f6;
+    background: #f0f7ff;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.12);
+  }
+
+  .stat-number {
+    font-size: 1.65rem;
+    font-weight: 800;
+    color: #0f172a;
+    line-height: 1;
+    margin-bottom: 0.35rem;
+  }
+  .seo-stat-card.active .stat-number {
+    color: #2563eb;
+  }
+
+  .stat-label {
+    font-size: 0.8rem;
+    color: #64748b;
+    font-weight: 600;
+  }
+
+  /* Table Card */
+  .seo-table-card {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.04);
+    overflow: hidden;
+  }
+
+  /* Toolbar */
+  .seo-toolbar {
+    padding: 1.15rem 1.35rem;
+    border-bottom: 1px solid #e2e8f0;
+    background: #f8fafc;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .seo-tabs-bar {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+  }
+
+  .tab-btn-pill {
+    padding: 0.45rem 0.95rem;
+    background: #ffffff;
+    border: 1px solid #cbd5e1;
+    border-radius: 9999px;
+    font-size: 0.835rem;
+    font-weight: 600;
+    color: #475569;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+  .tab-btn-pill:hover {
+    background: #f1f5f9;
+    color: #0f172a;
+  }
+  .tab-btn-pill.active {
+    background: #2563eb;
+    color: #ffffff;
+    border-color: #2563eb;
+    box-shadow: 0 2px 8px rgba(37, 99, 235, 0.25);
+  }
+
+  .seo-filter-controls {
+    display: flex;
+    gap: 0.85rem;
+    flex-wrap: wrap;
+  }
+
+  .search-input-wrap {
+    position: relative;
+    flex: 1;
+    min-width: 280px;
+  }
+
+  .search-icon {
+    position: absolute;
+    left: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #94a3b8;
+  }
+
+  .search-input {
+    width: 100%;
+    padding: 0.55rem 2.2rem 0.55rem 2.3rem;
+    border: 1px solid #cbd5e1;
+    border-radius: 8px;
+    font-size: 0.875rem;
+    background: #ffffff;
+    transition: border-color 0.2s ease;
+  }
+  .search-input:focus {
+    outline: none;
+    border-color: #2563eb;
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+  }
+
+  .clear-btn {
+    position: absolute;
+    right: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: transparent;
+    border: none;
+    font-size: 1.2rem;
+    color: #94a3b8;
+    cursor: pointer;
+    line-height: 1;
+  }
+
+  .filter-select {
+    padding: 0.55rem 0.85rem;
+    border: 1px solid #cbd5e1;
+    border-radius: 8px;
+    font-size: 0.85rem;
+    font-weight: 500;
+    color: #334155;
+    background: #ffffff;
+    cursor: pointer;
+  }
+
+  /* Table */
+  .table-responsive {
+    overflow-x: auto;
+  }
+
+  .seo-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.9rem;
+    text-align: left;
+  }
+
+  .seo-table th {
+    background: #f8fafc;
+    padding: 0.85rem 1.15rem;
+    font-weight: 700;
+    color: #475569;
+    border-bottom: 1px solid #e2e8f0;
+    font-size: 0.8125rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  .seo-table td {
+    padding: 1.15rem 1.15rem;
+    border-bottom: 1px solid #f1f5f9;
+    vertical-align: top;
+  }
+
+  .seo-row:hover {
+    background: #fbfdff;
+  }
+
+  /* Badges */
+  .type-badge {
+    display: inline-block;
+    padding: 2px 7px;
+    border-radius: 4px;
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+  }
+  .badge-cat { background: #dbeafe; color: #1e40af; }
+  .badge-subcat { background: #e0e7ff; color: #3730a3; }
+  .badge-brand { background: #fef3c7; color: #92400e; }
+  .badge-page { background: #dcfce7; color: #166534; }
+  .badge-post { background: #f3e8ff; color: #6b21a8; }
+  .badge-product { background: #ffedd5; color: #9a3412; }
+
+  .page-meta-box {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+  }
+
+  .page-title-row {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+  }
+
+  .item-name {
+    color: #0f172a;
+    font-size: 0.9375rem;
+  }
+
+  .page-slug-row {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+  }
+
+  .slug-text {
+    font-family: monospace;
+    font-size: 0.78rem;
+    color: #64748b;
+    background: #f1f5f9;
+    padding: 2px 6px;
+    border-radius: 4px;
+  }
+
+  .view-live-btn {
+    color: #94a3b8;
+    display: inline-flex;
+    align-items: center;
+    transition: color 0.15s ease;
+  }
+  .view-live-btn:hover {
+    color: #2563eb;
+  }
+
+  .title-cell-wrap, .desc-cell-wrap {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+  }
+
+  .title-text {
+    font-weight: 600;
+    color: #1e293b;
+    line-height: 1.45;
+  }
+
+  .desc-text {
+    color: #475569;
+    font-size: 0.85rem;
+    line-height: 1.5;
+  }
+
+  .empty-meta-text {
+    color: #ef4444;
+    font-style: italic;
+  }
+
+  .counter-badge-wrap {
+    display: flex;
+    align-items: center;
+  }
+
+  .len-badge {
+    display: inline-block;
+    padding: 1px 6px;
+    border-radius: 4px;
+    font-size: 0.72rem;
+    font-weight: 600;
+  }
+  .len-badge.good { background: #dcfce7; color: #15803d; }
+  .len-badge.warning { background: #fee2e2; color: #b91c1c; }
+  .len-badge.info { background: #f1f5f9; color: #475569; }
+
+  .col-actions {
+    text-align: center;
+  }
+
+  .btn-quick-edit {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 0.45rem 0.8rem;
+    background: #ffffff;
+    border: 1px solid #cbd5e1;
+    border-radius: 6px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: #1e293b;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+  .btn-quick-edit:hover {
+    background: #2563eb;
+    color: #ffffff;
+    border-color: #2563eb;
+    box-shadow: 0 2px 8px rgba(37, 99, 235, 0.25);
+  }
+
+  .no-results-box {
+    padding: 3rem 1.5rem;
+    text-align: center;
+    color: #94a3b8;
+  }
+  .no-results-box p {
+    margin-top: 0.75rem;
+    font-size: 0.95rem;
+    color: #64748b;
+  }
+
+  /* Modal Overlay */
+  .modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(15, 23, 42, 0.6);
+    backdrop-filter: blur(4px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 9999;
+    padding: 1.5rem;
+  }
+
+  .modal-card {
+    background: #ffffff;
+    width: 100%;
+    max-width: 720px;
+    border-radius: 14px;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+    overflow: hidden;
+    animation: modalIn 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  @keyframes modalIn {
+    from { opacity: 0; transform: scale(0.96) translateY(10px); }
+    to { opacity: 1; transform: scale(1) translateY(0); }
+  }
+
+  .modal-header {
+    padding: 1.25rem 1.5rem;
+    background: #f8fafc;
+    border-bottom: 1px solid #e2e8f0;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+  }
+
+  .modal-eyebrow {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0.25rem;
+  }
+
+  .modal-url-text {
+    font-family: monospace;
+    font-size: 0.8rem;
+    color: #64748b;
+  }
+
+  .modal-header h3 {
+    font-size: 1.2rem;
+    font-weight: 800;
+    color: #0f172a;
+    margin: 0;
+  }
+
+  .modal-close-icon {
+    background: transparent;
+    border: none;
+    font-size: 1.5rem;
+    color: #94a3b8;
+    cursor: pointer;
+    line-height: 1;
+    padding: 0;
+    transition: color 0.15s ease;
+  }
+  .modal-close-icon:hover {
+    color: #0f172a;
+  }
+
+  .modal-body {
+    padding: 1.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+    max-height: 80vh;
+    overflow-y: auto;
+  }
+
+  .form-group-seo {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+  }
+
+  .label-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.875rem;
+    color: #1e293b;
+  }
+
+  .char-meter {
+    font-size: 0.78rem;
+    font-weight: 700;
+  }
+  .char-meter.good { color: #16a34a; }
+  .char-meter.warning { color: #dc2626; }
+  .char-meter.info { color: #64748b; }
+
+  .seo-input, .seo-textarea {
+    width: 100%;
+    padding: 0.65rem 0.85rem;
+    border: 1px solid #cbd5e1;
+    border-radius: 8px;
+    font-size: 0.9rem;
+    color: #0f172a;
+    font-family: inherit;
+    transition: all 0.2s ease;
+    box-sizing: border-box;
+  }
+  .seo-input:focus, .seo-textarea:focus {
+    outline: none;
+    border-color: #2563eb;
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+  }
+
+  .progress-bar-wrap {
+    height: 4px;
+    background: #e2e8f0;
+    border-radius: 9999px;
+    overflow: hidden;
+    margin-top: 2px;
+  }
+
+  .progress-bar-inner {
+    height: 100%;
+    transition: width 0.2s ease, background-color 0.2s ease;
+  }
+  .progress-bar-inner.good { background-color: #22c55e; }
+  .progress-bar-inner.warning { background-color: #ef4444; }
+  .progress-bar-inner.info { background-color: #3b82f6; }
+
+  .field-hint {
+    font-size: 0.78rem;
+    color: #64748b;
+    line-height: 1.4;
+  }
+
+  /* Google Preview Snippet */
+  .google-preview-box {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    padding: 1rem 1.25rem;
+  }
+
+  .preview-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.75rem;
+  }
+
+  .preview-title-wrap {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.8rem;
+    font-weight: 700;
+    color: #475569;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+  }
+
+  .preview-device-tag {
+    font-size: 0.72rem;
+    background: #e2e8f0;
+    color: #475569;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-weight: 600;
+  }
+
+  .google-snippet-card {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 1rem;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.03);
+  }
+
+  .snippet-source {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 4px;
+  }
+
+  .google-favicon {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background: #f1f5f9;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .snippet-url-group {
+    display: flex;
+    flex-direction: column;
+    line-height: 1.2;
+  }
+
+  .snippet-domain {
+    font-size: 0.8125rem;
+    font-weight: 600;
+    color: #202124;
+  }
+
+  .snippet-path {
+    font-size: 0.75rem;
+    color: #5f6368;
+  }
+
+  .snippet-title {
+    font-size: 1.15rem;
+    font-weight: 500;
+    color: #1a0dab;
+    line-height: 1.35;
+    margin-bottom: 4px;
+    cursor: pointer;
+  }
+  .snippet-title:hover {
+    text-decoration: underline;
+  }
+
+  .snippet-desc {
+    font-size: 0.875rem;
+    color: #4d5156;
+    line-height: 1.5;
+  }
+
+  .modal-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.75rem;
+    padding-top: 0.5rem;
+    border-top: 1px solid #e2e8f0;
+  }
+
+  .btn-cancel {
+    padding: 0.6rem 1.25rem;
+    background: #ffffff;
+    border: 1px solid #cbd5e1;
+    border-radius: 8px;
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: #475569;
+    cursor: pointer;
+  }
+  .btn-cancel:hover {
+    background: #f1f5f9;
+  }
+
+  .btn-save-seo {
+    padding: 0.6rem 1.5rem;
+    background: #2563eb;
+    border: 1px solid #2563eb;
+    border-radius: 8px;
+    font-size: 0.875rem;
+    font-weight: 700;
+    color: #ffffff;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+  .btn-save-seo:hover {
+    background: #1d4ed8;
+    box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+  }
+  .btn-save-seo:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+
+  /* Toast */
+  .seo-toast-msg {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    background: #0f172a;
+    color: #ffffff;
+    padding: 0.85rem 1.35rem;
+    border-radius: 8px;
+    font-size: 0.875rem;
+    font-weight: 600;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+    z-index: 10000;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    animation: toastSlide 0.25s ease;
+  }
+
+  @keyframes toastSlide {
+    from { opacity: 0; transform: translateY(12px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+</style>
+
+<script>
+  document.addEventListener('DOMContentLoaded', () => {
+    // DOM Elements
+    const searchInput = document.getElementById('seo-search-input') as HTMLInputElement;
+    const clearSearchBtn = document.getElementById('clear-search-btn') as HTMLButtonElement;
+    const statusFilter = document.getElementById('seo-status-filter') as HTMLSelectElement;
+    const tabButtons = document.querySelectorAll('.tab-btn-pill');
+    const statCards = document.querySelectorAll('.seo-stat-card');
+    const tableRows = document.querySelectorAll('.seo-row');
+    const noResultsMsg = document.getElementById('no-results-msg');
+
+    // Modal Elements
+    const modal = document.getElementById('quick-edit-modal');
+    const modalCloseBtn = document.getElementById('modal-close-btn');
+    const modalCancelBtn = document.getElementById('modal-cancel-btn');
+    const modalForm = document.getElementById('quick-seo-form') as HTMLFormElement;
+    const modalSubmitBtn = document.getElementById('modal-submit-btn') as HTMLButtonElement;
+    
+    const modalInputType = document.getElementById('modal-input-type') as HTMLInputElement;
+    const modalInputId = document.getElementById('modal-input-id') as HTMLInputElement;
+    const modalInputTitle = document.getElementById('modal-input-title') as HTMLInputElement;
+    const modalInputDesc = document.getElementById('modal-input-desc') as HTMLTextAreaElement;
+    const modalInputH1 = document.getElementById('modal-input-h1') as HTMLInputElement;
+    const modalH1Group = document.getElementById('modal-h1-group');
+
+    const modalTypeBadge = document.getElementById('modal-type-badge');
+    const modalUrlSlug = document.getElementById('modal-url-slug');
+    const modalPageName = document.getElementById('modal-page-name');
+    
+    const modalTitleCounter = document.getElementById('modal-title-counter');
+    const modalTitleBar = document.getElementById('modal-title-bar');
+    const modalDescCounter = document.getElementById('modal-desc-counter');
+    const modalDescBar = document.getElementById('modal-desc-bar');
+
+    const previewSlugText = document.getElementById('preview-slug-text');
+    const previewTitleText = document.getElementById('preview-title-text');
+    const previewDescText = document.getElementById('preview-desc-text');
+    const toast = document.getElementById('seo-toast');
+
+    let currentType = 'all';
+
+    // Filter function
+    function applyFilters() {
+      const searchTerm = (searchInput?.value || '').trim().toLowerCase();
+      const statusValue = statusFilter?.value || 'all';
+      let visibleCount = 0;
+
+      tableRows.forEach(row => {
+        const tr = row as HTMLElement;
+        const rowType = tr.getAttribute('data-type') || '';
+        const rowName = tr.getAttribute('data-name') || '';
+        const rowSlug = tr.getAttribute('data-slug') || '';
+        const rowTitle = tr.getAttribute('data-title') || '';
+        const titleLen = Number(tr.getAttribute('data-title-len')) || 0;
+        const descLen = Number(tr.getAttribute('data-desc-len')) || 0;
+
+        // 1. Type Match
+        const matchType = (currentType === 'all' || rowType === currentType);
+
+        // 2. Search Match
+        const matchSearch = !searchTerm || rowName.includes(searchTerm) || rowSlug.includes(searchTerm) || rowTitle.includes(searchTerm);
+
+        // 3. Status Match
+        let matchStatus = true;
+        if (statusValue === 'good') {
+          matchStatus = (titleLen >= 40 && titleLen <= 65) && (descLen >= 110 && descLen <= 165);
+        } else if (statusValue === 'title_long') {
+          matchStatus = titleLen > 65;
+        } else if (statusValue === 'title_short') {
+          matchStatus = titleLen < 40;
+        } else if (statusValue === 'meta_missing') {
+          matchStatus = descLen === 0;
+        }
+
+        if (matchType && matchSearch && matchStatus) {
+          tr.style.display = '';
+          visibleCount++;
+        } else {
+          tr.style.display = 'none';
+        }
+      });
+
+      if (noResultsMsg) {
+        noResultsMsg.style.display = visibleCount === 0 ? 'block' : 'none';
+      }
+
+      if (clearSearchBtn) {
+        clearSearchBtn.style.display = searchTerm ? 'block' : 'none';
+      }
+    }
+
+    // Tab Switch
+    function setTab(type: string) {
+      currentType = type;
+      tabButtons.forEach(btn => {
+        if (btn.getAttribute('data-type') === type) {
+          btn.classList.add('active');
+        } else {
+          btn.classList.remove('active');
+        }
+      });
+
+      statCards.forEach(card => {
+        if (card.getAttribute('data-tab-trigger') === type) {
+          card.classList.add('active');
+        } else {
+          card.classList.remove('active');
+        }
+      });
+
+      applyFilters();
+    }
+
+    tabButtons.forEach(btn => {
+      btn.addEventListener('click', () => {
+        const type = btn.getAttribute('data-type') || 'all';
+        setTab(type);
+      });
+    });
+
+    statCards.forEach(card => {
+      card.addEventListener('click', () => {
+        const type = card.getAttribute('data-tab-trigger') || 'all';
+        setTab(type);
+      });
+    });
+
+    searchInput?.addEventListener('input', applyFilters);
+    statusFilter?.addEventListener('change', applyFilters);
+
+    clearSearchBtn?.addEventListener('click', () => {
+      if (searchInput) searchInput.value = '';
+      applyFilters();
+    });
+
+    // Modal Live Preview Calculations
+    function updateLivePreview() {
+      const title = (modalInputTitle?.value || '').trim();
+      const desc = (modalInputDesc?.value || '').trim();
+      const titleLen = title.length;
+      const descLen = desc.length;
+
+      // Title Counter & Bar
+      if (modalTitleCounter) {
+        modalTitleCounter.textContent = `${titleLen} / 60 ký tự`;
+        if (titleLen >= 40 && titleLen <= 65) {
+          modalTitleCounter.className = 'char-meter good';
+        } else if (titleLen > 65) {
+          modalTitleCounter.className = 'char-meter warning';
+        } else {
+          modalTitleCounter.className = 'char-meter info';
+        }
+      }
+
+      if (modalTitleBar) {
+        const pct = Math.min(100, Math.round((titleLen / 60) * 100));
+        modalTitleBar.style.width = `${pct}%`;
+        if (titleLen >= 40 && titleLen <= 65) {
+          modalTitleBar.className = 'progress-bar-inner good';
+        } else if (titleLen > 65) {
+          modalTitleBar.className = 'progress-bar-inner warning';
+        } else {
+          modalTitleBar.className = 'progress-bar-inner info';
+        }
+      }
+
+      // Desc Counter & Bar
+      if (modalDescCounter) {
+        modalDescCounter.textContent = `${descLen} / 155 ký tự`;
+        if (descLen >= 115 && descLen <= 165) {
+          modalDescCounter.className = 'char-meter good';
+        } else if (descLen > 165) {
+          modalDescCounter.className = 'char-meter warning';
+        } else {
+          modalDescCounter.className = 'char-meter info';
+        }
+      }
+
+      if (modalDescBar) {
+        const pct = Math.min(100, Math.round((descLen / 155) * 100));
+        modalDescBar.style.width = `${pct}%`;
+        if (descLen >= 115 && descLen <= 165) {
+          modalDescBar.className = 'progress-bar-inner good';
+        } else if (descLen > 165) {
+          modalDescBar.className = 'progress-bar-inner warning';
+        } else {
+          modalDescBar.className = 'progress-bar-inner info';
+        }
+      }
+
+      // Google Snippet Preview Texts
+      if (previewTitleText) {
+        previewTitleText.textContent = title || 'Tiêu Đề Trang | VLXD Hoàng Yến';
+      }
+      if (previewDescText) {
+        previewDescText.textContent = desc || 'Đoạn mô tả ngắn hiển thị bên dưới tiêu đề trên Google tìm kiếm...';
+      }
+    }
+
+    modalInputTitle?.addEventListener('input', updateLivePreview);
+    modalInputDesc?.addEventListener('input', updateLivePreview);
+
+    // Open Quick Edit Modal
+    document.querySelectorAll('.btn-quick-edit').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const type = btn.getAttribute('data-edit-type') || '';
+        const id = btn.getAttribute('data-edit-id') || '';
+        const name = btn.getAttribute('data-edit-name') || '';
+        const url = btn.getAttribute('data-edit-url') || '';
+        const title = btn.getAttribute('data-edit-title') || '';
+        const desc = btn.getAttribute('data-edit-desc') || '';
+        const h1 = btn.getAttribute('data-edit-h1') || '';
+
+        if (modalInputType) modalInputType.value = type;
+        if (modalInputId) modalInputId.value = id;
+        if (modalInputTitle) modalInputTitle.value = title;
+        if (modalInputDesc) modalInputDesc.value = desc;
+        if (modalInputH1) modalInputH1.value = h1;
+
+        if (modalPageName) modalPageName.textContent = `Chỉnh Sửa SEO: ${name}`;
+        if (modalUrlSlug) modalUrlSlug.textContent = url;
+        if (previewSlugText) previewSlugText.textContent = `https://vlxdhoangyen.com${url.startsWith('/') ? url : '/' + url}`;
+
+        if (modalTypeBadge) {
+          modalTypeBadge.textContent = type === 'category' ? 'Danh Mục' : (type === 'brand' ? 'Thương Hiệu' : (type === 'post' ? 'Bài Viết' : (type === 'product' ? 'Sản Phẩm' : 'Trang')));
+          modalTypeBadge.className = `type-badge ${type === 'category' ? 'badge-cat' : (type === 'brand' ? 'badge-brand' : (type === 'post' ? 'badge-post' : (type === 'product' ? 'badge-product' : 'badge-page')))}`;
+        }
+
+        if (modalH1Group) {
+          const h1Label = modalH1Group.querySelector('label strong');
+          if (h1Label) {
+            h1Label.textContent = type === 'post' ? 'Tiêu Đề Bài Viết (H1/Title) *' : (type === 'product' ? 'Tên Sản Phẩm (H1) *' : 'Thẻ Tiêu Đề H1 Danh Mục');
+          }
+          modalH1Group.style.display = (type === 'category' || type === 'post' || type === 'product') ? 'block' : 'none';
+        }
+
+        updateLivePreview();
+
+        if (modal) {
+          modal.style.display = 'flex';
+          modalInputTitle?.focus();
+        }
+      });
+    });
+
+    // Close Modal
+    function closeModal() {
+      if (modal) modal.style.display = 'none';
+    }
+
+    modalCloseBtn?.addEventListener('click', closeModal);
+    modalCancelBtn?.addEventListener('click', closeModal);
+    modal?.addEventListener('click', (e) => {
+      if (e.target === modal) closeModal();
+    });
+
+    // Show Toast
+    function showToast(message: string, isError = false) {
+      if (!toast) return;
+      toast.textContent = message;
+      toast.style.background = isError ? '#ef4444' : '#0f172a';
+      toast.style.display = 'flex';
+      setTimeout(() => {
+        toast.style.display = 'none';
+      }, 3500);
+    }
+
+    // Form Submit (AJAX)
+    modalForm?.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      if (!modalSubmitBtn) return;
+
+      const type = modalInputType.value;
+      const id = modalInputId.value;
+      const seo_title = modalInputTitle.value.trim();
+      const seo_description = modalInputDesc.value.trim();
+      const h1 = modalInputH1?.value?.trim();
+
+      modalSubmitBtn.disabled = true;
+      modalSubmitBtn.innerHTML = '<span>Đang Lưu...</span>';
+
+      try {
+        const res = await fetch('/api/admin/quick-seo', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ type, id, seo_title, seo_description, h1 })
+        });
+
+        const data = await res.json();
+        if (res.ok && data.success) {
+          showToast('✓ Đã cập nhật tiêu đề & meta SEO thành công!');
+          
+          // Update table row in realtime
+          const titleDisplay = document.getElementById(`title-display-${type}-${id}`);
+          const titleCount = document.getElementById(`title-count-${type}-${id}`);
+          const descDisplay = document.getElementById(`desc-display-${type}-${id}`);
+          const descCount = document.getElementById(`desc-count-${type}-${id}`);
+
+          if (titleDisplay) titleDisplay.textContent = seo_title;
+          if (descDisplay) descDisplay.textContent = seo_description || 'Chưa cấu hình Meta Description';
+
+          const titleLen = seo_title.length;
+          const descLen = seo_description.length;
+          const isTitleGood = titleLen >= 40 && titleLen <= 65;
+          const isDescGood = descLen >= 110 && descLen <= 165;
+
+          if (titleCount) {
+            titleCount.textContent = `${titleLen} ký tự ${isTitleGood ? '✓' : (titleLen > 65 ? '⚠️ Quá dài' : '')}`;
+            titleCount.className = `len-badge ${isTitleGood ? 'good' : (titleLen > 65 ? 'warning' : 'info')}`;
+          }
+
+          if (descCount) {
+            descCount.textContent = `${descLen} ký tự ${isDescGood ? '✓' : (descLen === 0 ? '⚠️ Thiếu' : '')}`;
+            descCount.className = `len-badge ${isDescGood ? 'good' : (descLen > 165 ? 'warning' : 'info')}`;
+          }
+
+          // Update trigger button data attributes
+          const triggerBtn = document.querySelector(`.btn-quick-edit[data-edit-type="${type}"][data-edit-id="${id}"]`);
+          if (triggerBtn) {
+            triggerBtn.setAttribute('data-edit-title', seo_title);
+            triggerBtn.setAttribute('data-edit-desc', seo_description);
+            if (h1) triggerBtn.setAttribute('data-edit-h1', h1);
+          }
+
+          // Update tr data attributes for filtering
+          const rowTr = document.querySelector(`tr.seo-row[data-type="${type}"][data-id="${id}"]`);
+          if (rowTr) {
+            rowTr.setAttribute('data-title', seo_title.toLowerCase());
+            rowTr.setAttribute('data-title-len', titleLen.toString());
+            rowTr.setAttribute('data-desc-len', descLen.toString());
+          }
+
+          closeModal();
+        } else {
+          throw new Error(data.error || 'Có lỗi xảy ra khi cập nhật.');
+        }
+      } catch (err: any) {
+        showToast('Lỗi: ' + err.message, true);
+      } finally {
+        modalSubmitBtn.disabled = false;
+        modalSubmitBtn.innerHTML = '<span>Lưu Cập Nhật SEO</span>';
+      }
+    });
+
+  });
+</script>

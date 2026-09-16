@@ -1,0 +1,70 @@
+---
+import Layout from '../layouts/Layout.astro';
+
+Astro.response.status = 404;
+---
+
+<Layout
+  title="404 - Không Tìm Thấy Trang | Siêu Thị VLXD Hoàng Yến"
+  description="Trang quý khách yêu cầu không tồn tại hoặc đã được chuyển sang địa chỉ mới trên website Siêu Thị VLXD Hoàng Yến."
+  currentPath="/404"
+  noindex={true}
+>
+  <div class="container not-found-wrap">
+    <div class="not-found-card">
+      <span class="error-badge">404 - ERROR</span>
+      <h1 class="error-title">Trang Không Tồn Tại</h1>
+      <p class="error-desc">
+        Liên kết bạn vừa truy cập có thể đã được cập nhật hoặc không tồn tại trên hệ thống mới của Siêu Thị VLXD Hoàng Yến.
+      </p>
+      <div class="error-actions">
+        <a href="/" class="btn btn-primary btn-lg">Về Trang Chủ</a>
+        <a href="/san-pham/" class="btn btn-navy btn-lg">Xem Danh Mục Sản Phẩm</a>
+      </div>
+    </div>
+  </div>
+</Layout>
+
+<style>
+  .not-found-wrap {
+    padding: 6rem 1.25rem;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+  .not-found-card {
+    background: #ffffff;
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-xl);
+    padding: 4rem 3rem;
+    text-align: center;
+    max-width: 600px;
+    box-shadow: var(--shadow-lg);
+  }
+  .error-badge {
+    display: inline-block;
+    background: #fee2e2;
+    color: var(--color-accent);
+    font-weight: 800;
+    font-size: 0.9rem;
+    padding: 0.35rem 1rem;
+    border-radius: var(--radius-full);
+    margin-bottom: 1rem;
+  }
+  .error-title {
+    font-size: 2.2rem;
+    margin-bottom: 1rem;
+  }
+  .error-desc {
+    color: var(--text-muted);
+    font-size: 1rem;
+    line-height: 1.6;
+    margin-bottom: 2rem;
+  }
+  .error-actions {
+    display: flex;
+    justify-content: center;
+    gap: 1rem;
+    flex-wrap: wrap;
+  }
+</style>

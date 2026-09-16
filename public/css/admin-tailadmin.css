@@ -1,0 +1,479 @@
+/* ==========================================
+   TAILADMIN CORE STYLESHEET (VLXD HOÀNG YẾN)
+   ========================================== */
+
+:root {
+  /* TailAdmin Color Palette */
+  --tail-primary: #3c50e0;
+  --tail-primary-hover: #3044ce;
+  --tail-dark: #1c2434;
+  --tail-dark-hover: #333a48;
+  --tail-body: #64748b;
+  --tail-heading: #1c2434;
+  --tail-border: #e2e8f0;
+  --tail-bg: #f1f5f9;
+  --tail-card-bg: #ffffff;
+  --tail-success: #10b981;
+  --tail-danger: #ef4444;
+  --tail-warning: #f59e0b;
+  
+  /* Fallback aliases for legacy CSS variables */
+  --border-subtle: #e2e8f0;
+  --radius-lg: 0.75rem;
+  --radius-md: 0.5rem;
+  --radius-sm: 0.375rem;
+  --radius-full: 9999px;
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.05);
+  --font-heading: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-body: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --color-primary-dark: #1c2434;
+  --color-primary: #3c50e0;
+  --text-muted: #64748b;
+  --color-accent: #3c50e0;
+}
+
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
+html, body {
+  margin: 0;
+  padding: 0;
+  font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  background-color: #f1f5f9 !important;
+  color: #1c2434 !important;
+  -webkit-font-smoothing: antialiased;
+}
+
+.admin-body {
+  background-color: #f1f5f9 !important;
+  margin: 0;
+  padding: 0;
+}
+
+.admin-wrapper {
+  display: flex !important;
+  min-height: 100vh;
+  width: 100%;
+}
+
+/* TailAdmin Sidebar */
+.admin-sidebar {
+  width: 280px !important;
+  background: #1c2434 !important;
+  color: #8a99ad !important;
+  display: flex !important;
+  flex-direction: column !important;
+  flex-shrink: 0 !important;
+  min-height: 100vh;
+  z-index: 99;
+}
+
+.admin-brand {
+  padding: 1.5rem 1.75rem !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important;
+}
+
+.brand-logo-box {
+  display: flex;
+  flex-direction: column;
+}
+
+.brand-text {
+  color: #ffffff !important;
+  font-weight: 800 !important;
+  font-size: 1.15rem !important;
+  letter-spacing: 0.02em;
+  display: block;
+}
+
+.brand-sub {
+  color: #3c50e0 !important;
+  font-size: 0.72rem !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  margin-top: 2px;
+  display: block;
+}
+
+.nav-section-title {
+  padding: 1.5rem 1.75rem 0.5rem !important;
+  font-size: 0.72rem !important;
+  font-weight: 700 !important;
+  color: #8a99ad !important;
+  letter-spacing: 0.08em;
+}
+
+.admin-nav {
+  padding: 0 1rem 1.5rem !important;
+  flex-grow: 1;
+}
+
+.admin-nav ul {
+  list-style: none !important;
+  padding: 0 !important;
+  margin: 0 !important;
+}
+
+.admin-nav li {
+  margin-bottom: 0.35rem !important;
+}
+
+.admin-nav a {
+  display: flex !important;
+  align-items: center !important;
+  gap: 0.85rem !important;
+  padding: 0.75rem 1rem !important;
+  color: #8a99ad !important;
+  font-size: 0.925rem !important;
+  font-weight: 500 !important;
+  border-radius: 0.5rem !important;
+  text-decoration: none !important;
+  transition: all 0.2s ease !important;
+}
+
+.admin-nav a:hover {
+  background: #333a48 !important;
+  color: #ffffff !important;
+}
+
+.admin-nav li.active a {
+  background: #333a48 !important;
+  color: #ffffff !important;
+  font-weight: 600 !important;
+  box-shadow: inset 4px 0 0 #3c50e0 !important;
+}
+
+.nav-icon {
+  display: flex !important;
+  align-items: center !important;
+}
+
+.sidebar-bottom {
+  padding: 1.25rem 1.25rem !important;
+  border-top: 1px solid rgba(255, 255, 255, 0.08) !important;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 0.5rem !important;
+}
+
+.admin-view-site, .admin-logout {
+  display: flex !important;
+  align-items: center !important;
+  gap: 0.75rem !important;
+  padding: 0.65rem 1rem !important;
+  border-radius: 0.5rem !important;
+  font-size: 0.85rem !important;
+  font-weight: 600 !important;
+  text-decoration: none !important;
+  transition: all 0.2s ease !important;
+}
+
+.admin-view-site {
+  background: rgba(255, 255, 255, 0.04) !important;
+  color: #cbd5e1 !important;
+}
+
+.admin-view-site:hover {
+  background: rgba(255, 255, 255, 0.1) !important;
+  color: #ffffff !important;
+}
+
+.admin-logout {
+  color: #f87171 !important;
+}
+
+.admin-logout:hover {
+  background: rgba(239, 68, 68, 0.1) !important;
+  color: #ef4444 !important;
+}
+
+/* TailAdmin Main Content Area */
+.admin-main {
+  flex-grow: 1 !important;
+  display: flex !important;
+  flex-direction: column !important;
+  min-width: 0 !important;
+  background: #f1f5f9 !important;
+}
+
+.admin-topbar {
+  background: #ffffff !important;
+  border-bottom: 1px solid #e2e8f0 !important;
+  height: 70px !important;
+  padding: 0 2rem !important;
+  display: flex !important;
+  justify-content: space-between !important;
+  align-items: center !important;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.03) !important;
+}
+
+.admin-page-title {
+  font-size: 1.25rem !important;
+  font-weight: 700 !important;
+  color: #1c2434 !important;
+  margin: 0 !important;
+  letter-spacing: -0.01em;
+}
+
+.admin-user-pill {
+  display: flex !important;
+  align-items: center !important;
+  gap: 0.6rem !important;
+  background: #f8fafc !important;
+  border: 1px solid #e2e8f0 !important;
+  padding: 0.45rem 1rem !important;
+  border-radius: 9999px !important;
+  font-size: 0.85rem !important;
+  font-weight: 600 !important;
+  color: #1c2434 !important;
+}
+
+.user-avatar-dot {
+  width: 8px !important;
+  height: 8px !important;
+  background: #10b981 !important;
+  border-radius: 50% !important;
+  display: inline-block !important;
+  box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.2) !important;
+}
+
+.admin-page-content {
+  padding: 2rem !important;
+  flex-grow: 1 !important;
+}
+
+/* TailAdmin Cards & Tables */
+.table-card, .admin-form-card, .side-card, .form-card, .tail-filter-card, .card-table-wrap {
+  background: #ffffff !important;
+  border: 1px solid #e2e8f0 !important;
+  border-radius: 0.75rem !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05) !important;
+  margin-bottom: 1.5rem !important;
+  overflow: hidden !important;
+}
+
+.card-header, .flex-header, .card-header-row {
+  background: #ffffff !important;
+  border-bottom: 1px solid #e2e8f0 !important;
+  padding: 1.25rem 1.5rem !important;
+  display: flex !important;
+  justify-content: space-between !important;
+  align-items: center !important;
+}
+
+.card-header h2, .form-card h3, .card-header-row h2 {
+  font-size: 1.1rem !important;
+  font-weight: 700 !important;
+  color: #1c2434 !important;
+  margin: 0 !important;
+}
+
+/* TailAdmin Table */
+.table-responsive {
+  width: 100% !important;
+  overflow-x: auto !important;
+}
+
+.admin-table {
+  width: 100% !important;
+  border-collapse: collapse !important;
+  text-align: left !important;
+}
+
+.admin-table thead th, .admin-table th {
+  background: #f7f9fc !important;
+  color: #64748b !important;
+  font-size: 0.75rem !important;
+  font-weight: 700 !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.05em !important;
+  padding: 1rem 1.25rem !important;
+  border-bottom: 1px solid #e2e8f0 !important;
+}
+
+.admin-table tbody td, .admin-table td {
+  padding: 1rem 1.25rem !important;
+  border-bottom: 1px solid #f1f5f9 !important;
+  vertical-align: middle !important;
+  color: #1c2434 !important;
+  font-size: 0.875rem !important;
+}
+
+.admin-table tbody tr:hover {
+  background-color: #f8fafc !important;
+}
+
+/* Status Badges */
+.status-tag, .status-pill {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 0.35rem !important;
+  padding: 4px 12px !important;
+  border-radius: 9999px !important;
+  font-size: 0.75rem !important;
+  font-weight: 700 !important;
+  line-height: 1.2 !important;
+}
+
+.status-tag.published, .status-pill.active, .status-pill.status-completed {
+  background: #e8fadf !important;
+  color: #10b981 !important;
+  border: 1px solid #a7f3d0 !important;
+}
+
+.status-tag.draft, .status-pill.inactive, .status-pill.status-contacted {
+  background: #fef3c7 !important;
+  color: #d97706 !important;
+  border: 1px solid #fde68a !important;
+}
+
+.status-tag.trash, .status-pill.status-new {
+  background: #fde8e8 !important;
+  color: #ef4444 !important;
+  border: 1px solid #fca5a5 !important;
+}
+
+/* TailAdmin Buttons */
+.btn {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 0.5rem !important;
+  padding: 0.65rem 1.25rem !important;
+  font-size: 0.875rem !important;
+  font-weight: 600 !important;
+  border-radius: 0.5rem !important;
+  cursor: pointer !important;
+  transition: all 0.2s ease !important;
+  border: none !important;
+  text-decoration: none !important;
+}
+
+.btn-sm {
+  padding: 0.45rem 0.85rem !important;
+  font-size: 0.8rem !important;
+}
+
+.btn-primary {
+  background: #3c50e0 !important;
+  color: #ffffff !important;
+  box-shadow: 0 4px 12px rgba(60, 80, 224, 0.25) !important;
+}
+
+.btn-primary:hover {
+  background: #3044ce !important;
+  transform: translateY(-1px);
+}
+
+.btn-outline {
+  background: #ffffff !important;
+  color: #1c2434 !important;
+  border: 1px solid #e2e8f0 !important;
+}
+
+.btn-outline:hover {
+  background: #f8fafc !important;
+  border-color: #cbd5e1 !important;
+}
+
+.btn-navy {
+  background: #1c2434 !important;
+  color: #ffffff !important;
+}
+
+.btn-navy:hover {
+  background: #333a48 !important;
+}
+
+.btn-action, .edit-btn, .delete-btn {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 0.35rem !important;
+  padding: 0.4rem 0.75rem !important;
+  border-radius: 0.375rem !important;
+  font-size: 0.78rem !important;
+  font-weight: 600 !important;
+  cursor: pointer !important;
+  transition: all 0.15s ease !important;
+  text-decoration: none !important;
+  border: none !important;
+}
+
+.btn-action.edit, .edit-btn {
+  background: rgba(60, 80, 224, 0.08) !important;
+  color: #3c50e0 !important;
+  border: 1px solid rgba(60, 80, 224, 0.2) !important;
+}
+
+.btn-action.edit:hover, .edit-btn:hover {
+  background: #3c50e0 !important;
+  color: #ffffff !important;
+}
+
+.btn-action.delete, .delete-btn {
+  background: rgba(239, 68, 68, 0.08) !important;
+  color: #ef4444 !important;
+  border: 1px solid rgba(239, 68, 68, 0.2) !important;
+}
+
+.btn-action.delete:hover, .delete-btn:hover {
+  background: #ef4444 !important;
+  color: #ffffff !important;
+}
+
+.btn-action.restore {
+  background: rgba(16, 185, 129, 0.08) !important;
+  color: #10b981 !important;
+  border: 1px solid rgba(16, 185, 129, 0.2) !important;
+}
+
+.btn-action.restore:hover {
+  background: #10b981 !important;
+  color: #ffffff !important;
+}
+
+/* TailAdmin Form Inputs */
+.form-group {
+  margin-bottom: 1.25rem !important;
+}
+
+.form-group label {
+  display: block !important;
+  font-size: 0.875rem !important;
+  font-weight: 600 !important;
+  color: #1c2434 !important;
+  margin-bottom: 0.5rem !important;
+}
+
+.form-group input, .form-group select, .form-group textarea, .tail-input, .tail-select {
+  width: 100% !important;
+  padding: 0.75rem 1rem !important;
+  border: 1px solid #e2e8f0 !important;
+  border-radius: 0.5rem !important;
+  font-size: 0.875rem !important;
+  color: #1c2434 !important;
+  background: #ffffff !important;
+  outline: none !important;
+  transition: border-color 0.2s, box-shadow 0.2s !important;
+}
+
+.form-group input:focus, .form-group select:focus, .form-group textarea:focus, .tail-input:focus, .tail-select:focus {
+  border-color: #3c50e0 !important;
+  box-shadow: 0 0 0 4px rgba(60, 80, 224, 0.12) !important;
+}
+
+.tail-checkbox {
+  width: 18px !important;
+  height: 18px !important;
+  cursor: pointer !important;
+  accent-color: #3c50e0 !important;
+}
+
+/* Responsive */
+@media (max-width: 900px) {
+  .admin-wrapper { flex-direction: column !important; }
+  .admin-sidebar { width: 100% !important; min-height: auto !important; }
+  .admin-page-content { padding: 1rem !important; }
+}

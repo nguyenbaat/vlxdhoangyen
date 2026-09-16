@@ -1,0 +1,308 @@
+---
+import Layout from '../layouts/Layout.astro';
+import { SettingsRepo } from '../server/db/repo.js';
+
+const settings = await SettingsRepo.getAll();
+const breadcrumbs = [
+  { name: 'Trang Chủ', url: '/' },
+  { name: 'Chính Sách Giao Nhận & Vận Chuyển', url: '/chinh-sach-van-chuyen/' }
+];
+---
+
+<Layout
+  title="Chính Sách Giao Nhận & Vận Chuyển Vật Tư | VLXD Hoàng Yến Quảng Trị"
+  description="Chi tiết chính sách giao nhận vật liệu xây dựng tận công trình: phạm vi, thời gian, phí vận chuyển và quy trình nghiệm thu tại Siêu Thị VLXD Hoàng Yến Quảng Trị."
+  breadcrumbs={breadcrumbs}
+  currentPath="/chinh-sach-van-chuyen/"
+>
+  <div class="policy-page">
+    <!-- Header Hero -->
+    <header class="policy-header">
+      <div class="container">
+        <div class="eyebrow">Dịch Vụ Giao Nhận Công Trình</div>
+        <h1>Chính Sách Giao Nhận & Vận Chuyển</h1>
+        <p>Hỗ trợ giao vật tư đúng quy cách và khối lượng thỏa thuận đến công trình tại khu vực Đông Hà và các vùng lân cận tại Quảng Trị.</p>
+      </div>
+    </header>
+
+    <div class="container policy-body-container">
+      <!-- Quick Summary Cards -->
+      <div class="summary-cards">
+        <div class="summary-card">
+          <span class="summary-icon">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" style="color: #dc2626;"><rect x="1" y="3" width="15" height="13"></rect><polygon points="16 8 20 8 23 11 23 16 16 16 8"></polygon><circle cx="5.5" cy="18.5" r="2.5"></circle><circle cx="18.5" cy="18.5" r="2.5"></circle></svg>
+          </span>
+          <strong>Giao trong ngày</strong>
+          <span>Nội thành Đông Hà</span>
+        </div>
+        <div class="summary-card">
+          <span class="summary-icon">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" style="color: #0284c7;"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>
+          </span>
+          <strong>Đông Hà & lân cận</strong>
+          <span>Khu vực hỗ trợ giao</span>
+        </div>
+        <div class="summary-card">
+          <span class="summary-icon">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" style="color: #16a34a;"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path><rect x="8" y="2" width="8" height="4" rx="1" ry="1"></rect><path d="M9 14l2 2 4-4"></path></svg>
+          </span>
+          <strong>Có biên bản</strong>
+          <span>Ký xác nhận tại công trình</span>
+        </div>
+        <div class="summary-card">
+          <span class="summary-icon">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" style="color: #d97706;"><path d="M2 20h20M5 20V8l7-5 7 5v12M9 20v-6h6v6"></path></svg>
+          </span>
+          <strong>Bốc xếp</strong>
+          <span>Hỗ trợ theo yêu cầu</span>
+        </div>
+      </div>
+
+      <div class="policy-content prose-industrial">
+
+        <h2>1. Phương Tiện & Phạm Vi Vận Chuyển</h2>
+        <p>
+          Siêu Thị VLXD Hoàng Yến trang bị đội xe chuyên dụng phục vụ giao hàng trực tiếp đến công trình, bao gồm:
+        </p>
+        <ul>
+          <li><strong>Xe tải ben và xe sàn phẳng:</strong> Phù hợp vận chuyển sắt thép cây dài 11,7m, thép cuộn, xi măng bao và gạch tuynel khối lượng lớn.</li>
+          <li><strong>Xe cẩu chuyên dụng:</strong> Hỗ trợ bốc dỡ trực tiếp xuống sàn công trình tầng cao hoặc các vị trí khó tiếp cận bằng xe thường.</li>
+          <li><strong>Xe tải nhỏ & bán tải:</strong> Giao hàng lẻ, thiết bị vệ sinh, phụ kiện công trình nhanh trong nội thành.</li>
+        </ul>
+
+        <h3>Phạm vi giao hàng cụ thể</h3>
+        <div class="area-table-wrapper">
+        <h2>1. Phạm Vi & Thời Gian Giao Nhận</h2>
+        <p>
+          Siêu Thị VLXD Hoàng Yến có phương tiện vận chuyển hỗ trợ giao hàng trực tiếp đến công trình tại khu vực TP. Đông Hà và các vùng lân cận tại tỉnh Quảng Trị.
+        </p>
+        <p>
+          Thời gian giao hàng phụ thuộc vào số lượng vật tư, tình trạng hàng hóa và vị trí công trình. Quý khách vui lòng liên hệ trước và cung cấp địa điểm cụ thể để nhân viên kiểm tra cung đường và sắp xếp lịch xe thuận tiện nhất.
+        </p>
+
+        <h2>2. Chi Phí Vận Chuyển</h2>
+        <p>
+          Chi phí vận chuyển được tính dựa trên chủng loại hàng hóa, khối lượng đặt mua và cự ly giao nhận thực tế:
+        </p>
+        <ul>
+          <li>Phương án và chi phí vận chuyển sẽ được thống nhất rõ ràng với khách hàng trước khi xuất kho.</li>
+          <li>Đối với các công trình có khối lượng lớn hoặc đơn hàng dự án, hai bên sẽ trao đổi và ghi nhận cụ thể trong báo giá hoặc hợp đồng kinh tế.</li>
+          <li>Hỗ trợ phương tiện bốc dỡ phù hợp theo yêu cầu của từng công trình.</li>
+        </ul>
+
+        <h2>3. Quy Trình Giao Nhận & Nghiệm Thu</h2>
+        <p>Toàn bộ quy trình giao nhận được thực hiện theo các bước chuẩn nhằm đảm bảo quyền lợi cho khách hàng và sự minh bạch của hàng hóa:</p>
+        <ol>
+          <li>
+            <strong>Bước 1 — Xác nhận đơn hàng & lịch giao:</strong> Khách hàng chốt số lượng, quy cách và địa điểm giao hàng qua Hotline hoặc Zalo. Bộ phận điều vận xác nhận lịch xe và thời gian cụ thể.
+          </li>
+          <li>
+            <strong>Bước 2 — Kiểm tra xuất kho:</strong> Sắt thép được kiểm đếm số cây, cân tải trọng thực tế; xi măng kiểm tra nguyên vẹn bao bì và hạn sản xuất; thiết bị vệ sinh kiểm tra nguyên hộp và đủ phụ kiện theo catalog.
+          </li>
+          <li>
+            <strong>Bước 3 — Vận chuyển & bàn giao:</strong> Tài xế giao hàng tại công trình kèm Phiếu xuất kho / Hóa đơn GTGT và Chứng chỉ xuất xưởng (nếu nhà thầu yêu cầu cho hồ sơ hoàn công).
+          </li>
+          <li>
+            <strong>Bước 4 — Ký nghiệm thu:</strong> Người nhận hàng (chủ nhà, thủ kho công trình hoặc kỹ sư giám sát) kiểm đếm thực tế và ký xác nhận trên Biên bản giao hàng. Mọi sai lệch được ghi nhận và xử lý ngay tại chỗ.
+          </li>
+          <li>
+            <strong>Bước 5 — Thanh toán & lưu chứng từ:</strong> Sau khi ký biên bản, khách hàng tiến hành thanh toán theo phương thức đã thỏa thuận. Hóa đơn GTGT điện tử được xuất và gửi qua email hoặc bản cứng theo yêu cầu.
+          </li>
+        </ol>
+
+        <h2>4. Quy Định Khi Nhận Hàng Không Đúng Số Lượng / Chất Lượng</h2>
+        <p>
+          Trong trường hợp phát hiện sai lệch về số lượng, chủng loại hoặc chất lượng so với đơn hàng đã xác nhận:
+        </p>
+        <ul>
+          <li>Ghi nhận ngay trên Biên bản giao hàng tại thời điểm nghiệm thu. Không ký xác nhận nếu hàng chưa đúng.</li>
+          <li>Liên hệ ngay bộ phận kinh doanh qua Hotline <strong>{settings.hotline_main}</strong> để được xử lý trong vòng <strong>24 giờ làm việc</strong>.</li>
+          <li>Hoàng Yến hỗ trợ kiểm tra, bổ sung hoặc điều chỉnh hàng hóa nếu có sai sót trong quá trình xuất kho.</li>
+          <li>Với hàng hóa có khiếm khuyết kỹ thuật được phát hiện trong quá trình thi công, xem thêm tại <a href="/chinh-sach-doi-tra/">Chính Sách Đổi Trả & Bảo Hành</a>.</li>
+        </ul>
+
+        <h2>5. Lưu Ý Đặc Biệt Cho Nhà Thầu & Công Trình Lớn</h2>
+        <ul>
+          <li>Nên đặt hàng trước ít nhất <strong>1 ngày</strong> đối với đơn sắt thép từ 5 tấn trở lên hoặc xi măng từ 100 bao trở lên để đảm bảo tồn kho.</li>
+          <li>Giai đoạn cao điểm thi công (tháng 10 – 3 năm sau), nên xác nhận lịch giao sớm để tránh tình trạng xe bận hoặc hàng hóa cần đặt trước từ nhà máy.</li>
+          <li>Hoàng Yến có thể hỗ trợ <strong>giao hàng ngoài giờ hành chính</strong> hoặc giao sáng sớm (từ 6:00) cho các công trình có yêu cầu đặc biệt về tiến độ — liên hệ trước để điều phối.</li>
+        </ul>
+
+        <div class="callout-box">
+          <h3 style="font-size: 1.15rem; margin-top: 0; margin-bottom: 0.5rem; font-weight: 700;">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" style="display: inline-block; vertical-align: middle; margin-right: 6px; color: #dc2626;"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>
+            <span>Liên Hệ Điều Phối Giao Hàng</span>
+          </h3>
+          <p>Hotline: <strong><a href={`tel:${settings.hotline_main}`}>{settings.hotline_main}</a></strong></p>
+          <p>Điện thoại: <strong><a href={`tel:${settings.hotline_alt}`}>{settings.hotline_alt}</a></strong></p>
+          <p>Địa chỉ cửa hàng: <strong>{settings.address}</strong></p>
+          <p>Giờ hoạt động: <strong>7:30 – 22:00 (Tất cả các ngày)</strong></p>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</Layout>
+
+<style>
+  .policy-header {
+    background: linear-gradient(135deg, var(--color-concrete-light) 0%, #e8edf3 100%);
+    border-bottom: 1px solid var(--color-border);
+    padding-top: var(--space-12);
+    padding-bottom: var(--space-12);
+  }
+
+  .policy-header p {
+    font-size: 1.1rem;
+    color: var(--color-text-muted);
+    margin-top: var(--space-2);
+    max-width: 680px;
+  }
+
+  .summary-cards {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: var(--space-4);
+    margin: var(--space-8) 0 var(--space-2);
+  }
+
+  .summary-card {
+    background: #fff;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-xs);
+    padding: var(--space-4);
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    text-align: center;
+  }
+
+  .summary-icon {
+    font-size: 1.75rem;
+    margin-bottom: 4px;
+  }
+
+  .summary-card strong {
+    font-size: 0.9rem;
+    color: var(--color-charcoal);
+    font-weight: 700;
+  }
+
+  .summary-card span {
+    font-size: 0.8rem;
+    color: var(--color-text-muted);
+  }
+
+  .policy-body-container {
+    padding-top: var(--space-8);
+    padding-bottom: var(--space-20);
+    max-width: 960px;
+  }
+
+  .policy-content h2 {
+    font-size: 1.45rem;
+    font-weight: 800;
+    margin-top: var(--space-10);
+    margin-bottom: var(--space-3);
+    padding-bottom: var(--space-2);
+    border-bottom: 2px solid var(--color-charcoal);
+  }
+
+  .policy-content h3 {
+    font-size: 1.1rem;
+    font-weight: 700;
+    margin-top: var(--space-6);
+    margin-bottom: var(--space-2);
+    color: var(--color-charcoal);
+  }
+
+  .policy-content p {
+    font-size: 1.025rem;
+    line-height: 1.75;
+    margin-bottom: var(--space-4);
+  }
+
+  .policy-content ul, .policy-content ol {
+    margin-left: var(--space-6);
+    margin-bottom: var(--space-6);
+    font-size: 1rem;
+    line-height: 1.75;
+  }
+
+  .policy-content li {
+    margin-bottom: var(--space-3);
+  }
+
+  .area-table-wrapper {
+    overflow-x: auto;
+    margin: var(--space-4) 0 var(--space-6);
+  }
+
+  .area-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.9375rem;
+  }
+
+  .area-table th {
+    background-color: var(--color-charcoal);
+    color: #fff;
+    padding: 10px 14px;
+    text-align: left;
+    font-weight: 700;
+    font-size: 0.875rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+
+  .area-table td {
+    padding: 10px 14px;
+    border-bottom: 1px solid var(--color-border);
+    vertical-align: top;
+  }
+
+  .area-table tr:nth-child(even) td {
+    background-color: var(--color-concrete-light);
+  }
+
+  .callout-box {
+    background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+    color: #e2e8f0;
+    border-radius: var(--radius-xs);
+    padding: var(--space-6) var(--space-8);
+    margin-top: var(--space-8);
+  }
+
+  .callout-box h4 {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: #fff;
+    margin-bottom: var(--space-4);
+  }
+
+  .callout-box p {
+    font-size: 0.9375rem;
+    color: #cbd5e1;
+    margin-bottom: var(--space-2);
+  }
+
+  .callout-box strong { color: #fff; }
+
+  .callout-box a {
+    color: #93c5fd;
+    text-decoration: none;
+  }
+
+  .callout-box a:hover { text-decoration: underline; }
+
+  .policy-content a {
+    color: var(--color-red);
+    text-decoration: underline;
+  }
+
+  @media (max-width: 768px) {
+    .summary-cards {
+      grid-template-columns: repeat(2, 1fr);
+    }
+  }
+</style>

@@ -1,0 +1,1728 @@
+---
+import Layout from '../layouts/Layout.astro';
+import { SettingsRepo } from '../server/db/repo.js';
+
+const settings = await SettingsRepo.getAll();
+const siteUrl = 'https://vlxdhoangyen.com';
+const breadcrumbs = [
+  { name: 'Trang Chủ', url: '/' },
+  { name: 'Giới Thiệu', url: '/gioi-thieu/' }
+];
+
+const aboutPageSchema = {
+  '@context': 'https://schema.org',
+  '@type': 'AboutPage',
+  '@id': `${siteUrl}/gioi-thieu/#webpage`,
+  url: `${siteUrl}/gioi-thieu/`,
+  name: 'Giới Thiệu Siêu Thị Vật Liệu Xây Dựng Hoàng Yến | Quảng Trị',
+  description: 'Giới thiệu Siêu Thị Vật Liệu Xây Dựng Hoàng Yến — Đơn vị phân phối vật liệu xây thô, sắt thép, xi măng, tôn lợp và thiết bị vệ sinh tại Quảng Trị.',
+  mainEntity: {
+    '@type': 'LocalBusiness',
+    '@id': `${siteUrl}/#organization`,
+    name: 'Siêu Thị Vật Liệu Xây Dựng Hoàng Yến',
+    legalName: 'CÔNG TY TNHH MTV VẬT LIỆU XÂY DỰNG TỔNG HỢP HOÀNG YẾN',
+    founder: {
+      '@type': 'Person',
+      name: 'Hoàng Yến',
+      jobTitle: 'Nhà sáng lập & CEO – Siêu Thị VLXD Hoàng Yến',
+      image: `${siteUrl}/images/CEO-Hoang-Yen.png`
+    },
+    employee: [
+      {
+        '@type': 'Person',
+        name: 'Thế Anh',
+        jobTitle: 'Giám đốc – Siêu Thị VLXD Hoàng Yến',
+        image: `${siteUrl}/images/theanh.png`
+      },
+      {
+        '@type': 'Person',
+        name: 'Chuyên viên Marketing',
+        jobTitle: 'Chuyên viên Marketing & SEO – VLXD Hoàng Yến',
+        image: `${siteUrl}/images/chuyenvienmkt.png`
+      }
+    ]
+  }
+};
+
+const categoriesList = [
+  { name: 'Xi Măng', slug: 'xi-mang', img: '/images/danh-muc/ximang.png', desc: 'PCB30, PCB40, chịu mặn bền sunfat', group: 'vlxd' },
+  { name: 'Thép Xây Dựng', slug: 'thep-xay-dung', img: '/images/danh-muc/thep.png', desc: 'Thép Hòa Phát, TISCO D6 – D32', group: 'vlxd' },
+  { name: 'Tôn Lợp Mạ Màu', slug: 'ton', img: '/images/danh-muc/ton.png', desc: 'Tôn lạnh, tôn sóng ngói Đông Á', group: 'vlxd' },
+  { name: 'Gạch Tuynel', slug: 'gach-tuynel', img: '/images/danh-muc/gach.png', desc: 'Gạch 2 lỗ, 4 lỗ, 6 lỗ, gạch đặc', group: 'vlxd' },
+  { name: 'Xà Gồ Mạ Kẽm', slug: 'xa-go', img: '/images/danh-muc/xago.png', desc: 'Xà gồ chữ C, chữ Z các quy cách', group: 'vlxd' },
+  { name: 'Lưới Xây Dựng', slug: 'luoi-xay-dung', img: '/images/danh-muc/b40.png', desc: 'Lưới B40, lưới thép đổ sàn bê tông', group: 'vlxd' },
+  { name: 'Kẽm Buộc', slug: 'kem-buoc', img: '/images/danh-muc/kem.png', desc: 'Kẽm dẻo 1 ly, 2 ly buộc cốt thép', group: 'vlxd' },
+  { name: 'Đinh Vít Xây Dựng', slug: 'dinh-vit', img: '/images/danh-muc/dinhsat.png', desc: 'Đinh bê tông, đinh vít bắn tôn', group: 'vlxd' },
+  { name: 'Xốp - Nhựa', slug: 'xop-nhua', img: '/images/danh-muc/xopnhua.png', desc: 'Xốp chống nóng, màng phủ nilong', group: 'vlxd' },
+  { name: 'Bồn Cầu', slug: 'bon-cau', img: '/images/danh-muc/boncau.png', desc: 'Bồn cầu 1 khối, 2 khối xả xoáy nano', group: 'tbvs' },
+  { name: 'Lavabo Chậu Rửa', slug: 'lavabo', img: '/images/danh-muc/lavabo.png', desc: 'Chậu đặt bàn, treo tường men chống bám', group: 'tbvs' },
+  { name: 'Vòi Hoa Sen', slug: 'voi-hoa-sen', img: '/images/danh-muc/voi-hoa-sen.png', desc: 'Sen cây phím đàn, sen tắm nóng lạnh', group: 'tbvs' },
+  { name: 'Bồn Tắm Cao Cấp', slug: 'bon-tam', img: '/images/danh-muc/bon-tam.png', desc: 'Bồn tắm ngâm, bồn massage sang trọng', group: 'tbvs' },
+  { name: 'Gạch Men Ốp Lát', slug: 'gach-men', img: '/images/danh-muc/gachmen.png', desc: 'Gạch ốp tường, lát sàn granite cao cấp', group: 'tbvs' },
+];
+---
+
+<Layout
+  title="Giới Thiệu Siêu Thị Vật Liệu Xây Dựng Hoàng Yến | Quảng Trị"
+  description="Giới thiệu Siêu Thị Vật Liệu Xây Dựng Hoàng Yến — Đơn vị phân phối vật liệu xây thô, sắt thép, xi măng, tôn lợp và thiết bị vệ sinh tại Quảng Trị."
+  breadcrumbs={breadcrumbs}
+  currentPath="/gioi-thieu/"
+  schemas={[aboutPageSchema]}
+>
+  <div class="about-page-container">
+    
+    <!-- Hero Header -->
+    <header class="about-hero-header">
+      <div class="container">
+        <div class="about-hero-inner">
+          <span class="about-hero-badge">Hồ Sơ Năng Lực Doanh Nghiệp</span>
+          <h1 class="about-hero-title">Giới Thiệu Siêu Thị Vật Liệu Xây Dựng Hoàng Yến</h1>
+          <p class="about-hero-lead">
+            Siêu Thị Vật Liệu Xây Dựng Hoàng Yến là Đại lý cấp 1 cung cấp VLXD tại tỉnh Quảng Trị, thành lập từ năm 2003 với hơn 20 năm kinh nghiệm và được hơn 1.250+ nhà thầu tin chọn trong suốt hơn 20 năm qua.
+          </p>
+          <p class="about-hero-desc">
+            Trải qua hơn 20 năm hình thành và phát triển từ năm 2003, Hoàng Yến từng bước xây dựng hệ thống sản phẩm đa dạng, phục vụ từ khách hàng xây dựng nhà ở dân dụng, đội thợ, nhà thầu cho đến các công trình có nhu cầu mua vật liệu với số lượng lớn. Chúng tôi hướng đến một mục tiêu rõ ràng: <strong>giúp khách hàng dễ tìm đúng vật liệu, đúng quy cách, phù hợp nhu cầu công trình và thuận tiện trong quá trình báo giá – đặt hàng – giao nhận</strong>.
+          </p>
+        </div>
+      </div>
+    </header>
+
+    <!-- Main Content Layout -->
+    <div class="container section-body">
+      <div class="about-layout-grid">
+        
+        <!-- Primary Article Content -->
+        <main class="about-content-primary">
+          <!-- 1. Vì Sao Khách Hàng Lựa Chọn VLXD Hoàng Yến? -->
+          <section class="about-section">
+            <h2 class="section-heading">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" class="heading-svg"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
+              Vì Sao Khách Hàng Lựa Chọn VLXD Hoàng Yến?
+            </h2>
+
+            <div class="reasons-grid">
+              <div class="reason-card">
+                <div class="reason-number">01</div>
+                <h3>Hơn 20 Năm Uy Tín &amp; 1.250+ Nhà Thầu Tin Chọn</h3>
+                <p>Thành lập từ năm 2003, Hoàng Yến là đơn vị cung ứng vật liệu xây dựng hàng đầu tại Quảng Trị, luôn đồng hành tin cậy cùng các công trình dân dụng và dự án lớn.</p>
+              </div>
+
+              <div class="reason-card">
+                <div class="reason-number">02</div>
+                <h3>Danh Mục Sản Phẩm Đa Dạng</h3>
+                <p>Từ vật liệu xây thô đến thiết bị hoàn thiện nội thất, khách hàng có thể mua trọn gói trong cùng một hệ thống.</p>
+              </div>
+
+              <div class="reason-card">
+                <div class="reason-number">03</div>
+                <h3>Thông Tin Sản Phẩm Rõ Ràng</h3>
+                <p>Website minh bạch đầy đủ: Quy cách, kích thước, mác thép, barem trọng lượng, ứng dụng thực tế và tình trạng tồn kho.</p>
+              </div>
+
+              <div class="reason-card">
+                <div class="reason-number">04</div>
+                <h3>Hỗ Trợ Báo Giá Theo Nhu Cầu</h3>
+                <p>Báo giá linh hoạt theo thời điểm, khối lượng mua, thương hiệu và địa điểm giao hàng tối ưu nhất cho công trình.</p>
+              </div>
+
+              <div class="reason-card full-width">
+                <div class="reason-number">05</div>
+                <h3>Hỗ Trợ Giao Vật Liệu Tận Công Trình</h3>
+                <p>Đội xe vận chuyển chuyên dụng hỗ trợ vận chuyển an toàn đến tận công trình tại khu vực Đông Hà và các vùng lân cận tại Quảng Trị.</p>
+              </div>
+            </div>
+          </section>
+
+          <!-- 2. Sứ Mệnh & Tầm Nhìn Phát Triển -->
+          <section class="about-section">
+            <h2 class="section-heading">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" class="heading-svg"><circle cx="12" cy="12" r="10"></circle><polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"></polygon></svg>
+              Sứ Mệnh &amp; Tầm Nhìn Phát Triển
+            </h2>
+
+            <div class="mission-vision-grid">
+              <!-- Mission Card -->
+              <div class="mv-card mv-mission">
+                <div class="mv-header">
+                  <div class="mv-icon-badge">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"></path></svg>
+                  </div>
+                  <div>
+                    <span class="mv-tag">MISSION</span>
+                    <h3 class="mv-title">Sứ Mệnh</h3>
+                  </div>
+                </div>
+                <p class="mv-lead">
+                  Cung cấp vật liệu xây dựng phù hợp, thông tin rõ ràng và hỗ trợ khách hàng thuận tiện trong quá trình lựa chọn sản phẩm.
+                </p>
+              </div>
+
+              <!-- Vision Card -->
+              <div class="mv-card mv-vision">
+                <div class="mv-header">
+                  <div class="mv-icon-badge vision">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+                  </div>
+                  <div>
+                    <span class="mv-tag vision">VISION</span>
+                    <h3 class="mv-title">Tầm Nhìn</h3>
+                  </div>
+                </div>
+                <p class="mv-lead">
+                  Phát triển VLXD Hoàng Yến trở thành địa chỉ vật liệu xây dựng đáng tin cậy tại Quảng Trị, kết hợp kinh doanh truyền thống với nền tảng số hiện đại.
+                </p>
+              </div>
+            </div>
+          </section>
+
+          <!-- 3. Ban Điều Hành & Đội Ngũ Nhân Sự -->
+          <section class="about-section">
+            <h2 class="section-heading">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" class="heading-svg"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+              Ban Điều Hành &amp; Đội Ngũ Nhân Sự
+            </h2>
+            <p>
+              Đằng sau mỗi đơn hàng và sự phát triển của Siêu Thị VLXD Hoàng Yến là đội ngũ tâm huyết, giàu kinh nghiệm thực tế và luôn đặt quyền lợi của khách hàng lên hàng đầu:
+            </p>
+
+            <div class="team-profiles-grid">
+              <!-- Profile 1: Hoàng Yến - Nhà sáng lập -->
+              <div class="team-profile-card">
+                <div class="team-card-inner">
+                  <div class="team-photo-wrap">
+                    <img
+                      src="/images/CEO-Hoang-Yen.png"
+                      alt="Hoàng Yến - Nhà sáng lập VLXD Hoàng Yến"
+                      class="team-avatar-img"
+                      width="125"
+                      height="125"
+                      loading="lazy"
+                    />
+                  </div>
+                  <div class="team-info-wrap">
+                    <div class="team-header-meta">
+                      <div>
+                        <h3 class="team-member-name">Hoàng Yến</h3>
+                        <div class="team-position">Nhà sáng lập &amp; CEO – Siêu Thị VLXD Hoàng Yến</div>
+                      </div>
+                      <span class="team-role-tag ceo-tag">NHÀ SÁNG LẬP</span>
+                    </div>
+                    <div class="team-bio-content">
+                      <p>
+                        Là người sáng lập và trực tiếp định hướng phát triển Siêu Thị VLXD Hoàng Yến, tập trung xây dựng hệ thống sản phẩm vật liệu xây dựng và thiết bị vệ sinh theo hướng chuyên nghiệp, minh bạch và thuận tiện hơn cho khách hàng trong quá trình tìm hiểu và lựa chọn vật liệu.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Profile 2: Thế Anh - Giám đốc -->
+              <div class="team-profile-card">
+                <div class="team-card-inner">
+                  <div class="team-photo-wrap">
+                    <img
+                      src="/images/theanh.png"
+                      alt="Thế Anh - Giám đốc VLXD Hoàng Yến"
+                      class="team-avatar-img"
+                      width="125"
+                      height="125"
+                      loading="lazy"
+                    />
+                  </div>
+                  <div class="team-info-wrap">
+                    <div class="team-header-meta">
+                      <div>
+                        <h3 class="team-member-name">Thế Anh</h3>
+                        <div class="team-position">Giám đốc – Siêu Thị VLXD Hoàng Yến</div>
+                      </div>
+                      <span class="team-role-tag dir-tag">GIÁM ĐỐC</span>
+                    </div>
+                    <div class="team-bio-content">
+                      <p>
+                        Thế Anh là Giám đốc Siêu Thị Vật Liệu Xây Dựng Hoàng Yến, trực tiếp tham gia điều hành hoạt động kinh doanh và hỗ trợ khách hàng trong quá trình lựa chọn, báo giá và đặt mua vật liệu xây dựng.
+                      </p>
+                      <p>
+                        Anh phụ trách tiếp nhận nhu cầu thực tế của khách hàng, hỗ trợ báo giá vật liệu, kiểm tra sản phẩm, số lượng, phương án giao nhận và chi phí vận chuyển theo từng đơn hàng. Đồng thời, Thế Anh phối hợp trong quá trình cung ứng vật tư cho khách hàng cá nhân, thợ xây, nhà thầu và các công trình.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Profile 3: Chuyên viên Marketing -->
+              <div class="team-profile-card">
+                <div class="team-card-inner">
+                  <div class="team-photo-wrap">
+                    <img
+                      src="/images/chuyenvienmkt.png"
+                      alt="Chuyên viên Marketing - VLXD Hoàng Yến"
+                      class="team-avatar-img"
+                      width="125"
+                      height="125"
+                      loading="lazy"
+                    />
+                  </div>
+                  <div class="team-info-wrap">
+                    <div class="team-header-meta">
+                      <div>
+                        <h3 class="team-member-name">Chuyên viên Marketing</h3>
+                        <div class="team-position">Phụ trách nội dung &amp; SEO – VLXD Hoàng Yến</div>
+                      </div>
+                      <span class="team-role-tag mkt-tag">NỘI DUNG &amp; SEO</span>
+                    </div>
+                    <div class="team-bio-content">
+                      <p>
+                        Phụ trách xây dựng và phát triển nội dung truyền thông cho VLXD Hoàng Yến trên website và các kênh digital. Công việc tập trung vào nội dung sản phẩm, bài viết kiến thức vật liệu xây dựng, SEO, hình ảnh truyền thông và tối ưu trải nghiệm thông tin cho khách hàng.
+                      </p>
+                      <p>
+                        Bên cạnh đó, vị trí Marketing hỗ trợ cập nhật thông tin sản phẩm, xây dựng nội dung theo nhu cầu tìm kiếm thực tế và kết nối các hoạt động truyền thông với định hướng phát triển thương hiệu VLXD Hoàng Yến.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <!-- 4. Đồng Hành Cùng Ngành Xây Dựng Tại Quảng Trị (Visual Showcase & Carousel) -->
+          <section class="about-section">
+            <h2 class="section-heading">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" class="heading-svg"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
+              Đồng Hành Cùng Ngành Xây Dựng Tại Quảng Trị
+            </h2>
+            <p>
+              Hoàng Yến tập trung vào lĩnh vực cung ứng vật liệu xây dựng phục vụ thị trường địa phương với hệ thống sản phẩm đa dạng từ xây thô đến hoàn thiện nội thất:
+            </p>
+
+            <!-- Slide Chạy Danh Mục Sản Phẩm (Smooth Infinite Marquee Carousel) -->
+            <div class="cat-marquee-wrapper">
+              <div class="cat-marquee-header">
+                <span class="cat-marquee-badge">HỆ THỐNG 14+ DANH MỤC VẬT TƯ</span>
+                <span class="cat-marquee-hint">Rê chuột để dừng &bull; Nhấp để xem sản phẩm</span>
+              </div>
+              <div class="cat-marquee-container">
+                <div class="cat-marquee-track">
+                  <!-- First loop -->
+                  {categoriesList.map((cat) => (
+                    <a href={`/${cat.slug}/`} class="cat-slide-card">
+                      <div class="cat-slide-img-wrap">
+                        <img src={cat.img} alt={cat.name} width="64" height="64" loading="lazy" />
+                      </div>
+                      <div class="cat-slide-meta">
+                        <span class="cat-slide-name">{cat.name}</span>
+                        <span class={`cat-slide-tag ${cat.group}`}>{cat.group === 'vlxd' ? 'Xây Thô' : 'Thiết Bị'}</span>
+                      </div>
+                    </a>
+                  ))}
+                  <!-- Second loop for infinite seamless scrolling -->
+                  {categoriesList.map((cat) => (
+                    <a href={`/${cat.slug}/`} class="cat-slide-card" aria-hidden="true">
+                      <div class="cat-slide-img-wrap">
+                        <img src={cat.img} alt={cat.name} width="64" height="64" loading="lazy" />
+                      </div>
+                      <div class="cat-slide-meta">
+                        <span class="cat-slide-name">{cat.name}</span>
+                        <span class={`cat-slide-tag ${cat.group}`}>{cat.group === 'vlxd' ? 'Xây Thô' : 'Thiết Bị'}</span>
+                      </div>
+                    </a>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            <!-- Visual 2-Group Display -->
+            <div class="cat-visual-groups">
+              <!-- Group 1: Vật Liệu Xây Thô -->
+              <div class="cat-group-visual-box">
+                <div class="group-visual-header">
+                  <div class="gvh-icon vlxd">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path></svg>
+                  </div>
+                  <div>
+                    <span class="gvh-sub">NHÓM 01</span>
+                    <h3 class="gvh-title">Vật Liệu Xây Dựng Cơ Bản</h3>
+                  </div>
+                </div>
+                <div class="cat-cards-mini-grid">
+                  {categoriesList.filter(c => c.group === 'vlxd').map((cat) => (
+                    <a href={`/${cat.slug}/`} class="cat-item-card">
+                      <div class="cic-thumb">
+                        <img src={cat.img} alt={cat.name} width="48" height="48" loading="lazy" />
+                      </div>
+                      <div class="cic-info">
+                        <h4 class="cic-name">{cat.name}</h4>
+                        <p class="cic-desc">{cat.desc}</p>
+                      </div>
+                      <span class="cic-arrow">&rarr;</span>
+                    </a>
+                  ))}
+                </div>
+              </div>
+
+              <!-- Group 2: Thiết Bị Vệ Sinh -->
+              <div class="cat-group-visual-box">
+                <div class="group-visual-header">
+                  <div class="gvh-icon tbvs">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path><path d="M22 6l-10 7L2 6"></path></svg>
+                  </div>
+                  <div>
+                    <span class="gvh-sub tbvs">NHÓM 02</span>
+                    <h3 class="gvh-title">Thiết Bị Vệ Sinh &amp; Nội Thất</h3>
+                  </div>
+                </div>
+                <div class="cat-cards-mini-grid">
+                  {categoriesList.filter(c => c.group === 'tbvs').map((cat) => (
+                    <a href={`/${cat.slug}/`} class="cat-item-card">
+                      <div class="cic-thumb">
+                        <img src={cat.img} alt={cat.name} width="48" height="48" loading="lazy" />
+                      </div>
+                      <div class="cic-info">
+                        <h4 class="cic-name">{cat.name}</h4>
+                        <p class="cic-desc">{cat.desc}</p>
+                      </div>
+                      <span class="cic-arrow">&rarr;</span>
+                    </a>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            <p class="section-note" style="margin-top: 1.25rem;">
+              Nhờ đó, khách hàng có thể tìm kiếm và mua trọn gói nhiều nhóm vật liệu và thiết bị cần thiết cho công trình tại cùng một địa điểm tiện lợi.
+            </p>
+          </section>
+
+          <!-- 5. Chúng Tôi Cung Cấp Những Gì? -->
+          <section class="about-section">
+            <h2 class="section-heading">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" class="heading-svg"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"></rect><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path></svg>
+              Chúng Tôi Cung Cấp Những Gì?
+            </h2>
+
+            <div class="offerings-container">
+              <div class="offering-box">
+                <h3 class="offering-title">1. Vật Liệu Xây Thô &amp; Kết Cấu</h3>
+                <p>Hoàng Yến cung cấp các nhóm vật liệu phục vụ phần móng, kết cấu chịu lực và xây thô công trình:</p>
+                <div class="offering-items-list">
+                  <div class="offering-item">
+                    <strong>Thép xây dựng:</strong> Các dòng thép cây, thép cuộn (D6 - D32) phục vụ nhà ở dân dụng và dự án công nghiệp.
+                  </div>
+                  <div class="offering-item">
+                    <strong>Xi măng:</strong> Các dòng xi măng phục vụ xây trát, tô, đổ bê tông móng dầm sàn từ những thương hiệu phổ biến.
+                  </div>
+                  <div class="offering-item">
+                    <strong>Gạch xây dựng:</strong> Gạch tuynel nung chín đều, chịu lực cao phục vụ xây tường bao và tường ngăn.
+                  </div>
+                  <div class="offering-item">
+                    <strong>Tôn &amp; Xà gồ:</strong> Phục vụ thi công mái lợp nhà ở, xưởng sản xuất, kết cấu mái chắc chắn.
+                  </div>
+                  <div class="offering-item">
+                    <strong>Lưới, kẽm &amp; Đinh vít:</strong> Các dòng vật tư phụ trợ hoàn thiện quá trình thi công xây dựng.
+                  </div>
+                </div>
+              </div>
+
+              <div class="offering-box">
+                <h3 class="offering-title">2. Thiết Bị Vệ Sinh &amp; Phòng Tắm</h3>
+                <p>Bên cạnh vật liệu xây thô, Hoàng Yến còn cung cấp nhiều sản phẩm hoàn thiện không gian sống:</p>
+                <div class="offering-items-list">
+                  <div class="offering-item">
+                    <strong>Bồn cầu:</strong> Dòng một khối xả xoáy nano và dòng hai khối tiết kiệm nước.
+                  </div>
+                  <div class="offering-item">
+                    <strong>Lavabo &amp; Vòi nước:</strong> Chậu rửa mặt sứ phủ men chống bám bẩn kèm vòi đồng mạ chrome.
+                  </div>
+                  <div class="offering-item">
+                    <strong>Sen tắm &amp; Sen cây:</strong> Bộ sen cây phím đàn, sen tắm nóng lạnh mạ titan cao cấp.
+                  </div>
+                  <div class="offering-item">
+                    <strong>Bồn tắm &amp; Phụ kiện:</strong> Bồn tắm nằm, bồn tắm massage và trọn bộ phụ kiện phòng tắm inox 304.
+                  </div>
+                </div>
+                <p style="margin-top: 10px; font-size: 0.9rem; color: #64748b;">
+                  Danh mục được xây dựng để đáp ứng đầy đủ nhu cầu từ công trình dân dụng phổ thông đến các không gian phòng tắm yêu cầu cao hơn về thiết kế và tiện nghi.
+                </p>
+              </div>
+            </div>
+          </section>
+
+          <!-- 6. Các Thương Hiệu Đồng Hành -->
+          <section class="about-section">
+            <h2 class="section-heading">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" class="heading-svg"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
+              Các Thương Hiệu Vật Liệu Xây Dựng Đồng Hành
+            </h2>
+            <p>
+              Hoàng Yến phân phối sản phẩm từ nhiều thương hiệu uy tín hàng đầu trên thị trường vật liệu xây dựng và thiết bị vệ sinh Việt Nam:
+            </p>
+            <div class="brands-pills-row">
+              <span class="brand-pill">Hòa Phát</span>
+              <span class="brand-pill">Nghi Sơn</span>
+              <span class="brand-pill">Bỉm Sơn Con Voi</span>
+              <span class="brand-pill">Sông Gianh</span>
+              <span class="brand-pill">Tôn Đông Á</span>
+              <span class="brand-pill">Caesar</span>
+              <span class="brand-pill">Viglacera</span>
+              <span class="brand-pill">Mowoen</span>
+            </div>
+            <p style="font-size: 0.9rem; color: #475569; margin-top: 12px;">
+              Trên website, mỗi sản phẩm được cung cấp minh bạch về thương hiệu, quy cách và đặc điểm kỹ thuật để quý khách hàng thuận tiện tham khảo trước khi chọn mua.
+            </p>
+          </section>
+
+          <!-- 7. 6 Giá Trị Cốt Lõi -->
+          <section class="about-section">
+            <h2 class="section-heading">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" class="heading-svg"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
+              6 Giá Trị Cốt Lõi (Core Values)
+            </h2>
+            <p>
+              Mọi hoạt động tư vấn, cung ứng sản phẩm và phục vụ khách hàng tại VLXD Hoàng Yến đều được xây dựng trên nền tảng 6 giá trị cốt lõi:
+            </p>
+
+            <div class="core-values-grid">
+              <!-- Value 1 -->
+              <div class="core-val-card">
+                <div class="val-card-top">
+                  <span class="val-num-badge">01</span>
+                  <h3 class="val-title">Minh Bạch</h3>
+                </div>
+                <p class="val-desc">
+                  Thông tin về sản phẩm, quy cách, giá bán và tình trạng hàng được trình bày rõ ràng theo dữ liệu thực tế tại từng thời điểm.
+                </p>
+                <div class="val-spirit">
+                  <span class="spirit-label">Tinh thần:</span>
+                  <strong>Nói đúng thông tin – không phóng đại.</strong>
+                </div>
+              </div>
+
+              <!-- Value 2 -->
+              <div class="core-val-card">
+                <div class="val-card-top">
+                  <span class="val-num-badge">02</span>
+                  <h3 class="val-title">Trách Nhiệm</h3>
+                </div>
+                <p class="val-desc">
+                  Mỗi sản phẩm và thông tin cung cấp cho khách hàng cần được xem xét cẩn thận, đặc biệt đối với những vật liệu ảnh hưởng trực tiếp đến quá trình thi công công trình.
+                </p>
+                <div class="val-spirit">
+                  <span class="spirit-label">Tinh thần:</span>
+                  <strong>Có trách nhiệm với từng thông tin và từng nhu cầu của khách hàng.</strong>
+                </div>
+              </div>
+
+              <!-- Value 3 -->
+              <div class="core-val-card">
+                <div class="val-card-top">
+                  <span class="val-num-badge">03</span>
+                  <h3 class="val-title">Phù Hợp</h3>
+                </div>
+                <p class="val-desc">
+                  Không phải vật liệu đắt hơn luôn là lựa chọn phù hợp hơn. Hoàng Yến hướng đến việc giúp khách hàng lựa chọn sản phẩm dựa trên nhu cầu, hạng mục và điều kiện thực tế của công trình.
+                </p>
+                <div class="val-spirit">
+                  <span class="spirit-label">Tinh thần:</span>
+                  <strong>Đúng vật liệu – đúng nhu cầu.</strong>
+                </div>
+              </div>
+
+              <!-- Value 4 -->
+              <div class="core-val-card">
+                <div class="val-card-top">
+                  <span class="val-num-badge">04</span>
+                  <h3 class="val-title">Đồng Hành</h3>
+                </div>
+                <p class="val-desc">
+                  VLXD không chỉ là việc bán một sản phẩm riêng lẻ. Một công trình thường cần nhiều loại vật tư ở nhiều giai đoạn khác nhau. Hoàng Yến hướng tới duy trì sự kết nối với khách hàng trong quá trình tìm hiểu và lựa chọn vật liệu cho công trình.
+                </p>
+                <div class="val-spirit">
+                  <span class="spirit-label">Tinh thần:</span>
+                  <strong>Đồng hành cùng từng giai đoạn xây dựng.</strong>
+                </div>
+              </div>
+
+              <!-- Value 5 -->
+              <div class="core-val-card">
+                <div class="val-card-top">
+                  <span class="val-num-badge">05</span>
+                  <h3 class="val-title">Giá Trị Thực</h3>
+                </div>
+                <p class="val-desc">
+                  Tập trung vào những giá trị có thể mang lại cho khách hàng thay vì sử dụng những lời quảng cáo hoặc cam kết không có cơ sở. Thông tin phải hữu ích, dễ hiểu và có thể áp dụng vào nhu cầu thực tế.
+                </p>
+                <div class="val-spirit">
+                  <span class="spirit-label">Tinh thần:</span>
+                  <strong>Giá trị thật cho công trình thật.</strong>
+                </div>
+              </div>
+
+              <!-- Value 6 -->
+              <div class="core-val-card">
+                <div class="val-card-top">
+                  <span class="val-num-badge">06</span>
+                  <h3 class="val-title">Phát Triển Bền Vững</h3>
+                </div>
+                <p class="val-desc">
+                  Xây dựng doanh nghiệp dựa trên mối quan hệ lâu dài với khách hàng, nhà cung cấp và cộng đồng địa phương, thay vì chỉ tập trung vào một giao dịch ngắn hạn.
+                </p>
+                <div class="val-spirit">
+                  <span class="spirit-label">Tinh thần:</span>
+                  <strong>Xây dựng hôm nay – tạo nền tảng lâu dài.</strong>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <!-- 8. Phục Vụ Khách Hàng & Công Trình Tại Quảng Trị -->
+          <section class="about-section local-seo-section">
+            <h2 class="section-heading">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" class="heading-svg"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>
+              Phục Vụ Khách Hàng &amp; Công Trình Tại Quảng Trị
+            </h2>
+            <p>
+              Siêu Thị VLXD Hoàng Yến tập trung phục vụ khách hàng và công trình trên địa bàn tỉnh Quảng Trị. Quý khách có nhu cầu tham khảo sản phẩm và dịch vụ khu vực:
+            </p>
+            <div class="seo-landing-links">
+              <a href="/vlxd-quang-tri/" class="seo-link-pill">Vật Liệu Xây Dựng Đông Hà</a>
+              <a href="/thep-xay-dung/" class="seo-link-pill">Thép Xây Dựng Quảng Trị</a>
+              <a href="/xi-mang/" class="seo-link-pill">Xi Măng Giá Sỉ Quảng Trị</a>
+              <a href="/ton/" class="seo-link-pill">Tôn Lợp Mạ Màu Quảng Trị</a>
+              <a href="/bon-cau/" class="seo-link-pill">Thiết Bị Vệ Sinh Quảng Trị</a>
+            </div>
+          </section>
+
+          <!-- 9. Quy Định Về Nội Dung Trên Website -->
+          <section class="about-section disclaimer-section">
+            <h3 class="disclaimer-title">Quy Định Về Nội Dung Trên Website</h3>
+            <p>
+              Các nội dung được đăng tải trên website VLXD Hoàng Yến được xây dựng nhằm cung cấp thông tin tham khảo minh bạch cho khách hàng về quy cách sản phẩm, tiêu chuẩn kỹ thuật, barem vật liệu và kinh nghiệm thi công. Thông số kỹ thuật được đối chiếu từ tài liệu của nhà sản xuất. Đối với giá bán thực tế, quý khách nên liên hệ để nhận báo giá chính xác tại thời điểm mua.
+            </p>
+          </section>
+
+        </main>
+
+        <!-- Sidebar Corporate Card & Contact -->
+        <aside class="about-sidebar">
+          
+          <!-- Corporate Info Card -->
+          <div class="corp-info-card">
+            <div class="corp-card-header">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path></svg>
+              <h3>Thông Tin Doanh Nghiệp</h3>
+            </div>
+            
+            <div class="corp-details-list">
+              <div class="corp-detail-item">
+                <span class="c-label">Tên doanh nghiệp</span>
+                <span class="c-val highlight-val">CÔNG TY TNHH MTV VẬT LIỆU XÂY DỰNG TỔNG HỢP HOÀNG YẾN</span>
+              </div>
+              <div class="corp-detail-item">
+                <span class="c-label">Thương hiệu</span>
+                <span class="c-val">Siêu Thị VLXD Hoàng Yến</span>
+              </div>
+              <div class="corp-detail-item">
+                <span class="c-label">Địa chỉ</span>
+                <span class="c-val">299 Lê Duẩn, Phường Đông Hà, Tỉnh Quảng Trị</span>
+              </div>
+              <div class="corp-detail-item">
+                <span class="c-label">Mã số thuế (MST)</span>
+                <span class="c-val">3200165533</span>
+              </div>
+              <div class="corp-detail-item">
+                <span class="c-label">Vị thế</span>
+                <span class="c-val highlight-val">Đại lý cấp 1 VLXD tỉnh Quảng Trị</span>
+              </div>
+              <div class="corp-detail-item">
+                <span class="c-label">Thành lập</span>
+                <span class="c-val">Năm 2003 (Hơn 20 năm kinh nghiệm)</span>
+              </div>
+              <div class="corp-detail-item">
+                <span class="c-label">Uy tín nhà thầu</span>
+                <span class="c-val">Hơn 1.250+ nhà thầu tin chọn</span>
+              </div>
+              <div class="corp-detail-item">
+                <span class="c-label">Hotline / Zalo</span>
+                <a href="tel:0946575579" class="c-val phone-link">0946.575.579</a>
+              </div>
+              <div class="corp-detail-item">
+                <span class="c-label">Điện thoại</span>
+                <a href="tel:0914127111" class="c-val phone-link">0914.127.111</a>
+              </div>
+              <div class="corp-detail-item">
+                <span class="c-label">Email</span>
+                <span class="c-val">vlxdhoangyenqt@gmail.com</span>
+              </div>
+              <div class="corp-detail-item">
+                <span class="c-label">Giờ hoạt động</span>
+                <span class="c-val">7:30 – 22:00 (Tất cả các ngày)</span>
+              </div>
+            </div>
+
+            <a href="https://maps.app.goo.gl/QUX1w34xfjRMcyW87" target="_blank" rel="noopener noreferrer" class="btn-corp-maps">
+              <span>Xem Bản Đồ Cửa Hàng →</span>
+            </a>
+          </div>
+
+        </aside>
+
+      </div>
+      <section class="about-cta-banner">
+        <div class="cta-banner-inner">
+          <div class="cta-text-side">
+            <span class="cta-eyebrow">TƯ VẤN &amp; BÁO GIÁ NHANH</span>
+            <h3 class="cta-main-title">Anh Đang Cần Báo Giá Vật Liệu Cho Nhà Ở Hoặc Công Trình?</h3>
+            <p class="cta-intro-p">Hãy gửi cho Hoàng Yến danh sách nhu cầu vật tư bao gồm:</p>
+            <div class="cta-check-grid">
+              <span><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" style="color: #16a34a; vertical-align: middle; margin-right: 4px;"><polyline points="20 6 9 17 4 12"></polyline></svg>Loại vật liệu cần mua</span>
+              <span><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" style="color: #16a34a; vertical-align: middle; margin-right: 4px;"><polyline points="20 6 9 17 4 12"></polyline></svg>Thương hiệu mong muốn</span>
+              <span><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" style="color: #16a34a; vertical-align: middle; margin-right: 4px;"><polyline points="20 6 9 17 4 12"></polyline></svg>Quy cách &amp; mác vật liệu</span>
+              <span><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" style="color: #16a34a; vertical-align: middle; margin-right: 4px;"><polyline points="20 6 9 17 4 12"></polyline></svg>Số lượng khối lượng</span>
+              <span><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" style="color: #16a34a; vertical-align: middle; margin-right: 4px;"><polyline points="20 6 9 17 4 12"></polyline></svg>Địa điểm giao hàng</span>
+            </div>
+          </div>
+          <div class="cta-btn-side">
+            <a href={`tel:${settings.hotline_main.replace(/\./g, '')}`} class="btn btn-cta-primary">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M6.62 10.79a15.05 15.05 0 006.59 6.59l2.2-2.2a1 1 0 011.02-.24 11.72 11.72 0 003.68.59 1 1 0 011 1V20a1 1 0 01-1 1A17 17 0 013 4a1 1 0 011-1h3.5a1 1 0 011 1 11.72 11.72 0 00.59 3.68 1 1 0 01-.24 1.02l-2.23 2.09z"/></svg>
+              <span>Yêu Cầu Báo Giá</span>
+            </a>
+            <a href="/san-pham/" class="btn btn-cta-secondary">
+              <span>Xem Sản Phẩm</span>
+            </a>
+            <a href="/lien-he/" class="btn btn-cta-outline">
+              <span>Liên Hệ VLXD Hoàng Yến</span>
+            </a>
+          </div>
+        </div>
+      </section>
+
+    </div>
+  </div>
+</Layout>
+
+<style>
+  .about-page-container {
+    background-color: #f8fafc;
+    padding-bottom: 4rem;
+  }
+
+  /* Hero Header */
+  .about-hero-header {
+    position: relative;
+    color: #ffffff;
+    padding: 3.8rem 0 3.2rem;
+    border-bottom: 4px solid var(--color-red);
+    overflow: hidden;
+    background-color: #0f172a;
+  }
+  .about-hero-header::before {
+    content: "";
+    position: absolute;
+    inset: -15px;
+    background-image: url('/images/banner.png');
+    background-size: cover;
+    background-position: center right;
+    filter: blur(2.5px) brightness(0.65);
+    transform: scale(1.03);
+    z-index: 1;
+  }
+  .about-hero-header::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(90deg, rgba(15, 23, 42, 0.92) 0%, rgba(15, 23, 42, 0.78) 55%, rgba(15, 23, 42, 0.42) 100%);
+    z-index: 2;
+  }
+  .about-hero-header .container {
+    position: relative;
+    z-index: 3;
+  }
+  .about-hero-inner {
+    max-width: 880px;
+    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
+  }
+  .about-hero-badge {
+    display: inline-block;
+    background-color: var(--color-red);
+    color: #ffffff;
+    font-size: 0.75rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    padding: 4px 12px;
+    border-radius: 4px;
+    margin-bottom: 1rem;
+  }
+  .about-hero-title {
+    font-family: var(--font-heading);
+    font-size: clamp(1.8rem, 3.5vw, 2.6rem);
+    font-weight: 800;
+    line-height: 1.25;
+    color: #ffffff;
+    margin-bottom: 1rem;
+  }
+  .about-hero-lead {
+    font-size: 1.15rem;
+    font-weight: 600;
+    color: #93c5fd;
+    line-height: 1.6;
+    margin-bottom: 0.8rem;
+  }
+  .about-hero-desc {
+    font-size: 0.95rem;
+    color: #cbd5e1;
+    line-height: 1.7;
+  }
+  .about-hero-desc strong {
+    color: #ffffff;
+  }
+
+  /* Main Grid */
+  .section-body {
+    margin-top: 2.5rem;
+  }
+  .about-layout-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 340px;
+    gap: 2rem;
+    align-items: flex-start;
+  }
+
+  .about-content-primary {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: var(--radius-sm);
+    padding: 2rem;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+    min-width: 0;
+    max-width: 100%;
+    box-sizing: border-box;
+  }
+
+  .about-section {
+    margin-bottom: 2.5rem;
+    padding-bottom: 2rem;
+    border-bottom: 1px solid #f1f5f9;
+  }
+  .about-section:last-child {
+    border-bottom: none;
+    margin-bottom: 0;
+    padding-bottom: 0;
+  }
+
+  .section-heading {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-family: var(--font-heading);
+    font-size: 1.35rem;
+    font-weight: 800;
+    color: #0f172a;
+    margin-bottom: 1rem;
+    line-height: 1.3;
+  }
+  .heading-svg {
+    color: var(--color-red);
+    flex-shrink: 0;
+  }
+
+  .about-section p {
+    font-size: 0.98rem;
+    line-height: 1.75;
+    color: #334155;
+    margin-bottom: 1rem;
+  }
+
+  /* ==========================================================================
+     Category Marquee Slider & Visual Showcase
+     ========================================================================== */
+  .cat-marquee-wrapper {
+    background: linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%);
+    border: 1px solid #e2e8f0;
+    border-radius: 16px;
+    padding: 1.25rem;
+    margin: 1.5rem 0;
+    overflow: hidden;
+    position: relative;
+    box-shadow: 0 4px 20px rgba(15, 23, 42, 0.03);
+    width: 100%;
+    box-sizing: border-box;
+    min-width: 0;
+    max-width: 100%;
+  }
+  .cat-marquee-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 1px solid #e2e8f0;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .cat-marquee-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.75rem;
+    font-weight: 800;
+    letter-spacing: 0.06em;
+    color: var(--color-red);
+    background: #fef2f2;
+    padding: 4px 10px;
+    border-radius: 9999px;
+    border: 1px solid #fee2e2;
+  }
+  .cat-marquee-hint {
+    font-size: 0.8rem;
+    color: #64748b;
+    font-style: italic;
+  }
+  .cat-marquee-container {
+    overflow: hidden;
+    position: relative;
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
+    box-sizing: border-box;
+    mask-image: linear-gradient(to right, transparent, black 40px, black calc(100% - 40px), transparent);
+    -webkit-mask-image: linear-gradient(to right, transparent, black 40px, black calc(100% - 40px), transparent);
+  }
+  .cat-marquee-track {
+    display: flex;
+    gap: 1rem;
+    width: max-content;
+    animation: catMarqueeScroll 40s linear infinite;
+    padding: 6px 0;
+  }
+  .cat-marquee-track:hover {
+    animation-play-state: paused;
+  }
+  @keyframes catMarqueeScroll {
+    0% {
+      transform: translateX(0);
+    }
+    100% {
+      transform: translateX(-50%);
+    }
+  }
+  .cat-slide-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    width: 130px;
+    padding: 12px 10px;
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 14px;
+    text-decoration: none;
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 2px 6px rgba(15, 23, 42, 0.04);
+    flex-shrink: 0;
+  }
+  .cat-slide-card:hover {
+    transform: translateY(-4px);
+    border-color: var(--color-red);
+    box-shadow: 0 8px 20px rgba(220, 38, 38, 0.12);
+  }
+  .cat-slide-img-wrap {
+    width: 58px;
+    height: 58px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 8px;
+    transition: transform 0.25s ease;
+  }
+  .cat-slide-card:hover .cat-slide-img-wrap {
+    transform: scale(1.1);
+  }
+  .cat-slide-img-wrap img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    filter: drop-shadow(0 2px 4px rgba(0,0,0,0.08));
+  }
+  .cat-slide-meta {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: 3px;
+    width: 100%;
+  }
+  .cat-slide-name {
+    font-size: 0.8125rem;
+    font-weight: 700;
+    color: #0f172a;
+    line-height: 1.25;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 100%;
+  }
+  .cat-slide-card:hover .cat-slide-name {
+    color: var(--color-red);
+  }
+  .cat-slide-tag {
+    font-size: 0.65rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    padding: 2px 6px;
+    border-radius: 4px;
+  }
+  .cat-slide-tag.vlxd {
+    background: #fef2f2;
+    color: #b91c1c;
+  }
+  .cat-slide-tag.tbvs {
+    background: #eff6ff;
+    color: #0284c7;
+  }
+
+  /* Visual Showcase Groups */
+  .cat-visual-groups {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.25rem;
+    margin: 1.5rem 0 0.5rem;
+  }
+  .cat-group-visual-box {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 16px;
+    padding: 1.25rem;
+    box-shadow: 0 4px 16px rgba(15, 23, 42, 0.03);
+    display: flex;
+    flex-direction: column;
+  }
+  .group-visual-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 1rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 1px solid #f1f5f9;
+  }
+  .gvh-icon {
+    width: 38px;
+    height: 38px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+  .gvh-icon.vlxd {
+    background: #fef2f2;
+    color: var(--color-red);
+  }
+  .gvh-icon.tbvs {
+    background: #eff6ff;
+    color: #0284c7;
+  }
+  .gvh-sub {
+    font-size: 0.6875rem;
+    font-weight: 800;
+    letter-spacing: 0.06em;
+    color: var(--color-red);
+    display: block;
+    line-height: 1;
+    margin-bottom: 2px;
+  }
+  .gvh-sub.tbvs {
+    color: #0284c7;
+  }
+  .gvh-title {
+    font-family: var(--font-heading);
+    font-size: 1.05rem;
+    font-weight: 800;
+    color: #0f172a;
+    margin: 0;
+    line-height: 1.25;
+  }
+  .cat-cards-mini-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .cat-item-card {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 8px 10px;
+    background: #f8fafc;
+    border: 1px solid #f1f5f9;
+    border-radius: 10px;
+    text-decoration: none;
+    transition: all 0.2s ease;
+  }
+  .cat-item-card:hover {
+    background: #ffffff;
+    border-color: #cbd5e1;
+    box-shadow: 0 4px 12px rgba(15, 23, 42, 0.06);
+    transform: translateX(3px);
+  }
+  .cic-thumb {
+    width: 40px;
+    height: 40px;
+    background: #ffffff;
+    border-radius: 8px;
+    padding: 4px;
+    border: 1px solid #e2e8f0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+  .cic-thumb img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+  }
+  .cic-info {
+    flex: 1;
+    min-width: 0;
+  }
+  .cic-name {
+    font-family: var(--font-heading);
+    font-size: 0.8875rem;
+    font-weight: 700;
+    color: #0f172a;
+    margin: 0 0 2px 0;
+    line-height: 1.25;
+    transition: color 0.15s ease;
+  }
+  .cat-item-card:hover .cic-name {
+    color: var(--color-red);
+  }
+  .cic-desc {
+    font-size: 0.78rem;
+    color: #64748b;
+    margin: 0;
+    line-height: 1.35;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .cic-arrow {
+    color: #94a3b8;
+    font-weight: 700;
+    font-size: 1rem;
+    transition: transform 0.2s ease, color 0.2s ease;
+  }
+  .cat-item-card:hover .cic-arrow {
+    color: var(--color-red);
+    transform: translateX(4px);
+  }
+  .section-note {
+    font-size: 0.9rem;
+    font-style: italic;
+    color: #64748b;
+  }
+
+  /* Offerings Box */
+  .offerings-container {
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+    margin-top: 1rem;
+  }
+  .offering-box {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-left: 4px solid #0f172a;
+    border-radius: var(--radius-xs);
+    padding: 1.25rem;
+  }
+  .offering-title {
+    font-size: 1.1rem;
+    font-weight: 800;
+    color: #0f172a;
+    margin-bottom: 0.5rem;
+  }
+  .offering-items-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-top: 0.75rem;
+  }
+  .offering-item {
+    font-size: 0.9rem;
+    color: #334155;
+    line-height: 1.5;
+  }
+  .offering-item strong {
+    color: #0f172a;
+  }
+
+  /* Brands Pills */
+  .brands-pills-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 1rem;
+  }
+  .brand-pill {
+    background: #ffffff;
+    border: 1px solid #cbd5e1;
+    color: #0f172a;
+    font-size: 0.85rem;
+    font-weight: 700;
+    padding: 6px 14px;
+    border-radius: 20px;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.03);
+  }
+
+  /* Reasons Grid */
+  .reasons-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+    margin-top: 1.25rem;
+  }
+  .reason-card {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: var(--radius-xs);
+    padding: 1.25rem;
+    position: relative;
+  }
+  .reason-card.full-width {
+    grid-column: 1 / -1;
+  }
+  .reason-number {
+    font-family: var(--font-heading);
+    font-size: 1.2rem;
+    font-weight: 900;
+    color: var(--color-red);
+    margin-bottom: 0.3rem;
+  }
+  .reason-card h4 {
+    font-size: 0.98rem;
+    font-weight: 800;
+    color: #0f172a;
+    margin-bottom: 0.4rem;
+  }
+  .reason-card p {
+    font-size: 0.88rem;
+    color: #475569;
+    margin-bottom: 0;
+    line-height: 1.55;
+  }
+
+  /* 1. Mission & Vision Grid */
+  .mission-vision-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.25rem;
+    margin-top: 1rem;
+  }
+  .mv-card {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 16px;
+    padding: 1.5rem;
+    position: relative;
+    box-shadow: 0 4px 16px rgba(15, 23, 42, 0.04);
+    display: flex;
+    flex-direction: column;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+  }
+  .mv-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(15, 23, 42, 0.08);
+  }
+  .mv-mission {
+    border-top: 4px solid var(--color-red);
+  }
+  .mv-vision {
+    border-top: 4px solid #0284c7;
+  }
+  .mv-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 1rem;
+  }
+  .mv-icon-badge {
+    width: 44px;
+    height: 44px;
+    border-radius: 12px;
+    background: #fef2f2;
+    color: var(--color-red);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+  .mv-icon-badge.vision {
+    background: #eff6ff;
+    color: #0284c7;
+  }
+  .mv-tag {
+    font-size: 0.6875rem;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    color: var(--color-red);
+    display: block;
+    line-height: 1;
+    margin-bottom: 3px;
+  }
+  .mv-tag.vision {
+    color: #0284c7;
+  }
+  .mv-title {
+    font-family: var(--font-heading);
+    font-size: 1.15rem;
+    font-weight: 800;
+    color: #0f172a;
+    margin: 0;
+    line-height: 1.2;
+  }
+  .mv-lead {
+    font-size: 0.925rem;
+    font-weight: 600;
+    color: #1e293b;
+    line-height: 1.6;
+    margin-bottom: 0.75rem;
+  }
+  .mv-desc {
+    font-size: 0.88rem;
+    color: #64748b;
+    line-height: 1.65;
+    margin-bottom: 0;
+  }
+
+  /* 2. 6 Core Values Grid */
+  .core-values-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1.25rem;
+    margin-top: 1.25rem;
+  }
+  .core-val-card {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 14px;
+    padding: 1.25rem;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    box-shadow: 0 2px 8px rgba(15, 23, 42, 0.03);
+    transition: all 0.2s ease;
+  }
+  .core-val-card:hover {
+    border-color: #cbd5e1;
+    box-shadow: 0 6px 18px rgba(15, 23, 42, 0.06);
+  }
+  .val-card-top {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 0.75rem;
+  }
+  .val-num-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    background: linear-gradient(135deg, var(--color-red) 0%, #b91c1c 100%);
+    color: #ffffff;
+    font-size: 0.8125rem;
+    font-weight: 800;
+    border-radius: 8px;
+    flex-shrink: 0;
+  }
+  .val-title {
+    font-family: var(--font-heading);
+    font-size: 1.05rem;
+    font-weight: 800;
+    color: #0f172a;
+    margin: 0;
+  }
+  .val-desc {
+    font-size: 0.8875rem;
+    color: #475569;
+    line-height: 1.6;
+    margin-bottom: 0.85rem;
+  }
+  .val-spirit {
+    background: #f8fafc;
+    border-left: 3px solid var(--color-red);
+    border-radius: 0 6px 6px 0;
+    padding: 8px 12px;
+    font-size: 0.8125rem;
+    color: #0f172a;
+    line-height: 1.5;
+  }
+  .spirit-label {
+    display: block;
+    font-size: 0.6875rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: #94a3b8;
+    margin-bottom: 2px;
+  }
+
+  /* 2. Team Profiles Grid (Original Horizontal Layout) */
+  .team-profiles-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+    margin-top: 1.25rem;
+  }
+  .team-profile-card {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 18px;
+    padding: 1.5rem;
+    box-shadow: 0 4px 20px rgba(15, 23, 42, 0.05);
+    transition: all 0.25s ease;
+  }
+  .team-profile-card:hover {
+    box-shadow: 0 10px 30px rgba(15, 23, 42, 0.08);
+    border-color: #cbd5e1;
+  }
+  .team-card-inner {
+    display: flex;
+    gap: 1.5rem;
+    align-items: flex-start;
+  }
+  .team-photo-wrap {
+    flex-shrink: 0;
+  }
+  .team-avatar-img {
+    width: 120px;
+    height: 120px;
+    border-radius: 16px;
+    object-fit: cover;
+    border: 3px solid #ffffff;
+    box-shadow: 0 6px 18px rgba(15, 23, 42, 0.12);
+    display: block;
+    background: #f1f5f9;
+  }
+  .team-info-wrap {
+    flex: 1;
+    min-width: 0;
+  }
+  .team-header-meta {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-bottom: 0.65rem;
+  }
+  .team-member-name {
+    font-family: var(--font-heading);
+    font-size: 1.2rem;
+    font-weight: 800;
+    color: #0f172a;
+    margin: 0 0 2px 0;
+    line-height: 1.25;
+  }
+  .team-position {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--color-red);
+  }
+  .team-role-tag {
+    font-size: 0.6875rem;
+    font-weight: 800;
+    padding: 4px 10px;
+    border-radius: 9999px;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    white-space: nowrap;
+  }
+  .ceo-tag {
+    background: #fef2f2;
+    color: #b91c1c;
+    border: 1px solid #fecaca;
+  }
+  .dir-tag {
+    background: #f0fdf4;
+    color: #15803d;
+    border: 1px solid #bbf7d0;
+  }
+  .cs-tag,
+  .mkt-tag {
+    background: #eff6ff;
+    color: #1d4ed8;
+    border: 1px solid #dbeafe;
+  }
+  .team-bio-content p {
+    font-size: 0.8875rem;
+    color: #475569;
+    line-height: 1.65;
+    margin-bottom: 0.5rem;
+  }
+  .team-bio-content p:last-child {
+    margin-bottom: 0;
+  }
+
+  /* Local SEO Section */
+  .local-seo-section {
+    background: #f8fafc;
+    padding: 1.25rem;
+    border-radius: var(--radius-xs);
+    border: 1px dashed #cbd5e1;
+  }
+  .seo-landing-links {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 0.75rem;
+  }
+  .seo-link-pill {
+    display: inline-block;
+    background: #ffffff;
+    color: #0284c7;
+    border: 1px solid #bae6fd;
+    font-size: 0.82rem;
+    font-weight: 700;
+    padding: 6px 12px;
+    border-radius: 4px;
+    text-decoration: none;
+    transition: all 0.15s ease;
+  }
+  .seo-link-pill:hover {
+    background: #0284c7;
+    color: #ffffff;
+    border-color: #0284c7;
+  }
+
+  /* Disclaimer */
+  .disclaimer-section {
+    background: #fffbeb;
+    border: 1px solid #fde68a;
+    border-radius: var(--radius-xs);
+    padding: 1.25rem;
+  }
+  .disclaimer-title {
+    font-size: 0.95rem;
+    font-weight: 800;
+    color: #92400e;
+    margin-bottom: 0.4rem;
+  }
+  .disclaimer-section p {
+    font-size: 0.85rem;
+    color: #78350f;
+    margin-bottom: 0;
+    line-height: 1.6;
+  }
+
+  /* Sidebar Card */
+  .about-sidebar {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+    position: sticky;
+    top: 90px;
+  }
+  .corp-info-card {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: var(--radius-sm);
+    padding: 1.25rem;
+    box-shadow: 0 4px 16px rgba(15, 23, 42, 0.04);
+  }
+  .corp-card-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: #0284c7;
+    padding-bottom: 0.75rem;
+    border-bottom: 2px solid #0f172a;
+    margin-bottom: 1rem;
+  }
+  .corp-card-header h3 {
+    font-size: 1rem;
+    font-weight: 800;
+    color: #0f172a;
+    margin: 0;
+  }
+  .corp-details-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-bottom: 1.25rem;
+  }
+  .corp-detail-item {
+    display: flex;
+    flex-direction: column;
+  }
+  .c-label {
+    font-size: 0.6875rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: #94a3b8;
+  }
+  .c-val {
+    font-size: 0.8125rem;
+    font-weight: 600;
+    color: #334155;
+    line-height: 1.4;
+  }
+  .highlight-val {
+    color: #0f172a;
+    font-weight: 700;
+  }
+  .phone-link {
+    color: var(--color-red);
+    font-weight: 800;
+    text-decoration: none;
+  }
+  .btn-corp-maps {
+    display: block;
+    text-align: center;
+    background: #0f172a;
+    color: #ffffff;
+    font-weight: 700;
+    font-size: 0.8125rem;
+    padding: 10px;
+    border-radius: var(--radius-xs);
+    text-decoration: none;
+    transition: background 0.15s ease;
+  }
+  .btn-corp-maps:hover {
+    background: var(--color-red);
+  }
+
+  /* CTA Banner */
+  .about-cta-banner {
+    margin-top: 3rem;
+    background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+    color: #ffffff;
+    border-radius: var(--radius-sm);
+    padding: 2.25rem;
+    border-left: 6px solid var(--color-red);
+    box-shadow: 0 8px 24px rgba(15, 23, 42, 0.15);
+  }
+  .cta-banner-inner {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 2rem;
+    align-items: center;
+  }
+  .cta-eyebrow {
+    font-size: 0.6875rem;
+    font-weight: 800;
+    color: #fef08a;
+    letter-spacing: 0.08em;
+  }
+  .cta-main-title {
+    font-family: var(--font-heading);
+    font-size: 1.35rem;
+    font-weight: 800;
+    color: #ffffff;
+    margin: 4px 0 8px 0;
+  }
+  .cta-intro-p {
+    font-size: 0.9rem;
+    color: #cbd5e1;
+    margin-bottom: 0.75rem;
+  }
+  .cta-check-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    font-size: 0.8125rem;
+    color: #93c5fd;
+    font-weight: 600;
+  }
+  .cta-btn-side {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    min-width: 200px;
+  }
+  .btn-cta-primary {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    background: var(--color-red);
+    color: #ffffff;
+    font-weight: 800;
+    font-size: 0.9rem;
+    padding: 10px 18px;
+    border-radius: var(--radius-xs);
+    text-decoration: none;
+    transition: background 0.15s ease;
+  }
+  .btn-cta-primary:hover {
+    background: #b91c1c;
+  }
+  .btn-cta-secondary {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: #0284c7;
+    color: #ffffff;
+    font-weight: 700;
+    font-size: 0.88rem;
+    padding: 10px 18px;
+    border-radius: var(--radius-xs);
+    text-decoration: none;
+    transition: background 0.15s ease;
+  }
+  .btn-cta-secondary:hover {
+    background: #0369a1;
+  }
+  .btn-cta-outline {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: transparent;
+    color: #ffffff;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    font-weight: 600;
+    font-size: 0.85rem;
+    padding: 9px 18px;
+    border-radius: var(--radius-xs);
+    text-decoration: none;
+    transition: all 0.15s ease;
+  }
+  .btn-cta-outline:hover {
+    background: #ffffff;
+    color: #0f172a;
+  }
+
+  @media (max-width: 1024px) {
+    .about-layout-grid {
+      grid-template-columns: 1fr;
+    }
+    .about-sidebar {
+      position: static;
+    }
+    .cta-banner-inner {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  @media (max-width: 640px) {
+    .cat-visual-groups,
+    .reasons-grid,
+    .mission-vision-grid,
+    .core-values-grid {
+      grid-template-columns: 1fr;
+    }
+    .team-card-inner {
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+    }
+    .team-header-meta {
+      justify-content: center;
+    }
+    .about-content-primary {
+      padding: 1.25rem;
+    }
+  }
+</style>

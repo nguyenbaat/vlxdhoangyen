@@ -1,0 +1,6 @@
+---
+// 301 Permanent Redirect from legacy /cua-hang/ to /san-pham/
+const url = Astro.url;
+const search = url.search;
+return Astro.redirect(`/san-pham/${search}`, 301);
+---

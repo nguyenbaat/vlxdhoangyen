@@ -1,0 +1,205 @@
+---
+import AdminLayout from '../../../../layouts/AdminLayout.astro';
+import BlockEditor from '../../../../components/admin/BlockEditor.astro';
+import MediaManager from '../../../../components/admin/MediaManager.astro';
+import { CategoryRepo } from '../../../../server/db/repo.js';
+import { CATEGORY_SEO_DATA, buildCategorySeoHtml } from '../../../../server/data/category-seo-data.js';
+
+const { id } = Astro.params;
+const catId = Number(id);
+
+if (!catId) {
+  return Astro.redirect('/admin/categories');
+}
+
+const category = await CategoryRepo.getById(catId);
+if (!category) {
+  return Astro.redirect('/admin/categories');
+}
+
+let errorMsg = '';
+
+if (Astro.request.method === 'POST') {
+  try {
+    const formData = await Astro.request.formData();
+    const name = formData.get('name')?.toString().trim() || '';
+    let slug = formData.get('slug')?.toString().trim() || '';
+    const h1 = formData.get('h1')?.toString().trim() || name;
+    const parent_id_val = formData.get('parent_id')?.toString();
+    const parent_id = parent_id_val ? Number(parent_id_val) : null;
+    const group_type = formData.get('group_type')?.toString() || 'vlxd';
+    const description = formData.get('description')?.toString().trim() || '';
+    const content = formData.get('content')?.toString() || '';
+    const image_url = formData.get('image_url')?.toString().trim() || '';
+    const seo_title = formData.get('seo_title')?.toString().trim() || name;
+    const seo_description = formData.get('seo_description')?.toString().trim() || description;
+    const sort_order = Number(formData.get('sort_order')) || 0;
+    const is_active = formData.get('is_active') === 'on' ? 1 : 0;
+
+    if (!name) throw new Error('Vui lòng nhập tên danh mục.');
+    if (!slug) slug = category.slug;
+
+    await CategoryRepo.update(catId, {
+      name,
+      slug,
+      parent_id,
+      group_type,
+      h1,
+      description,
+      content,
+      image_url,
+      seo_title,
+      seo_description,
+      sort_order,
+      is_active
+    });
+
+    return Astro.redirect('/admin/categories');
+  } catch (err: any) {
+    errorMsg = err.message;
+  }
+}
+
+const allCategories = (await CategoryRepo.getMainCategories()).filter(c => c.id !== catId);
+const categoryInitialContent = category.content || buildCategorySeoHtml(CATEGORY_SEO_DATA[category.slug]) || '';
+---
+
+<AdminLayout title={`Sửa Danh Mục: ${category.name}`} activeNav="categories">
+  <div class="form-container">
+    <div class="form-header-bar">
+      <a href="/admin/categories" class="btn btn-outline btn-sm">&larr; Quay lại danh mục</a>
+      <a href={`/${category.slug}/`} target="_blank" class="btn btn-navy btn-sm">Xem trang ngoài web</a>
+    </div>
+
+    {errorMsg && <div class="error-box">{errorMsg}</div>}
+
+    <form method="POST" class="admin-form-card">
+      <div class="form-grid-2">
+        <!-- Main Column -->
+        <div class="col-main">
+          <div class="form-group">
+            <label for="name">Tên danh mục (Hiển thị Menu/Breadcrumb) *</label>
+            <input type="text" id="name" name="name" value={category.name} required />
+          </div>
+
+          <div class="form-group">
+            <label for="h1">Tiêu Đề H1 Trang Danh Mục (Tối ưu SEO Onpage)</label>
+            <input type="text" id="h1" name="h1" value={category.h1 || category.name} placeholder="VD: Xi Măng Xây Dựng Tại Quảng Trị" />
+          </div>
+
+          <div class="form-group">
+            <label for="slug">Đường dẫn tĩnh (Slug)</label>
+            <input type="text" id="slug" name="slug" value={category.slug} required />
+          </div>
+
+          <div class="form-group">
+            <label for="description">Mô tả tóm tắt (Hiển thị đầu trang & SEO)</label>
+            <textarea id="description" name="description" rows="3">{category.description}</textarea>
+          </div>
+
+          <!-- Gutenberg Block Editor for Category content -->
+          <BlockEditor
+            initialContent={categoryInitialContent}
+            name="content"
+            id="category_content"
+            label="Nội Dung Bài Viết Hướng Dẫn & Thông Số Chi Tiết (Gutenberg Block Editor)"
+          />
+
+          <div class="seo-fieldset">
+            <h4>Tối Ưu SEO Google</h4>
+            <div class="form-group">
+              <label for="seo_title">Thẻ Tiêu Đề SEO (Title Tag)</label>
+              <input type="text" id="seo_title" name="seo_title" value={category.seo_title || category.name} />
+            </div>
+            <div class="form-group">
+              <label for="seo_description">Thẻ Mô Tả SEO (Meta Description)</label>
+              <textarea id="seo_description" name="seo_description" rows="2">{category.seo_description || category.description}</textarea>
+            </div>
+          </div>
+        </div>
+
+        <!-- Sidebar Column -->
+        <div class="col-side">
+          <div class="side-card">
+            <h4>Đăng & Trạng Thái</h4>
+            
+            <div class="form-group">
+              <label for="group_type">Phân nhóm ngành hàng</label>
+              <select id="group_type" name="group_type">
+                <option value="vlxd" selected={category.group_type === 'vlxd' || !category.group_type}>Vật Liệu Xây Thô (VLXD)</option>
+                <option value="noi-that" selected={category.group_type === 'noi-that'}>Trang Trí Nội Thất</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label for="parent_id">Danh mục cha (Để trống nếu là danh mục chính)</label>
+              <select id="parent_id" name="parent_id">
+                <option value="">-- Là danh mục cấp 1 chính --</option>
+                {allCategories.map(c => (
+                  <option value={c.id} selected={category.parent_id === c.id}>{c.name}</option>
+                ))}
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label for="sort_order">Thứ tự hiển thị (Số nhỏ trước)</label>
+              <input type="number" id="sort_order" name="sort_order" value={category.sort_order || 0} />
+            </div>
+
+            <div class="form-group checkbox-group">
+              <label>
+                <input type="checkbox" name="is_active" checked={category.is_active !== 0} />
+                Hiển thị danh mục trên website
+              </label>
+            </div>
+
+            <button type="submit" class="btn btn-primary btn-block">
+              LƯU THAY ĐỔI
+            </button>
+          </div>
+
+          <MediaManager
+            featuredImage={category.image_url || ''}
+            featuredInputName="image_url"
+            allowMultiple={false}
+          />
+        </div>
+      </div>
+    </form>
+  </div>
+</AdminLayout>
+
+<style>
+  .form-container { max-width: 1200px; margin: 0 auto; }
+  .form-header-bar { display: flex; justify-content: space-between; margin-bottom: 1.5rem; }
+  .error-box { background: #fee2e2; color: #b91c1c; padding: 1rem; border-radius: 8px; margin-bottom: 1.5rem; font-weight: 600; }
+  
+  .admin-form-card { background: transparent; }
+  .form-grid-2 { display: grid; grid-template-columns: 1fr 340px; gap: 1.5rem; }
+  
+  .col-main { background: #ffffff; padding: 1.5rem; border-radius: 8px; border: 1px solid #e2e8f0; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
+  .col-side { display: flex; flex-direction: column; gap: 1.5rem; }
+  .side-card { background: #ffffff; padding: 1.25rem; border-radius: 8px; border: 1px solid #e2e8f0; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
+  .side-card h4 { margin-top: 0; margin-bottom: 1rem; font-size: 1rem; font-weight: 700; color: #0f172a; border-bottom: 1px solid #f1f5f9; padding-bottom: 0.5rem; }
+  
+  .form-group { margin-bottom: 1.2rem; }
+  .form-group label { display: block; font-size: 0.85rem; font-weight: 700; margin-bottom: 0.4rem; color: #334155; }
+  .form-group input[type="text"], .form-group input[type="number"], .form-group select, .form-group textarea {
+    width: 100%; padding: 0.6rem 0.8rem; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 0.9rem; outline: none; transition: border-color 0.2s;
+  }
+  .form-group input:focus, .form-group select:focus, .form-group textarea:focus { border-color: #0284c7; }
+  
+  .seo-fieldset { background: #f8fafc; padding: 1.25rem; border-radius: 8px; border: 1px dashed #cbd5e1; margin-top: 1.5rem; }
+  .seo-fieldset h4 { margin-top: 0; margin-bottom: 1rem; color: #0369a1; }
+  
+  .checkbox-group label { display: flex; align-items: center; gap: 0.5rem; font-weight: 600; cursor: pointer; }
+  .checkbox-group input { width: 18px; height: 18px; }
+  
+  .btn-block { width: 100%; margin-top: 1rem; padding: 0.8rem; font-weight: 700; }
+  .image-preview { margin-top: 0.75rem; border-radius: 6px; overflow: hidden; border: 1px solid #e2e8f0; text-align: center; background: #f8fafc; padding: 0.5rem; }
+  .image-preview img { max-width: 100%; max-height: 160px; object-fit: contain; }
+
+  @media (max-width: 1024px) {
+    .form-grid-2 { grid-template-columns: 1fr; }
+  }
+</style>

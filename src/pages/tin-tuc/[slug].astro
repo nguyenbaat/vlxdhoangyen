@@ -1,0 +1,2127 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import { PostRepo, ProductRepo, CategoryRepo, SettingsRepo } from '../../server/db/repo.js';
+
+const { slug } = Astro.params;
+const post = slug ? await PostRepo.getBySlug(slug) : null;
+
+if (!post) {
+  return Astro.redirect('/404');
+}
+
+const settings = await SettingsRepo.getAll();
+const allCategories = await CategoryRepo.getMainCategories();
+const recentPosts = (await PostRepo.getLatest(4)).filter(p => p.id !== post.id).slice(0, 3);
+
+// Dynamic Related Products matching post category or topic
+let relatedProducts = [];
+if (post.category_slug) {
+  const cat = await CategoryRepo.getBySlug(post.category_slug);
+  if (cat) {
+    relatedProducts = (await ProductRepo.getByCategory(cat.id)).slice(0, 4);
+  }
+}
+if (relatedProducts.length === 0) {
+  // Fallback if no specific category match
+  if (post.title.toLowerCase().includes('thép') || post.slug.includes('thep')) {
+    relatedProducts = (await ProductRepo.getByCategory(2)).slice(0, 4);
+  } else if (post.title.toLowerCase().includes('xi măng') || post.slug.includes('xi-mang')) {
+    relatedProducts = (await ProductRepo.getByCategory(1)).slice(0, 4);
+  } else if (post.title.toLowerCase().includes('gạch') || post.slug.includes('gach')) {
+    relatedProducts = (await ProductRepo.getByCategory(5)).slice(0, 4);
+  } else {
+    relatedProducts = await ProductRepo.getFeatured(4);
+  }
+}
+
+// Format Date
+function formatDate(dateStr?: string) {
+  if (!dateStr) return '15/09/2026';
+  try {
+    const d = new Date(dateStr);
+    const day = String(d.getDate()).padStart(2, '0');
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const year = d.getFullYear();
+    return `${day}/${month}/${year}`;
+  } catch {
+    return '15/09/2026';
+  }
+}
+
+const formattedDate = formatDate(post.published_at);
+
+// Extract Headings for Table of Contents (TOC) & inject IDs if needed
+interface TocItem {
+  id: string;
+  text: string;
+  level: number;
+}
+
+const tocItems: TocItem[] = [];
+let processedContent = post.content || '';
+
+// Regex to find and process H2 and H3 for Table of Contents
+const headingRegex = /<(h[23])([^>]*)>(.*?)<\/\1>/gi;
+let headingIndex = 0;
+
+processedContent = processedContent.replace(headingRegex, (match, tag, attrs, text) => {
+  const cleanText = text.replace(/<[^>]*>/g, '').trim();
+  
+  // Skip headings from FAQ items, CTA boxes, EEAT cards, or auxiliary widgets
+  const isExcluded = 
+    /class=["'][^"']*(faq-question|cta-heading|section-title|eeat-|no-toc)[^"']*["']/i.test(attrs) ||
+    /^(hỏi:|câu hỏi \d+:|q\d*:)/i.test(cleanText);
+
+  if (isExcluded) {
+    return match; // Do not add to TOC, keep original in article
+  }
+
+  headingIndex++;
+  const level = parseInt(tag.charAt(1), 10);
+  
+  // Extract existing id or generate one
+  const idMatch = attrs.match(/id=["']([^"']+)["']/i);
+  let id = idMatch ? idMatch[1] : '';
+  
+  if (!id) {
+    const slugified = cleanText.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[đĐ]/g, 'd').replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+    id = `muc-${headingIndex}-${slugified || 'heading'}`;
+    tocItems.push({ id, text: cleanText, level });
+    return `<${tag}${attrs} id="${id}">${text}</${tag}>`;
+  }
+  
+  tocItems.push({ id, text: cleanText, level });
+  return match;
+});
+
+// Extract FAQs for FAQPage Schema
+interface FaqItem {
+  question: string;
+  answer: string;
+}
+const faqItems: FaqItem[] = [];
+const faqItemRegex = /<div class="faq-item">[\s\S]*?<h3 class="faq-question">(.*?)<\/h3>[\s\S]*?<div class="faq-answer">([\s\S]*?)<\/div>[\s\S]*?<\/div>/gi;
+let faqMatch;
+while ((faqMatch = faqItemRegex.exec(post.content || '')) !== null) {
+  faqItems.push({
+    question: faqMatch[1].replace(/<[^>]*>/g, '').trim(),
+    answer: faqMatch[2].replace(/<[^>]*>/g, '').trim()
+  });
+}
+
+// Auto-enrich any <img> tags inside processedContent for strict SEO ALT & Lazy Loading
+const postTitleClean = (post.title || 'Vật tư xây dựng Hoàng Yến').replace(/"/g, '&quot;');
+processedContent = processedContent.replace(/<img\s+([^>]*?)>/gi, (match, attrs) => {
+  let newAttrs = attrs;
+  const altMatch = attrs.match(/alt=["']([^"']*)["']/i);
+  if (!altMatch) {
+    newAttrs += ` alt="${postTitleClean} – Siêu Thị VLXD Hoàng Yến Quảng Trị"`;
+  } else if (!altMatch[1].trim()) {
+    newAttrs = newAttrs.replace(/alt=["'][^"']*["']/i, `alt="${postTitleClean} – Siêu Thị VLXD Hoàng Yến Quảng Trị"`);
+  }
+  if (!/loading=["'][^"']*["']/i.test(newAttrs)) {
+    newAttrs += ' loading="lazy"';
+  }
+  if (!/decoding=["'][^"']*["']/i.test(newAttrs)) {
+    newAttrs += ' decoding="async"';
+  }
+  return `<img ${newAttrs}>`;
+});
+
+// SEO Breadcrumbs
+const categoryName = post.category_name || 'Vật Liệu Xây Dựng';
+const categorySlug = post.category_slug || 'thep-xay-dung';
+
+const breadcrumbs = [
+  { name: 'Trang Chủ', url: '/' },
+  { name: 'Tin Tức', url: '/tin-tuc/' },
+  { name: post.title, url: `/tin-tuc/${post.slug}/` }
+];
+
+const canonicalUrl = `https://vlxdhoangyen.com/tin-tuc/${post.slug}/`;
+
+// Schemas
+const articleSchema = {
+  '@context': 'https://schema.org',
+  '@type': 'NewsArticle',
+  mainEntityOfPage: {
+    '@type': 'WebPage',
+    '@id': canonicalUrl
+  },
+  headline: post.title,
+  description: post.seo_description || post.summary,
+  image: [post.featured_image || settings.banner_url],
+  datePublished: post.published_at ? new Date(post.published_at).toISOString() : new Date().toISOString(),
+  dateModified: post.published_at ? new Date(post.published_at).toISOString() : new Date().toISOString(),
+  inLanguage: 'vi-VN',
+  articleSection: categoryName,
+  keywords: [categoryName, 'VLXD Quảng Trị', 'Vật liệu xây dựng Hoàng Yến', 'Báo giá vật tư'],
+  author: {
+    '@type': 'Organization',
+    name: 'Ban Biên tập & Marketing – Siêu thị VLXD Hoàng Yến',
+    url: 'https://vlxdhoangyen.com/gioi-thieu/'
+  },
+  publisher: {
+    '@type': 'Organization',
+    name: settings.company_name,
+    url: 'https://vlxdhoangyen.com',
+    logo: {
+      '@type': 'ImageObject',
+      url: 'https://vlxdhoangyen.com/logo.png'
+    }
+  }
+};
+
+const schemas: any[] = [articleSchema];
+
+if (faqItems.length > 0) {
+  schemas.push({
+    '@context': 'https://schema.org',
+    '@type': 'FAQPage',
+    mainEntity: faqItems.map(item => ({
+      '@type': 'Question',
+      name: item.question,
+      acceptedAnswer: {
+        '@type': 'Answer',
+        text: item.answer
+      }
+    }))
+  });
+}
+
+// CTA Content based on post type
+let ctaTitle = 'Cần Báo Giá VLXD Cho Công Trình Tại Quảng Trị?';
+let ctaDesc = 'Gửi danh sách vật tư hoặc khối lượng dự kiến để Siêu thị VLXD Hoàng Yến bóc tách và báo giá cạnh tranh nhất.';
+let ctaButtonText = 'NHẬN BÁO GIÁ VẬT TƯ';
+
+if (post.title.toLowerCase().includes('thép') || post.slug.includes('thep')) {
+  ctaTitle = 'Cần Báo Giá Thép Xây Dựng Cho Công Trình?';
+  ctaDesc = 'Gửi danh sách quy cách D6 – D25 hoặc số lượng dự kiến để Hoàng Yến gửi bảng báo giá xuất xưởng và hỗ trợ giao tận công trình.';
+  ctaButtonText = 'NHẬN BÁO GIÁ THÉP';
+} else if (post.title.toLowerCase().includes('xi măng') || post.slug.includes('xi-mang')) {
+  ctaTitle = 'Cần Báo Giá Xi Măng Tận công trình?';
+  ctaDesc = 'Cung ứng xi măng Bỉm Sơn, Nghi Sơn, Sông Gianh PCB30 & PCB40 theo bao 50kg với báo giá cạnh tranh tại Quảng Trị.';
+  ctaButtonText = 'NHẬN BÁO GIÁ XI MĂNG';
+} else if (post.title.toLowerCase().includes('gạch') || post.slug.includes('gach')) {
+  ctaTitle = 'Cần Báo Giá Gạch Tuynel Đất Nung Chuẩn Kỹ Thuật?';
+  ctaDesc = 'Cung cấp gạch tuynel 2 lỗ, 4 lỗ, 6 lỗ, gạch đặc nung chín đều, chịu lực tốt, hỗ trợ xe giao tận công trình.';
+  ctaButtonText = 'NHẬN BÁO GIÁ GẠCH';
+}
+---
+
+<Layout
+  title={post.seo_title || `${post.title} | VLXD Hoàng Yến`}
+  description={post.seo_description || post.summary}
+  canonical={canonicalUrl}
+  ogImage={post.featured_image}
+  ogType="article"
+  breadcrumbs={breadcrumbs}
+  schemas={schemas}
+>
+  <div class="article-page-wrapper">
+    <div class="container article-main-container">
+      <div class="article-layout" style="display:grid;grid-template-columns:1fr 360px;gap:2rem;align-items:start;">
+        
+        <!-- MAIN ARTICLE COLUMN -->
+        <article class="article-primary-column" itemscope itemtype="https://schema.org/NewsArticle">
+          
+          <!-- 1. Category Tag Badge -->
+          <div class="article-tag-row">
+            <a href={`/${categorySlug}/`} class="article-category-badge">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+              </svg>
+              <span>{categoryName}</span>
+            </a>
+          </div>
+
+          <!-- 2. H1 Headline -->
+          <h1 class="article-title" itemprop="headline">{post.title}</h1>
+
+          <!-- 3. Article Meta (Author & Actual Date) -->
+          <div class="article-meta-bar">
+            <div class="meta-author">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color: #0284c7;"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
+              <span>Biên soạn bởi: <strong>Chuyên viên Marketing - VLXD Hoàng Yến</strong></span>
+            </div>
+            <span class="meta-separator">•</span>
+            <div class="meta-date">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color: var(--color-red);"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+              <span>Cập nhật: <time datetime={post.published_at}>{formattedDate}</time></span>
+            </div>
+          </div>
+
+          <!-- 4. Hero Featured Image -->
+          {post.featured_image && (
+            <figure class="article-hero-figure">
+              <img 
+                src={post.featured_image} 
+                alt={`${post.title} – Siêu Thị VLXD Hoàng Yến Quảng Trị`} 
+                title={`${post.title} – Phân phối tại Siêu thị VLXD Hoàng Yến`}
+                itemprop="image" 
+                loading="eager"
+                decoding="async"
+              />
+              <figcaption>Ảnh: {post.title} – Phân phối tại Siêu thị VLXD Hoàng Yến (299 Lê Duẩn, Quảng Trị)</figcaption>
+            </figure>
+          )}
+
+          <!-- 5. Table of Contents (Mục Lục Tự Động) -->
+          {tocItems.length > 0 && (
+            <div class="article-toc-box" id="article-toc">
+              <div class="toc-header" id="toc-toggle-btn" role="button" tabindex="0">
+                <div class="toc-title-wrap">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" style="color: var(--color-red);"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><line x1="3" y1="6" x2="3.01" y2="6"></line><line x1="3" y1="12" x2="3.01" y2="12"></line><line x1="3" y1="18" x2="3.01" y2="18"></line></svg>
+                  <span class="toc-main-title">Mục Lục Bài Viết</span>
+                </div>
+                <button type="button" class="toc-action-btn" aria-label="Đóng mở mục lục">[Ẩn]</button>
+              </div>
+              <nav class="toc-nav-body" id="toc-nav-body">
+                <ol class="toc-ordered-list">
+                  {tocItems.map(item => (
+                    <li class={`toc-node toc-level-${item.level}`}>
+                      <a href={`#${item.id}`} class="toc-link">{item.text}</a>
+                    </li>
+                  ))}
+                </ol>
+              </nav>
+            </div>
+          )}
+
+          <!-- 6. Main Prose Industrial Content -->
+          <div class="prose-industrial article-body-content" itemprop="articleBody" set:html={processedContent} />
+
+          <!-- Disclaimer / Ghi chú miễn trừ kỹ thuật & giá -->
+          <div class="article-disclaimer-card">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" style="color: #d97706; flex-shrink: 0; margin-top: 2px;">
+              <circle cx="12" cy="12" r="10"></circle>
+              <line x1="12" y1="8" x2="12" y2="12"></line>
+              <line x1="12" y1="16" x2="12.01" y2="16"></line>
+            </svg>
+            <div class="disclaimer-content-wrap">
+              <strong>Lưu ý tham khảo:</strong> Mọi thông số kỹ thuật, barem quy cách và công thức tính toán trong bài viết được biên soạn nhằm mục đích chia sẻ kiến thức xây dựng và tham khảo chuyên ngành. Quy cách sản phẩm thực tế, dung sai xuất xưởng và đơn giá có thể thay đổi theo từng nhà sản xuất và thời điểm mua hàng. Quý bạn đọc nên đối chiếu bản vẽ thiết kế công trình hoặc liên hệ trực tiếp Siêu thị VLXD Hoàng Yến để được hỗ trợ kiểm tra dữ liệu chính xác nhất.
+            </div>
+          </div>
+
+          <div class="eeat-author-card">
+            <div class="eeat-card-inner">
+              <div class="eeat-left-col">
+                <div class="eeat-photo-wrap">
+                  <img
+                    src="/images/chuyenvienmkt.png"
+                    alt="Chuyên viên Marketing VLXD Hoàng Yến"
+                    class="eeat-avatar-img"
+                    width="104"
+                    height="104"
+                    loading="lazy"
+                  />
+                </div>
+                <div class="eeat-social-row">
+                  <a href="https://www.facebook.com/sieuthivlxdhoangyen/" target="_blank" rel="noopener noreferrer" class="eeat-social-btn" aria-label="Facebook" title="Facebook VLXD Hoàng Yến">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"/></svg>
+                  </a>
+                  <a href="https://zalo.me/0946575579" target="_blank" rel="noopener noreferrer" class="eeat-social-btn" aria-label="Zalo" title="Zalo Tư Vấn">
+                    <svg width="15" height="15" viewBox="0 0 32 32" fill="currentColor"><path d="M16 2C8.28 2 2 8.28 2 16c0 2.56.68 4.96 1.86 7.04L2 30l7.18-1.84A13.93 13.93 0 0 0 16 30c7.72 0 14-6.28 14-14S23.72 2 16 2zm6.6 19.4c-.28.78-1.6 1.44-2.2 1.54-.56.1-1.26.14-2.04-.14-.48-.16-1.08-.38-1.86-.74-3.26-1.42-5.4-4.7-5.56-4.92-.16-.22-1.3-1.74-1.3-3.32s.82-2.36 1.12-2.68c.28-.32.62-.4.82-.4l.58.01c.2 0 .46-.08.72.54.28.64.94 2.3.02 2.48l-.52.28c-.2.12-.32.34-.22.58.44 1.02 1.32 2.12 2.3 2.86.98.74 2.04 1.22 2.78 1.44.22.06.46-.02.6-.22l.36-.52c.14-.2.36-.28.58-.18 1.48.72 2.3 1.08 2.5 1.22.2.14.28.42.02 1.16z"/></svg>
+                  </a>
+                  <a href="mailto:vlxdhoangyenqt@gmail.com" class="eeat-social-btn" aria-label="Email" title="Gửi Email">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+                  </a>
+                </div>
+              </div>
+              <div class="eeat-right-col">
+                <div class="eeat-header-row">
+                  <div>
+                    <h4 class="eeat-name">Chuyên viên Marketing</h4>
+                    <span class="eeat-role">VLXD Hoàng Yến &mdash; Quảng Trị</span>
+                  </div>
+                  <span class="eeat-dept-tag">Nội dung &amp; SEO</span>
+                </div>
+                <p class="eeat-bio">
+                  Phụ trách nội dung và SEO tại VLXD Hoàng Yến, tập trung vào các chủ đề vật liệu xây dựng, thiết bị vệ sinh, thông tin sản phẩm và nhu cầu tìm kiếm thực tế của khách hàng tại Quảng Trị.
+                </p>
+                <p class="eeat-bio eeat-bio-note">
+                  Những thông tin về giá, tồn kho, quy cách và thông số kỹ thuật được cập nhật theo dữ liệu hiện có và cần được kiểm tra lại tại thời điểm mua hàng.
+                </p>
+                <a href="/gioi-thieu/" class="eeat-link">
+                  <span>Tìm hiểu về VLXD Hoàng Yến</span>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+                </a>
+              </div>
+            </div>
+          </div>
+
+          <!-- 8. Related Products Section (Commercial Interlinking) -->
+          {relatedProducts.length > 0 && (
+            <section class="article-related-products">
+              <div class="section-title-bar">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color: #0284c7;"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"></path><line x1="3" y1="6" x2="21" y2="6"></line><path d="M16 10a4 4 0 0 1-8 0"></path></svg>
+                <h3 class="section-title">Sản Phẩm & Vật Tư Liên Quan</h3>
+              </div>
+              <div class="related-products-grid">
+                {relatedProducts.map(p => (
+                  <div class="rel-product-card">
+                    <a href={`/san-pham/${p.slug}/`} class="rel-product-img">
+                      <img src={p.featured_image || '/images/danh-muc/thep.png'} alt={p.name} loading="lazy" />
+                    </a>
+                    <div class="rel-product-details">
+                      <span class="rel-product-sku">Mã: {p.sku || 'HY-VLXD'}</span>
+                      <h4 class="rel-product-name">
+                        <a href={`/san-pham/${p.slug}/`}>{p.name}</a>
+                      </h4>
+                      <div class="rel-product-bottom">
+                        <span class="rel-product-price">Giá: Liên hệ</span>
+                        <a href={`/san-pham/${p.slug}/`} class="btn-rel-view">Chi Tiết</a>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </section>
+          )}
+
+          <!-- 9. Dynamic CTA Box -->
+          <div class="article-cta-box">
+            <div class="cta-inner">
+              <div class="cta-badge">BÁO GIÁ NHÀ MÁY</div>
+              <h3 class="cta-heading">{ctaTitle}</h3>
+              <p class="cta-description">{ctaDesc}</p>
+              <div class="cta-buttons-group">
+                <a href={`tel:${settings.hotline_main}`} class="btn btn-cta-primary">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M6.62 10.79a15.05 15.05 0 006.59 6.59l2.2-2.2a1 1 0 011.02-.24 11.72 11.72 0 003.68.59 1 1 0 011 1V20a1 1 0 01-1 1A17 17 0 013 4a1 1 0 011-1h3.5a1 1 0 011 1 11.72 11.72 0 00.59 3.68 1 1 0 01-.24 1.02l-2.23 2.09z"/>
+                  </svg>
+                  <span>{ctaButtonText} (0946.575.579)</span>
+                </a>
+                <a href={settings.zalo_url || `https://zalo.me/${settings.hotline_main.replace(/\s+/g, '')}`} target="_blank" rel="noopener noreferrer" class="btn btn-cta-secondary">
+                  <span>GỬI DANH SÁCH QUA ZALO</span>
+                </a>
+              </div>
+            </div>
+          </div>
+
+          <!-- 10. Related Articles Section -->
+          {recentPosts.length > 0 && (
+            <section class="article-related-posts">
+              <div class="section-title-bar">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color: var(--color-red);"><path d="M19 20H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h10l5 5v11a2 2 0 0 1-2 2z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line></svg>
+                <h3 class="section-title">Bài Viết & Cẩm Nang Liên Quan</h3>
+              </div>
+              <div class="related-posts-grid">
+                {recentPosts.map(rp => (
+                  <article class="rel-post-card">
+                    <a href={`/tin-tuc/${rp.slug}/`} class="rel-post-thumb">
+                      <img src={rp.featured_image || '/images/danh-muc/thep.png'} alt={rp.title} loading="lazy" />
+                    </a>
+                    <div class="rel-post-body">
+                      <span class="rel-post-tag">{rp.category_name || 'Tin Tức'}</span>
+                      <h4 class="rel-post-title">
+                        <a href={`/tin-tuc/${rp.slug}/`}>{rp.title}</a>
+                      </h4>
+                      <p class="rel-post-desc">{rp.summary}</p>
+                    </div>
+                  </article>
+                ))}
+              </div>
+            </section>
+          )}
+
+          <!-- 11. Topic Tag Pills (Danh mục VLXD tham khảo) -->
+          <div class="article-topic-pills">
+            <h4 class="topic-pills-title">Tham khảo sản phẩm VLXD Hoàng Yến:</h4>
+            <div class="pills-list">
+              {allCategories.map(cat => (
+                <a href={`/${cat.slug}/`} class="topic-pill-btn">
+                  {cat.name}
+                </a>
+              ))}
+            </div>
+          </div>
+
+        </article>
+
+        <!-- SIDEBAR COLUMN -->
+        <aside class="article-sidebar-column" style="display:flex;flex-direction:column;gap:1.25rem;position:sticky;top:90px;">
+          
+          <!-- Sticky Hotline Card (Luxury Redesign) -->
+          <div class="sidebar-card sidebar-hotline-card">
+            <div class="sh-top-badge">
+              <span class="sh-pulse-dot"></span>
+              <span>HỖ TRỢ TƯ VẤN BÁO GIÁ 24/7</span>
+            </div>
+            <div class="sh-header">
+              <div class="sh-icon-box">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>
+              </div>
+              <div class="sh-title-group">
+                <strong class="sh-main-title">BÁO GIÁ CÔNG TRÌNH</strong>
+                <p class="sh-sub-title">Báo giá theo khối lượng dự toán</p>
+              </div>
+            </div>
+
+            <div class="sh-actions-area">
+              <a href={`tel:${settings.hotline_main.replace(/\./g, '')}`} class="sh-tel-btn btn-glowing-red">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M6.62 10.79a15.05 15.05 0 006.59 6.59l2.2-2.2a1 1 0 011.02-.24 11.72 11.72 0 003.68.59 1 1 0 011 1V20a1 1 0 01-1 1A17 17 0 013 4a1 1 0 011-1h3.5a1 1 0 011 1 11.72 11.72 0 00.59 3.68 1 1 0 01-.24 1.02l-2.23 2.09z"/></svg>
+                <span>{settings.hotline_main}</span>
+              </a>
+
+              <a href={settings.zalo_url || 'https://zalo.me/0946575579'} target="_blank" rel="noopener noreferrer" class="sh-zalo-btn">
+                <img src="/zalo.png" alt="Zalo tư vấn báo giá" width="22" height="22" class="zalo-img-icon" />
+                <span>Nhận Báo Giá Qua Zalo</span>
+              </a>
+            </div>
+          </div>
+
+          <!-- Material Categories Menu -->
+          <div class="sidebar-card">
+            <h3 class="sidebar-heading">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" style="vertical-align: -3px; margin-right: 6px; color: #0284c7;"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>
+              Danh Mục Vật Tư
+            </h3>
+            <ul class="sidebar-cat-list">
+              {allCategories.map(cat => (
+                <li>
+                  <a href={`/${cat.slug}/`} class="cat-list-link">
+                    <span>{cat.name}</span>
+                    <svg class="cat-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"></polyline></svg>
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          <!-- Latest Posts Sidebar -->
+          <div class="sidebar-card">
+            <h3 class="sidebar-heading">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" style="vertical-align: -3px; margin-right: 6px; color: #c81e1e;"><path d="M19 20H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h10l5 5v11a2 2 0 0 1-2 2z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line></svg>
+              Bài Viết Mới Nhất
+            </h3>
+            <ul class="sidebar-recent-list">
+              {recentPosts.map(rp => (
+                <li>
+                  <a href={`/tin-tuc/${rp.slug}/`} class="recent-post-link">
+                    <img src={rp.featured_image || '/anh-sanpham.png'} alt={rp.title} class="rp-mini-thumb" />
+                    <div class="rp-mini-info">
+                      <span class="rp-mini-title">{rp.title}</span>
+                      <span class="rp-mini-date">{formatDate(rp.published_at)}</span>
+                    </div>
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          <!-- Store Info Badge (Premium Redesign) -->
+          <div class="sidebar-card sidebar-store-card">
+            <div class="store-badge-header">
+              <div class="store-badge-icon-box">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+                  <polyline points="9 22 9 12 15 12 15 22"></polyline>
+                </svg>
+              </div>
+              <div>
+                <h4 class="store-badge-title">Siêu Thị VLXD Hoàng Yến</h4>
+                <span class="store-badge-status">
+                  <span class="status-dot"></span> Đang mở cửa • 7:30 – 22:00
+                </span>
+              </div>
+            </div>
+            
+            <div class="store-info-list">
+              <div class="store-info-item">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="info-icon loc-icon">
+                  <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
+                  <circle cx="12" cy="10" r="3"></circle>
+                </svg>
+                <div class="info-text">
+                  <span class="info-label">Địa chỉ cửa hàng</span>
+                  <span class="info-val">299 Lê Duẩn, Phường Đông Hà, Tỉnh Quảng Trị</span>
+                </div>
+              </div>
+
+              <div class="store-info-item">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="info-icon clock-icon">
+                  <circle cx="12" cy="12" r="10"></circle>
+                  <polyline points="12 6 12 12 16 14"></polyline>
+                </svg>
+                <div class="info-text">
+                  <span class="info-label">Giờ hoạt động</span>
+                  <span class="info-val">7:30 – 22:00 (Tất cả các ngày)</span>
+                </div>
+              </div>
+            </div>
+
+            <a href="https://maps.app.goo.gl/QUX1w34xfjRMcyW87" target="_blank" rel="noopener noreferrer" class="btn-store-maps">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polygon points="3 11 22 2 13 21 11 13 3 11"></polygon>
+              </svg>
+              <span>Chỉ Đường Google Maps</span>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="arrow-icon">
+                <polyline points="9 18 15 12 9 6"></polyline>
+              </svg>
+            </a>
+          </div>
+
+        </aside>
+
+      </div>
+    </div>
+  </div>
+</Layout>
+
+<script is:inline>
+  // Table of Contents Toggle Script
+  document.addEventListener('DOMContentLoaded', () => {
+    const toggleBtn = document.getElementById('toc-toggle-btn');
+    const navBody = document.getElementById('toc-nav-body');
+    const actionBtn = toggleBtn ? toggleBtn.querySelector('.toc-action-btn') : null;
+
+    if (toggleBtn && navBody && actionBtn) {
+      toggleBtn.addEventListener('click', () => {
+        const isHidden = navBody.style.display === 'none';
+        navBody.style.display = isHidden ? 'block' : 'none';
+        actionBtn.textContent = isHidden ? '[Ẩn]' : '[Hiện]';
+      });
+    }
+
+    // Smooth Scroll for TOC links
+    document.querySelectorAll('.toc-link').forEach(link => {
+      link.addEventListener('click', (e) => {
+        const targetId = link.getAttribute('href');
+        if (targetId && targetId.startsWith('#')) {
+          const targetEl = document.querySelector(targetId);
+          if (targetEl) {
+            e.preventDefault();
+            targetEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            history.pushState(null, '', targetId);
+          }
+        }
+      });
+    });
+  });
+</script>
+
+<style>
+  .article-page-wrapper {
+    background-color: #f8fafc;
+    padding-top: var(--space-8);
+    padding-bottom: var(--space-20);
+  }
+
+  .article-main-container {
+    max-width: 1240px;
+  }
+
+  :global(.article-layout) {
+    display: grid;
+    grid-template-columns: 1fr 360px;
+    gap: var(--space-8);
+    align-items: flex-start;
+  }
+
+  :global(.article-sidebar-column) {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-5);
+    position: sticky;
+    top: 90px;
+  }
+
+
+  .article-primary-column {
+    background-color: #ffffff;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-sm);
+    padding: var(--space-8) var(--space-10);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+  }
+
+  /* 1. Category Tag Badge */
+  .article-tag-row {
+    margin-bottom: var(--space-4);
+  }
+
+  .article-category-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background-color: #fff1f2;
+    color: var(--color-red);
+    font-size: 0.8125rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    padding: 6px 14px;
+    border-radius: var(--radius-full);
+    border: 1px solid #fecdd3;
+    transition: all var(--transition-fast);
+  }
+
+  .article-category-badge:hover {
+    background-color: var(--color-red);
+    color: #ffffff;
+    border-color: var(--color-red);
+  }
+
+  /* 2. H1 Headline */
+  .article-title {
+    font-size: clamp(1.85rem, 3.2vw, 2.45rem);
+    font-weight: 800;
+    line-height: 1.3;
+    color: #0f172a;
+    letter-spacing: -0.02em;
+    margin-bottom: var(--space-4);
+  }
+
+  /* 3. Article Meta Bar */
+  .article-meta-bar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-3);
+    font-size: 0.875rem;
+    color: #64748b;
+    padding-bottom: var(--space-5);
+    margin-bottom: var(--space-6);
+    border-bottom: 1px solid #e2e8f0;
+  }
+
+  .meta-author, .meta-date {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .meta-author strong {
+    color: #1e293b;
+    font-weight: 600;
+  }
+
+  .meta-separator {
+    color: #cbd5e1;
+  }
+
+  /* 4. Hero Featured Image */
+  .article-hero-figure {
+    margin: 0 0 var(--space-8) 0;
+    border-radius: var(--radius-xs);
+    overflow: hidden;
+    border: 1px solid #e2e8f0;
+    background-color: #f1f5f9;
+  }
+
+  .article-hero-figure img {
+    width: 100%;
+    aspect-ratio: 16 / 9;
+    object-fit: cover;
+    display: block;
+  }
+
+  .article-hero-figure figcaption {
+    font-size: 0.8125rem;
+    color: #64748b;
+    font-style: italic;
+    padding: 8px 14px;
+    background-color: #f8fafc;
+    border-top: 1px solid #f1f5f9;
+    text-align: center;
+  }
+
+  /* 5. Table of Contents */
+  .article-toc-box {
+    background-color: #f8fafc;
+    border: 1px solid #cbd5e1;
+    border-left: 4px solid var(--color-charcoal);
+    border-radius: var(--radius-xs);
+    padding: var(--space-5);
+    margin-bottom: var(--space-8);
+  }
+
+  .toc-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    cursor: pointer;
+    user-select: none;
+    padding-bottom: var(--space-3);
+    border-bottom: 1px solid #e2e8f0;
+  }
+
+  .toc-title-wrap {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .toc-badge-icon {
+    font-size: 1.2rem;
+  }
+
+  .toc-main-title {
+    font-family: var(--font-heading);
+    font-size: 1.05rem;
+    font-weight: 800;
+    color: #0f172a;
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
+  }
+
+  .toc-action-btn {
+    background: none;
+    border: none;
+    color: var(--color-red);
+    font-weight: 700;
+    font-size: 0.875rem;
+    cursor: pointer;
+    padding: 2px 6px;
+  }
+
+  .toc-ordered-list {
+    margin: var(--space-4) 0 0 0;
+    padding-left: 0;
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .toc-node {
+    line-height: 1.5;
+  }
+
+  .toc-level-2 {
+    font-weight: 600;
+  }
+
+  .toc-level-3 {
+    margin-left: 1.25rem;
+    font-size: 0.9rem;
+    opacity: 0.95;
+    position: relative;
+    padding-left: 12px;
+  }
+
+  .toc-level-3::before {
+    content: "•";
+    color: var(--color-red);
+    position: absolute;
+    left: 0;
+    font-weight: bold;
+  }
+
+  .toc-link {
+    color: #334155;
+    font-size: 0.9375rem;
+    text-decoration: none;
+    transition: color var(--transition-fast);
+  }
+
+  .toc-link:hover {
+    color: var(--color-red);
+    text-decoration: underline;
+  }
+
+  /* 6. Prose Industrial Body Content */
+  .prose-industrial {
+    font-size: 1.0625rem;
+    line-height: 1.85;
+    color: #334155;
+  }
+
+  :global(.prose-industrial .article-lead) {
+    font-size: 1.15rem;
+    line-height: 1.75;
+    color: #1e293b;
+    font-weight: 500;
+    padding: var(--space-4) var(--space-5);
+    background-color: #f1f5f9;
+    border-left: 4px solid var(--color-red);
+    border-radius: var(--radius-xs);
+    margin-bottom: var(--space-8);
+  }
+
+  :global(.prose-industrial h2) {
+    font-size: 1.55rem;
+    font-weight: 800;
+    color: #0f172a;
+    margin-top: var(--space-10);
+    margin-bottom: var(--space-4);
+    padding-bottom: var(--space-2);
+    border-bottom: 2px solid #e2e8f0;
+    scroll-margin-top: 90px;
+  }
+
+  :global(.prose-industrial h3) {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: #1e293b;
+    margin-top: var(--space-6);
+    margin-bottom: var(--space-3);
+    scroll-margin-top: 90px;
+  }
+
+  :global(.prose-industrial p) {
+    margin-bottom: var(--space-5);
+  }
+
+  :global(.prose-industrial ul), :global(.prose-industrial ol) {
+    margin: 0 0 var(--space-5) var(--space-6);
+    padding: 0;
+  }
+
+  :global(.prose-industrial li) {
+    margin-bottom: var(--space-2);
+  }
+
+  :global(.prose-industrial strong) {
+    color: #0f172a;
+    font-weight: 700;
+  }
+
+  /* Responsive Tables */
+  :global(.table-responsive) {
+    width: 100%;
+    overflow-x: auto;
+    margin: var(--space-6) 0;
+    border: 1px solid #e2e8f0;
+    border-radius: var(--radius-xs);
+    background-color: #ffffff;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  :global(.table-industrial), :global(.prose-industrial table) {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.9375rem;
+    text-align: left;
+    margin: var(--space-6) 0;
+    border: 1px solid #cbd5e1;
+    border-radius: var(--radius-xs);
+    overflow: hidden;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
+  }
+
+  :global(.table-industrial th), :global(.prose-industrial table th) {
+    background-color: #0f172a;
+    color: #ffffff;
+    font-family: var(--font-heading);
+    font-weight: 700;
+    padding: 12px 16px;
+    font-size: 0.875rem;
+    letter-spacing: 0.02em;
+    border: 1px solid #1e293b;
+  }
+
+  :global(.table-industrial td), :global(.prose-industrial table td) {
+    padding: 12px 16px;
+    border: 1px solid #e2e8f0;
+    color: #334155;
+    line-height: 1.5;
+  }
+
+  :global(.table-industrial tbody tr:nth-child(even)), :global(.prose-industrial table tbody tr:nth-child(even)) {
+    background-color: #f8fafc;
+  }
+
+  :global(.table-industrial tbody tr:hover), :global(.prose-industrial table tbody tr:hover) {
+    background-color: #eff6ff;
+  }
+
+  /* Note Box */
+  :global(.article-note-box) {
+    display: flex;
+    gap: var(--space-4);
+    background-color: #fffbeb;
+    border: 1px solid #fde68a;
+    border-left: 4px solid #f59e0b;
+    padding: var(--space-5);
+    border-radius: var(--radius-xs);
+    margin: var(--space-6) 0;
+  }
+
+  :global(.note-icon) {
+    font-size: 1.5rem;
+    flex-shrink: 0;
+  }
+
+  :global(.note-content) {
+    font-size: 0.9375rem;
+    color: #78350f;
+    line-height: 1.65;
+  }
+
+  /* Callout Box / Answer First Box */
+  :global(.prose-industrial .callout-box) {
+    background: #f0f9ff !important;
+    color: #1e293b !important;
+    border: 1px solid #bae6fd !important;
+    border-left: 4px solid var(--color-red, #dc2626) !important;
+    padding: 1.25rem 1.5rem !important;
+    margin: 1.5rem 0 !important;
+    border-radius: var(--radius-xs) !important;
+    font-size: 0.95rem !important;
+    line-height: 1.7 !important;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.03) !important;
+  }
+
+  :global(.prose-industrial .callout-box *):not(strong):not(code):not(a) {
+    color: #334155 !important;
+  }
+
+  :global(.prose-industrial .callout-box strong) {
+    color: #0f172a !important;
+    font-weight: 700 !important;
+  }
+
+  :global(.prose-industrial .callout-box code) {
+    background: #e0f2fe !important;
+    color: #0369a1 !important;
+    padding: 2px 6px !important;
+    border-radius: 4px !important;
+    font-weight: 600 !important;
+  }
+
+  :global(.prose-industrial .callout-box a) {
+    color: #0284c7 !important;
+    text-decoration: none !important;
+    font-weight: 600 !important;
+  }
+
+  :global(.prose-industrial .callout-box a:hover) {
+    text-decoration: underline !important;
+  }
+
+  /* Article Images & Figures */
+  :global(.article-img-figure) {
+    margin: var(--space-6) 0;
+    border: 1px solid #e2e8f0;
+    border-radius: var(--radius-xs);
+    overflow: hidden;
+    background-color: #f8fafc;
+  }
+
+  :global(.article-img-figure img) {
+    width: 100%;
+    max-height: 480px;
+    object-fit: cover;
+    display: block;
+  }
+
+  :global(.article-img-figure figcaption) {
+    font-size: 0.8125rem;
+    color: #64748b;
+    font-style: italic;
+    padding: 8px 14px;
+    background-color: #f8fafc;
+    border-top: 1px solid #e2e8f0;
+    text-align: center;
+  }
+
+  /* FAQ Section inside Article */
+  :global(.faq-container) {
+    margin: var(--space-6) 0;
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-4);
+  }
+
+  :global(.faq-item) {
+    border: 1px solid #e2e8f0;
+    border-radius: var(--radius-xs);
+    background-color: #f8fafc;
+    padding: var(--space-5);
+  }
+
+  :global(.faq-question) {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: #0f172a;
+    margin: 0 0 var(--space-2) 0;
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+  }
+
+  :global(.faq-question::before) {
+    content: "Hỏi:";
+    font-size: 0.95rem;
+    font-weight: 800;
+    color: var(--color-red);
+    flex-shrink: 0;
+  }
+
+  :global(.faq-answer) {
+    font-size: 0.9375rem;
+    color: #475569;
+    line-height: 1.65;
+    margin: 0;
+    padding-left: 28px;
+  }
+
+  :global(.faq-answer p:last-child) {
+    margin-bottom: 0;
+  }
+
+  /* Conclusion Box */
+  :global(.article-conclusion-box) {
+    background-color: #f0fdf4;
+    border: 1px solid #bbf7d0;
+    border-left: 4px solid #16a34a;
+    padding: var(--space-6);
+    border-radius: var(--radius-xs);
+    margin-top: var(--space-8);
+  }
+
+  :global(.article-conclusion-box h3) {
+    color: #15803d;
+    margin-top: 0;
+    margin-bottom: var(--space-2);
+    font-size: 1.2rem;
+  }
+
+  :global(.article-conclusion-box p) {
+    color: #166534;
+    font-size: 0.9375rem;
+    line-height: 1.65;
+    margin-bottom: 0;
+  }
+
+  /* Article Technical & Pricing Disclaimer */
+  .article-disclaimer-card {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    background: #fffbeb;
+    border: 1px solid #fde68a;
+    border-left: 4px solid #f59e0b;
+    border-radius: var(--radius-xs);
+    padding: 14px 18px;
+    margin-top: var(--space-8);
+    margin-bottom: var(--space-4);
+    font-size: 0.875rem;
+    line-height: 1.6;
+    color: #92400e;
+  }
+
+  .article-disclaimer-card strong {
+    color: #78350f;
+    font-weight: 700;
+  }
+
+  /* EEAT Author Card (Luxury White Redesign) */
+  .eeat-author-card {
+    background: #ffffff;
+    border: 1px solid #edf2f7;
+    border-radius: 20px;
+    padding: 24px 28px;
+    margin-top: var(--space-10);
+    position: relative;
+    overflow: hidden;
+    box-shadow: 0 10px 30px -4px rgba(15, 23, 42, 0.06), 0 2px 8px -2px rgba(15, 23, 42, 0.03);
+    transition: transform 0.25s ease, box-shadow 0.25s ease;
+  }
+
+  .eeat-author-card:hover {
+    box-shadow: 0 16px 36px -6px rgba(15, 23, 42, 0.09), 0 4px 12px -2px rgba(15, 23, 42, 0.04);
+  }
+
+  .eeat-author-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: linear-gradient(90deg, var(--color-red) 0%, #f97316 60%, #eab308 100%);
+  }
+
+  .eeat-card-inner {
+    display: flex;
+    gap: 24px;
+    align-items: flex-start;
+  }
+
+  .eeat-left-col {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    flex-shrink: 0;
+  }
+
+  .eeat-photo-wrap {
+    position: relative;
+  }
+
+  .eeat-avatar-img {
+    width: 96px;
+    height: 96px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 3px solid #ffffff;
+    box-shadow: 0 8px 20px -4px rgba(15, 23, 42, 0.16), 0 0 0 1px rgba(226, 232, 240, 0.9);
+    display: block;
+    transition: transform 0.25s ease;
+  }
+
+  .eeat-author-card:hover .eeat-avatar-img {
+    transform: scale(1.03);
+  }
+
+  .eeat-social-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .eeat-social-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 30px;
+    height: 30px;
+    border-radius: 8px;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    color: #64748b;
+    text-decoration: none;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .eeat-social-btn:hover {
+    background: #0f172a;
+    color: #ffffff;
+    border-color: #0f172a;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 10px rgba(15, 23, 42, 0.18);
+  }
+
+  .eeat-right-col {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .eeat-header-row {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-bottom: 10px;
+  }
+
+  .eeat-name {
+    font-family: var(--font-heading);
+    font-size: 1.15rem;
+    font-weight: 800;
+    color: #0f172a;
+    margin: 0 0 4px 0;
+    line-height: 1.3;
+    letter-spacing: -0.01em;
+  }
+
+  .eeat-role {
+    display: block;
+    font-size: 0.84rem;
+    color: var(--color-red);
+    font-weight: 600;
+  }
+
+  .eeat-dept-tag {
+    font-size: 0.6875rem;
+    font-weight: 700;
+    color: #1d4ed8;
+    background: #eff6ff;
+    border: 1px solid #dbeafe;
+    padding: 4px 12px;
+    border-radius: 9999px;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+
+  .eeat-bio {
+    font-size: 0.8875rem;
+    color: #334155;
+    line-height: 1.68;
+    margin: 0 0 8px 0;
+  }
+
+  .eeat-bio-note {
+    color: #64748b;
+    font-size: 0.8125rem;
+    font-style: italic;
+    background: #f8fafc;
+    padding: 8px 12px;
+    border-radius: 8px;
+    border-left: 3px solid #cbd5e1;
+    margin: 8px 0 10px 0;
+    line-height: 1.55;
+  }
+
+  .eeat-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: 4px;
+    font-size: 0.84rem;
+    font-weight: 700;
+    color: var(--color-red);
+    text-decoration: none;
+    transition: all 0.2s ease;
+  }
+
+  .eeat-link:hover {
+    gap: 10px;
+    color: #b91c1c;
+  }
+
+  @media (max-width: 640px) {
+    .eeat-card-inner {
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      gap: 16px;
+    }
+
+    .eeat-header-row {
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+
+    .eeat-bio-note {
+      text-align: left;
+    }
+
+    .eeat-link {
+      justify-content: center;
+    }
+  }
+
+  /* 8. Related Products Grid */
+  .article-related-products {
+    margin-top: var(--space-10);
+    padding-top: var(--space-8);
+    border-top: 1px solid #e2e8f0;
+  }
+
+  .section-title-bar {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: var(--space-6);
+  }
+
+  .title-icon {
+    font-size: 1.25rem;
+  }
+
+  .section-title {
+    font-family: var(--font-heading);
+    font-size: 1.25rem;
+    font-weight: 800;
+    color: #0f172a;
+    margin: 0;
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
+  }
+
+  .related-products-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: var(--space-4);
+  }
+
+  .rel-product-card {
+    background-color: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: var(--radius-xs);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    transition: all var(--transition-fast);
+  }
+
+  .rel-product-card:hover {
+    border-color: var(--color-red);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
+  }
+
+  .rel-product-img {
+    width: 100%;
+    aspect-ratio: 4 / 3;
+    background-color: #ffffff;
+    padding: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-bottom: 1px solid #f1f5f9;
+  }
+
+  .rel-product-img img {
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
+  }
+
+  .rel-product-details {
+    padding: 10px 12px;
+    display: flex;
+    flex-direction: column;
+    flex-grow: 1;
+  }
+
+  .rel-product-sku {
+    font-size: 0.6875rem;
+    color: #94a3b8;
+    font-weight: 600;
+  }
+
+  .rel-product-name {
+    font-size: 0.8125rem;
+    font-weight: 700;
+    line-height: 1.35;
+    margin: 4px 0 8px 0;
+    flex-grow: 1;
+  }
+
+  .rel-product-name a {
+    color: #0f172a;
+    text-decoration: none;
+  }
+
+  .rel-product-name a:hover {
+    color: var(--color-red);
+  }
+
+  .rel-product-bottom {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: auto;
+    padding-top: 6px;
+    border-top: 1px dashed #f1f5f9;
+  }
+
+  .rel-product-price {
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: var(--color-red);
+  }
+
+  .btn-rel-view {
+    font-size: 0.6875rem;
+    font-weight: 700;
+    color: #0f172a;
+    padding: 3px 8px;
+    background-color: #f1f5f9;
+    border-radius: var(--radius-xs);
+    text-decoration: none;
+  }
+
+  .btn-rel-view:hover {
+    background-color: #0f172a;
+    color: #ffffff;
+  }
+
+  /* 9. CTA Box */
+  .article-cta-box {
+    margin-top: var(--space-10);
+    background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+    color: #ffffff;
+    padding: var(--space-8);
+    border-radius: var(--radius-sm);
+    border-left: 6px solid var(--color-red);
+    box-shadow: 0 6px 20px rgba(15, 23, 42, 0.15);
+  }
+
+  .cta-badge {
+    display: inline-block;
+    background-color: var(--color-red);
+    color: #ffffff;
+    font-size: 0.6875rem;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    padding: 4px 10px;
+    border-radius: var(--radius-xs);
+    margin-bottom: var(--space-3);
+  }
+
+  .cta-heading {
+    color: #ffffff;
+    font-size: clamp(1.25rem, 2.2vw, 1.55rem);
+    font-weight: 800;
+    margin-bottom: var(--space-3);
+  }
+
+  .cta-description {
+    font-size: 0.9375rem;
+    color: #cbd5e1;
+    line-height: 1.6;
+    margin-bottom: var(--space-6);
+    max-width: 720px;
+  }
+
+  .cta-buttons-group {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-4);
+  }
+
+  .btn-cta-primary {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background-color: var(--color-red);
+    color: #ffffff;
+    font-family: var(--font-heading);
+    font-size: 0.9375rem;
+    font-weight: 800;
+    padding: 12px 22px;
+    border-radius: var(--radius-xs);
+    text-decoration: none;
+    transition: background-color var(--transition-fast);
+  }
+
+  .btn-cta-primary:hover {
+    background-color: #b91c1c;
+  }
+
+  .btn-cta-secondary {
+    display: inline-flex;
+    align-items: center;
+    background-color: rgba(255, 255, 255, 0.12);
+    color: #ffffff;
+    font-family: var(--font-heading);
+    font-size: 0.9375rem;
+    font-weight: 700;
+    padding: 12px 20px;
+    border-radius: var(--radius-xs);
+    border: 1px solid rgba(255, 255, 255, 0.25);
+    text-decoration: none;
+    transition: all var(--transition-fast);
+  }
+
+  .btn-cta-secondary:hover {
+    background-color: #ffffff;
+    color: #0f172a;
+  }
+
+  /* 10. Related Posts */
+  .article-related-posts {
+    margin-top: var(--space-10);
+    padding-top: var(--space-8);
+    border-top: 1px solid #e2e8f0;
+  }
+
+  .related-posts-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: var(--space-5);
+  }
+
+  .rel-post-card {
+    border: 1px solid #e2e8f0;
+    border-radius: var(--radius-xs);
+    overflow: hidden;
+    background-color: #ffffff;
+    display: flex;
+    flex-direction: column;
+    transition: all var(--transition-fast);
+  }
+
+  .rel-post-card:hover {
+    border-color: #0f172a;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
+  }
+
+  .rel-post-thumb {
+    width: 100%;
+    aspect-ratio: 16 / 10;
+    overflow: hidden;
+    background-color: #f1f5f9;
+  }
+
+  .rel-post-thumb img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform var(--transition-normal);
+  }
+
+  .rel-post-card:hover .rel-post-thumb img {
+    transform: scale(1.04);
+  }
+
+  .rel-post-body {
+    padding: var(--space-4);
+    display: flex;
+    flex-direction: column;
+    flex-grow: 1;
+  }
+
+  .rel-post-tag {
+    font-size: 0.6875rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    color: var(--color-red);
+    margin-bottom: 4px;
+  }
+
+  .rel-post-title {
+    font-size: 0.875rem;
+    font-weight: 700;
+    line-height: 1.4;
+    margin-bottom: 6px;
+  }
+
+  .rel-post-title a {
+    color: #0f172a;
+    text-decoration: none;
+  }
+
+  .rel-post-title a:hover {
+    color: var(--color-red);
+  }
+
+  .rel-post-desc {
+    font-size: 0.8125rem;
+    color: #64748b;
+    line-height: 1.5;
+    margin: 0;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  /* 11. Topic Pills */
+  .article-topic-pills {
+    margin-top: var(--space-8);
+    padding-top: var(--space-6);
+    border-top: 1px dashed #e2e8f0;
+  }
+
+  .topic-pills-title {
+    font-size: 0.875rem;
+    font-weight: 700;
+    color: #475569;
+    margin-bottom: var(--space-3);
+  }
+
+  .pills-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .topic-pill-btn {
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: #334155;
+    background-color: #f1f5f9;
+    padding: 6px 12px;
+    border-radius: var(--radius-full);
+    border: 1px solid #e2e8f0;
+    text-decoration: none;
+    transition: all var(--transition-fast);
+  }
+
+  .topic-pill-btn:hover {
+    background-color: #0f172a;
+    color: #ffffff;
+    border-color: #0f172a;
+  }
+
+  /* SIDEBAR STYLES */
+  .article-sidebar-column {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-6);
+    position: sticky;
+    top: 90px;
+  }
+
+  .sidebar-card {
+    background-color: #ffffff;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-xs);
+    padding: var(--space-5);
+  }
+
+  .sidebar-heading {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.9375rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: #0f172a;
+    padding-bottom: var(--space-3);
+    border-bottom: 2px solid #0f172a;
+    margin-bottom: var(--space-4);
+  }
+
+  .sidebar-heading svg {
+    margin-right: 0 !important;
+    vertical-align: middle !important;
+    flex-shrink: 0;
+  }
+
+  /* Sidebar Hotline Card (Luxury Redesign) */
+  .sidebar-hotline-card {
+    background: linear-gradient(160deg, #0f172a 0%, #1a2744 60%, #0f172a 100%);
+    color: #ffffff;
+    border: 1px solid rgba(212, 175, 55, 0.25);
+    border-radius: var(--radius-sm);
+    padding: var(--space-5);
+    box-shadow: 0 12px 32px rgba(15, 23, 42, 0.35), inset 0 1px 0 rgba(212, 175, 55, 0.15);
+    position: relative;
+    overflow: hidden;
+  }
+
+  .sidebar-hotline-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, #ef4444 0%, #f59e0b 40%, #d4af37 70%, #f59e0b 100%);
+  }
+
+  .sh-top-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.625rem;
+    font-weight: 800;
+    color: #d4af37;
+    letter-spacing: 0.1em;
+    margin-bottom: 14px;
+    text-transform: uppercase;
+    background: rgba(212, 175, 55, 0.1);
+    border: 1px solid rgba(212, 175, 55, 0.25);
+    padding: 4px 10px;
+    border-radius: 20px;
+  }
+
+  .sh-pulse-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background-color: #ef4444;
+    box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.35);
+    animation: shPulse 1.8s infinite;
+  }
+
+  @keyframes shPulse {
+    0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.6); }
+    70% { box-shadow: 0 0 0 6px rgba(239, 68, 68, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+  }
+
+  .sh-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 16px;
+  }
+
+  .sh-icon-box {
+    width: 42px;
+    height: 42px;
+    background: rgba(239, 68, 68, 0.15);
+    border: 1px solid rgba(239, 68, 68, 0.3);
+    color: #ef4444;
+    border-radius: var(--radius-xs);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+
+  .sh-main-title {
+    display: block;
+    font-family: var(--font-heading);
+    font-size: 0.9375rem;
+    font-weight: 800;
+    color: #ffffff;
+    line-height: 1.25;
+  }
+
+  .sh-sub-title {
+    font-size: 0.75rem;
+    color: #94a3b8;
+    margin: 2px 0 0 0;
+  }
+
+  .sh-actions-area {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-bottom: 14px;
+  }
+
+  .btn-glowing-red {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
+    color: #ffffff;
+    font-family: var(--font-heading);
+    font-size: 1.3rem;
+    font-weight: 800;
+    padding: 14px;
+    border-radius: var(--radius-xs);
+    text-decoration: none;
+    letter-spacing: 0.03em;
+    box-shadow: 0 4px 20px rgba(220, 38, 38, 0.5), inset 0 1px 0 rgba(255,255,255,0.15);
+    transition: all var(--transition-fast);
+    border: 1px solid rgba(255,255,255,0.1);
+  }
+
+  .btn-glowing-red:hover {
+    background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+    box-shadow: 0 8px 28px rgba(239, 68, 68, 0.65);
+    transform: translateY(-2px);
+  }
+
+  .sh-zalo-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    background: linear-gradient(135deg, #0068ff 0%, #0052cc 100%);
+    color: #ffffff;
+    font-family: var(--font-heading);
+    font-size: 0.875rem;
+    font-weight: 700;
+    padding: 11px;
+    border-radius: var(--radius-xs);
+    text-decoration: none;
+    box-shadow: 0 3px 12px rgba(0, 104, 255, 0.3);
+    transition: all var(--transition-fast);
+    border: 1px solid rgba(255,255,255,0.1);
+  }
+
+  .sh-zalo-btn:hover {
+    background: linear-gradient(135deg, #0052cc 0%, #003d99 100%);
+    box-shadow: 0 6px 18px rgba(0, 104, 255, 0.45);
+    transform: translateY(-2px);
+  }
+
+  .zalo-img-icon {
+    width: 20px;
+    height: 20px;
+    object-fit: contain;
+    border-radius: 4px;
+  }
+
+  .sh-features-list {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    font-size: 0.75rem;
+    color: #cbd5e1;
+    border-top: 1px dashed rgba(255, 255, 255, 0.12);
+    padding-top: 10px;
+  }
+
+  .sh-tel-btn {
+    text-align: center;
+    padding: 10px;
+    border-radius: var(--radius-xs);
+    text-decoration: none;
+    letter-spacing: 0.03em;
+    transition: background-color var(--transition-fast);
+  }
+
+  .sh-tel-btn:hover {
+    background-color: #b91c1c;
+  }
+
+  .sh-subtel {
+    display: block;
+    text-align: center;
+    font-size: 0.75rem;
+    color: #cbd5e1;
+    margin-top: 4px;
+  }
+
+  .sh-note {
+    font-size: 0.75rem;
+    color: #94a3b8;
+    line-height: 1.45;
+    margin-top: var(--space-3);
+    margin-bottom: 0;
+  }
+
+  .sidebar-cat-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .sidebar-cat-list li {
+    border-bottom: 1px solid #f1f5f9;
+  }
+
+  .sidebar-cat-list li:last-child {
+    border-bottom: none;
+  }
+
+  .cat-list-link {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 0;
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: #334155;
+    text-decoration: none;
+    transition: color var(--transition-fast);
+  }
+
+  .cat-list-link:hover {
+    color: var(--color-red);
+  }
+
+  .cat-count {
+    font-size: 0.75rem;
+    color: #94a3b8;
+  }
+
+  .sidebar-recent-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+  }
+
+  .recent-post-link {
+    display: flex;
+    gap: 10px;
+    text-decoration: none;
+  }
+
+  .rp-mini-thumb {
+    width: 60px;
+    height: 48px;
+    object-fit: cover;
+    border-radius: var(--radius-xs);
+    flex-shrink: 0;
+  }
+
+  .rp-mini-title {
+    font-size: 0.8125rem;
+    font-weight: 600;
+    color: #1e293b;
+    line-height: 1.35;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  .recent-post-link:hover .rp-mini-title {
+    color: var(--color-red);
+  }
+
+  .rp-mini-date {
+    font-size: 0.6875rem;
+    color: #94a3b8;
+    margin-top: 2px;
+    display: block;
+  }
+
+  /* Sidebar Store Card (Premium Redesign) */
+  .sidebar-store-card {
+    background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+    border: 1px solid #e2e8f0;
+    border-radius: var(--radius-sm);
+    padding: var(--space-5);
+    box-shadow: 0 4px 16px rgba(15, 23, 42, 0.04);
+    position: relative;
+    overflow: hidden;
+  }
+
+  .sidebar-store-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: linear-gradient(90deg, #0284c7 0%, var(--color-red) 100%);
+  }
+
+  .store-badge-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid #f1f5f9;
+    margin-bottom: 14px;
+  }
+
+  .store-badge-icon-box {
+    width: 40px;
+    height: 40px;
+    background: #e0f2fe;
+    color: #0284c7;
+    border-radius: var(--radius-xs);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+
+  .store-badge-title {
+    font-family: var(--font-heading);
+    font-size: 0.9375rem;
+    font-weight: 800;
+    color: #0f172a;
+    line-height: 1.25;
+    margin: 0 0 3px 0;
+  }
+
+  .store-badge-status {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: #16a34a;
+  }
+
+  .status-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background-color: #16a34a;
+    box-shadow: 0 0 0 3px rgba(22, 163, 74, 0.2);
+  }
+
+  .store-info-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-bottom: 16px;
+  }
+
+  .store-info-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+  }
+
+  .info-icon {
+    flex-shrink: 0;
+    margin-top: 2px;
+  }
+
+  .loc-icon {
+    color: var(--color-red);
+  }
+
+  .clock-icon {
+    color: #d97706;
+  }
+
+  .info-text {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .info-label {
+    font-size: 0.6875rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: #94a3b8;
+  }
+
+  .info-val {
+    font-size: 0.8125rem;
+    font-weight: 600;
+    color: #334155;
+    line-height: 1.4;
+  }
+
+  .btn-store-maps {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    width: 100%;
+    padding: 10px 14px;
+    background: #0f172a;
+    color: #ffffff;
+    font-family: var(--font-heading);
+    font-size: 0.8125rem;
+    font-weight: 700;
+    border-radius: var(--radius-xs);
+    text-decoration: none;
+    transition: all var(--transition-fast);
+    box-shadow: 0 2px 6px rgba(15, 23, 42, 0.12);
+  }
+
+  .btn-store-maps:hover {
+    background: var(--color-red);
+    color: #ffffff;
+    box-shadow: 0 4px 12px rgba(200, 30, 30, 0.25);
+    transform: translateY(-1px);
+  }
+
+  .btn-store-maps .arrow-icon {
+    transition: transform var(--transition-fast);
+  }
+
+  .btn-store-maps:hover .arrow-icon {
+    transform: translateX(3px);
+  }
+
+  @media (max-width: 1024px) {
+    :global(.article-layout) {
+      grid-template-columns: 1fr 300px;
+    }
+    .related-products-grid {
+      grid-template-columns: repeat(2, 1fr);
+    }
+  }
+
+  @media (max-width: 768px) {
+    :global(.article-layout) {
+      grid-template-columns: 1fr;
+    }
+    :global(.article-sidebar-column) {
+      position: static;
+    }
+  }
+
+  @media (max-width: 640px) {
+    .article-primary-column {
+      padding: var(--space-5) var(--space-4);
+    }
+    .related-posts-grid {
+      grid-template-columns: 1fr;
+    }
+    .cta-buttons-group {
+      flex-direction: column;
+    }
+    .btn-cta-primary, .btn-cta-secondary {
+      width: 100%;
+      justify-content: center;
+    }
+  }
+</style>

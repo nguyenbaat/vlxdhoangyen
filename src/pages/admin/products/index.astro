@@ -1,0 +1,519 @@
+---
+import AdminLayout from '../../../layouts/AdminLayout.astro';
+import { ProductRepo, CategoryRepo } from '../../../server/db/repo.js';
+import { db } from '../../../server/db/index.js';
+
+let errorMsg = '';
+let successMsg = '';
+
+if (Astro.request.method === 'POST') {
+  try {
+    const formData = await Astro.request.formData();
+    const action = formData.get('action')?.toString();
+    const id = Number(formData.get('id'));
+
+    if (action === 'delete' || action === 'soft_delete') {
+      if (id) {
+        await ProductRepo.softDelete(id);
+        successMsg = 'Đã chuyển sản phẩm vào Thùng rác.';
+      }
+    } else if (action === 'restore') {
+      if (id) {
+        await ProductRepo.restore(id);
+        successMsg = 'Đã khôi phục sản phẩm thành công.';
+      }
+    } else if (action === 'hard_delete') {
+      if (id) {
+        await ProductRepo.hardDelete(id);
+        successMsg = 'Đã xóa vĩnh viễn sản phẩm khỏi hệ thống.';
+      }
+    } else if (action === 'bulk') {
+      const bulkType = formData.get('bulk_type')?.toString();
+      const ids = formData.getAll('ids[]').map(Number).filter(Boolean);
+
+      if (ids.length === 0) {
+        throw new Error('Vui lòng chọn ít nhất một sản phẩm.');
+      }
+
+      if (bulkType === 'bulk_draft') {
+        await ProductRepo.bulkUpdateStatus(ids, 'draft');
+        successMsg = `Đã chuyển ${ids.length} sản phẩm thành bản nháp.`;
+      } else if (bulkType === 'bulk_publish') {
+        await ProductRepo.bulkUpdateStatus(ids, 'published');
+        successMsg = `Đã công khai ${ids.length} sản phẩm.`;
+      } else if (bulkType === 'bulk_trash' || bulkType === 'bulk_delete') {
+        await ProductRepo.bulkSoftDelete(ids);
+        successMsg = `Đã chuyển ${ids.length} sản phẩm vào Thùng rác.`;
+      } else if (bulkType === 'bulk_restore') {
+        await ProductRepo.bulkRestore(ids);
+        successMsg = `Đã khôi phục ${ids.length} sản phẩm từ Thùng rác.`;
+      } else if (bulkType === 'bulk_hard_delete') {
+        await ProductRepo.bulkHardDelete(ids);
+        successMsg = `Đã xóa vĩnh viễn ${ids.length} sản phẩm.`;
+      }
+    }
+  } catch (err: any) {
+    errorMsg = err.message;
+  }
+}
+
+const url = new URL(Astro.request.url);
+const catFilter = url.searchParams.get('cat') || '';
+const search = url.searchParams.get('q') || '';
+const statusTab = url.searchParams.get('status') || 'all';
+
+// Fetch counts
+const countsRows = await db.query<{ status: string; count: string }>(
+  'SELECT status, count(*) as count FROM products GROUP BY status'
+);
+let publishedCount = 0;
+let draftCount = 0;
+let trashCount = 0;
+countsRows.forEach(r => {
+  if (r.status === 'published') publishedCount = parseInt(r.count || '0');
+  else if (r.status === 'draft') draftCount = parseInt(r.count || '0');
+  else if (r.status === 'trash') trashCount = parseInt(r.count || '0');
+});
+const totalActiveCount = publishedCount + draftCount;
+
+const categories = await CategoryRepo.getMainCategories();
+const { products, total } = await ProductRepo.getAll({
+  categorySlug: catFilter,
+  search: search,
+  limit: 300,
+  status: statusTab === 'all' ? undefined : (statusTab === 'active' ? '' : statusTab)
+});
+
+const displayProducts = statusTab === 'trash' 
+  ? products.filter(p => p.status === 'trash') 
+  : products.filter(p => p.status !== 'trash');
+---
+
+<AdminLayout title="Quản Lý Sản Phẩm" activeNav="products">
+  <div class="tail-mgmt-wrap">
+
+    <!-- TailAdmin Status Segmented Tabs -->
+    <div class="tail-segmented-tabs">
+      <a href="/admin/products" class={`tail-tab-item ${statusTab === 'all' ? 'active' : ''}`}>
+        <span>Tất cả sản phẩm</span>
+        <span class="tail-badge gray">{totalActiveCount}</span>
+      </a>
+      <a href="/admin/products?status=published" class={`tail-tab-item ${statusTab === 'published' ? 'active' : ''}`}>
+        <span>Công khai</span>
+        <span class="tail-badge green">{publishedCount}</span>
+      </a>
+      <a href="/admin/products?status=draft" class={`tail-tab-item ${statusTab === 'draft' ? 'active' : ''}`}>
+        <span>Bản nháp</span>
+        <span class="tail-badge dark">{draftCount}</span>
+      </a>
+      <a href="/admin/products?status=trash" class={`tail-tab-item trash-tab ${statusTab === 'trash' ? 'active' : ''}`}>
+        <span>Thùng rác</span>
+        <span class="tail-badge red">{trashCount}</span>
+      </a>
+    </div>
+
+    <!-- TailAdmin Filter & Action Bar Card -->
+    <div class="tail-filter-card">
+      <div class="filter-left">
+        <form action="/admin/products" method="GET" class="filter-form-row">
+          <input type="hidden" name="status" value={statusTab} />
+          <div class="input-with-icon">
+            <span class="search-icon" style="display: flex; align-items: center; justify-content: center;">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            </span>
+            <input 
+              type="search" 
+              name="q" 
+              value={search} 
+              placeholder="Tìm sản phẩm, mã SKU..." 
+              class="tail-input"
+            />
+          </div>
+          
+          <select name="cat" onchange="this.form.submit()" class="tail-select">
+            <option value="">-- Tất cả danh mục --</option>
+            {categories.map(c => (
+              <option value={c.slug} selected={catFilter === c.slug}>{c.name}</option>
+            ))}
+          </select>
+
+          <button type="submit" class="btn btn-navy">Lọc Dữ Liệu</button>
+          {(search || catFilter) && (
+            <a href={`/admin/products?status=${statusTab}`} class="btn btn-outline">Bỏ lọc</a>
+          )}
+        </form>
+      </div>
+
+      <div class="filter-right">
+        <form method="POST" id="bulk_prod_form" class="bulk-form-row">
+          <input type="hidden" name="action" value="bulk" />
+          <select name="bulk_type" id="bulk_prod_select" class="tail-select bulk-select" required>
+            <option value="">— Hành động hàng loạt —</option>
+            {statusTab === 'trash' ? (
+              <>
+                <option value="bulk_restore">Khôi phục các sản phẩm chọn</option>
+                <option value="bulk_hard_delete">Xóa Vĩnh Viễn chọn (Không thể hoàn tác)</option>
+              </>
+            ) : (
+              <>
+                <option value="bulk_trash">Bỏ vào Thùng Rác chọn</option>
+                <option value="bulk_draft">Chuyển thành Bản nháp</option>
+                <option value="bulk_publish">Công khai sản phẩm</option>
+              </>
+            )}
+          </select>
+          <button type="submit" class="btn btn-outline">Áp dụng</button>
+          <span class="selected-count-tag" id="prod_selected_badge">Đã chọn: 0</span>
+        </form>
+
+        <a href="/admin/products/new" class="btn btn-primary">
+          + Thêm Sản Phẩm Mới
+        </a>
+      </div>
+    </div>
+
+    {errorMsg && <div class="tail-alert danger">{errorMsg}</div>}
+    {successMsg && <div class="tail-alert success">{successMsg}</div>}
+
+    <!-- TailAdmin Data Table -->
+    <div class="table-card">
+      <div class="table-responsive">
+        <form method="POST" id="prod_table_form">
+          <table class="admin-table">
+            <thead>
+              <tr>
+                <th width="40" style="text-align: center;">
+                  <input type="checkbox" id="check_all_prods" class="tail-checkbox" title="Chọn / Bỏ chọn tất cả" />
+                </th>
+                <th width="65">Ảnh</th>
+                <th>Tên Sản Phẩm</th>
+                <th>Danh Mục</th>
+                <th>Thương Hiệu</th>
+                <th>Giá Bán</th>
+                <th>Tình Trạng</th>
+                <th>Trạng Thái</th>
+                <th width="160" style="text-align: center;">Thao Tác</th>
+              </tr>
+            </thead>
+            <tbody>
+              {displayProducts.length === 0 ? (
+                <tr>
+                  <td colspan="9" style="text-align: center; padding: 3rem; color: #64748b;">
+                    {statusTab === 'trash' ? 'Thùng rác hiện tại đang trống.' : 'Không tìm thấy sản phẩm nào phù hợp.'}
+                  </td>
+                </tr>
+              ) : (
+                displayProducts.map(p => (
+                  <tr class={p.status === 'trash' ? 'is-trash-row' : ''}>
+                    <td style="text-align: center;">
+                      <input type="checkbox" name="ids[]" value={p.id} class="prod-checkbox tail-checkbox" />
+                    </td>
+                    <td class="thumb-cell">
+                      <div class="product-thumb-frame">
+                        <img src={p.featured_image || '/anh-sanpham.png'} alt="" loading="lazy" />
+                      </div>
+                    </td>
+                    <td>
+                      <strong class="prod-title-text">{p.name}</strong>
+                      <div class="slug-tag">/{p.slug}/</div>
+                    </td>
+                    <td><span class="category-name-badge">{p.category_name || '—'}</span></td>
+                    <td><span class="brand-name-text">{p.brand_name || '—'}</span></td>
+                    <td>
+                      <span class="price-text">
+                        {p.price > 0 ? `${new Intl.NumberFormat('vi-VN').format(p.price)} đ/${p.unit}` : 'Liên Hệ'}
+                      </span>
+                    </td>
+                    <td>
+                      <span class={`stock-indicator ${p.is_in_stock ? 'in' : 'out'}`}>
+                        {p.is_in_stock ? '● Còn hàng' : '○ Hết hàng'}
+                      </span>
+                    </td>
+                    <td>
+                      {p.status === 'trash' ? (
+                        <span class="status-tag trash">Thùng Rác</span>
+                      ) : p.status === 'published' ? (
+                        <span class="status-tag published">Công khai</span>
+                      ) : (
+                        <span class="status-tag draft">Bản nháp</span>
+                      )}
+                    </td>
+                    <td class="action-cell" style="text-align: center;">
+                      {p.status === 'trash' ? (
+                        <div class="flex-actions-cell">
+                          <form method="POST" style="display: inline;">
+                            <input type="hidden" name="action" value="restore" />
+                            <input type="hidden" name="id" value={p.id} />
+                            <button type="submit" class="btn-action restore" title="Khôi phục">
+                              Khôi phục
+                            </button>
+                          </form>
+                          <form method="POST" onsubmit="return confirm('Xóa vĩnh viễn sản phẩm này khỏi hệ thống?');" style="display: inline;">
+                            <input type="hidden" name="action" value="hard_delete" />
+                            <input type="hidden" name="id" value={p.id} />
+                            <button type="submit" class="btn-action delete" title="Xóa Vĩnh Viễn">
+                              Xóa
+                            </button>
+                          </form>
+                        </div>
+                      ) : (
+                        <div class="flex-actions-cell">
+                          <a href={`/admin/products/edit/${p.id}`} class="btn-action edit" title="Sửa">
+                            Sửa
+                          </a>
+                          <form method="POST" onsubmit="return confirm('Chuyển sản phẩm vào Thùng Rác?');" style="display: inline;">
+                            <input type="hidden" name="action" value="soft_delete" />
+                            <input type="hidden" name="id" value={p.id} />
+                            <button type="submit" class="btn-action delete" title="Bỏ vào thùng rác">
+                              Xóa
+                            </button>
+                          </form>
+                        </div>
+                      )}
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </form>
+      </div>
+    </div>
+  </div>
+</AdminLayout>
+
+<script is:inline>
+  document.addEventListener('DOMContentLoaded', () => {
+    const checkAll = document.getElementById('check_all_prods');
+    const prodCheckboxes = document.querySelectorAll('.prod-checkbox');
+    const badge = document.getElementById('prod_selected_badge');
+    const bulkForm = document.getElementById('bulk_prod_form');
+
+    function updateCount() {
+      const selected = document.querySelectorAll('.prod-checkbox:checked').length;
+      if (badge) badge.textContent = `Đã chọn: ${selected}`;
+    }
+
+    if (checkAll) {
+      checkAll.addEventListener('change', () => {
+        prodCheckboxes.forEach(cb => cb.checked = checkAll.checked);
+        updateCount();
+      });
+    }
+
+    prodCheckboxes.forEach(cb => {
+      cb.addEventListener('change', () => {
+        if (checkAll) {
+          checkAll.checked = (document.querySelectorAll('.prod-checkbox:checked').length === prodCheckboxes.length);
+        }
+        updateCount();
+      });
+    });
+
+    if (bulkForm) {
+      bulkForm.addEventListener('submit', (e) => {
+        const selected = document.querySelectorAll('.prod-checkbox:checked');
+        if (selected.length === 0) {
+          e.preventDefault();
+          alert('Vui lòng chọn ít nhất 1 sản phẩm!');
+          return;
+        }
+
+        const selectVal = document.getElementById('bulk_prod_select').value;
+        if (!selectVal) {
+          e.preventDefault();
+          alert('Vui lòng chọn hành động hàng loạt!');
+          return;
+        }
+
+        const oldInputs = bulkForm.querySelectorAll('input[name="ids[]"]');
+        oldInputs.forEach(i => i.remove());
+
+        selected.forEach(cb => {
+          const input = document.createElement('input');
+          input.type = 'hidden';
+          input.name = 'ids[]';
+          input.value = cb.value;
+          bulkForm.appendChild(input);
+        });
+      });
+    }
+  });
+</script>
+
+<style>
+  /* TailAdmin Segmented Tabs */
+  .tail-segmented-tabs {
+    display: flex;
+    gap: 0.5rem;
+    margin-bottom: 1.5rem;
+    background: #ffffff;
+    padding: 0.5rem;
+    border-radius: 0.75rem;
+    border: 1px solid var(--tail-border);
+    box-shadow: 0 1px 3px rgba(0,0,0,0.03);
+    overflow-x: auto;
+  }
+  .tail-tab-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.6rem 1.1rem;
+    border-radius: 0.5rem;
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: #64748b;
+    text-decoration: none;
+    transition: all 0.2s ease;
+  }
+  .tail-tab-item:hover {
+    background: #f8fafc;
+    color: var(--tail-dark);
+  }
+  .tail-tab-item.active {
+    background: var(--tail-dark);
+    color: #ffffff;
+  }
+  .tail-tab-item.trash-tab.active {
+    background: var(--tail-danger);
+    color: #ffffff;
+  }
+  .tail-badge {
+    font-size: 0.72rem;
+    font-weight: 800;
+    padding: 2px 8px;
+    border-radius: 9999px;
+  }
+  .tail-badge.gray { background: #f1f5f9; color: #475569; }
+  .tail-badge.green { background: #dcfce7; color: #10b981; }
+  .tail-badge.dark { background: #e2e8f0; color: #1c2434; }
+  .tail-badge.red { background: #fee2e2; color: #ef4444; }
+  .tail-tab-item.active .tail-badge {
+    background: rgba(255, 255, 255, 0.2);
+    color: #ffffff;
+  }
+
+  /* TailAdmin Filter Card */
+  .tail-filter-card {
+    background: #ffffff;
+    border: 1px solid var(--tail-border);
+    border-radius: 0.75rem;
+    padding: 1.25rem 1.5rem;
+    margin-bottom: 1.5rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1.5rem;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.03);
+    flex-wrap: wrap;
+  }
+  .filter-form-row, .bulk-form-row {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+  }
+  .input-with-icon {
+    position: relative;
+    display: flex;
+    align-items: center;
+  }
+  .search-icon {
+    position: absolute;
+    left: 0.85rem;
+    font-size: 0.85rem;
+    color: #94a3b8;
+  }
+  .tail-input {
+    padding-left: 2.2rem !important;
+    min-width: 260px;
+  }
+  .tail-select {
+    min-width: 180px;
+  }
+  .selected-count-tag {
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: #64748b;
+  }
+  .filter-right {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    flex-wrap: wrap;
+  }
+
+  /* TailAdmin Data Table Fine Tuning */
+  .product-thumb-frame {
+    width: 48px;
+    height: 48px;
+    border-radius: 0.5rem;
+    overflow: hidden;
+    background: #f8fafc;
+    border: 1px solid var(--tail-border);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .product-thumb-frame img {
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
+  }
+
+  .prod-title-text {
+    font-size: 0.9rem;
+    font-weight: 700;
+    color: var(--tail-dark);
+    display: block;
+  }
+  .slug-tag {
+    font-size: 0.78rem;
+    color: var(--tail-primary);
+    margin-top: 2px;
+  }
+
+  .category-name-badge {
+    background: #f1f5f9;
+    color: #475569;
+    font-size: 0.78rem;
+    font-weight: 600;
+    padding: 3px 8px;
+    border-radius: 0.375rem;
+  }
+  .brand-name-text {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #334155;
+  }
+
+  .price-text {
+    font-size: 0.88rem;
+    font-weight: 700;
+    color: #0f172a;
+  }
+
+  .stock-indicator {
+    font-size: 0.8rem;
+    font-weight: 600;
+  }
+  .stock-indicator.in { color: var(--tail-success); }
+  .stock-indicator.out { color: var(--tail-danger); }
+
+  .flex-actions-cell {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.4rem;
+  }
+
+  .tail-alert {
+    padding: 0.85rem 1.25rem;
+    border-radius: 0.5rem;
+    font-size: 0.875rem;
+    font-weight: 600;
+    margin-bottom: 1.5rem;
+  }
+  .tail-alert.danger { background: #fde8e8; color: #ef4444; border: 1px solid #fca5a5; }
+  .tail-alert.success { background: #e8fadf; color: #10b981; border: 1px solid #a7f3d0; }
+</style>

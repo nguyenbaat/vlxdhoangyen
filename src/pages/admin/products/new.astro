@@ -1,0 +1,749 @@
+---
+import AdminLayout from '../../../layouts/AdminLayout.astro';
+import BlockEditor from '../../../components/admin/BlockEditor.astro';
+import MediaManager from '../../../components/admin/MediaManager.astro';
+import AIAssistantModal from '../../../components/admin/AIAssistantModal.astro';
+import { ProductRepo, CategoryRepo, BrandRepo } from '../../../server/db/repo.js';
+
+let errorMsg = '';
+
+if (Astro.request.method === 'POST') {
+  try {
+    const formData = await Astro.request.formData();
+    const name = formData.get('name')?.toString().trim() || '';
+    let slug = formData.get('slug')?.toString().trim() || '';
+    const category_id = Number(formData.get('category_id')) || undefined;
+    const brand_id = Number(formData.get('brand_id')) || null;
+    const custom_badge = formData.get('custom_badge')?.toString().trim() || '';
+    const sku = formData.get('sku')?.toString().trim() || '';
+    const price = Number(formData.get('price')) || 0;
+    const unit = formData.get('unit')?.toString().trim() || 'Bao';
+    const short_description = formData.get('short_description')?.toString().trim() || '';
+    const content = formData.get('content')?.toString() || '';
+    const specifications = formData.get('specifications')?.toString() || '';
+    const featured_image = formData.get('featured_image')?.toString().trim() || '';
+    const gallery_str = formData.get('gallery')?.toString() || '';
+    const seo_title = formData.get('seo_title')?.toString().trim() || name;
+    const seo_description = formData.get('seo_description')?.toString().trim() || short_description;
+    const is_featured = formData.get('is_featured') === 'on' ? 1 : 0;
+    const is_in_stock = formData.get('is_in_stock') === 'on' ? 1 : 0;
+    const status = formData.get('status')?.toString() || 'published';
+
+    if (!name) {
+      throw new Error('Vui lòng nhập tên sản phẩm.');
+    }
+
+    if (!slug) {
+      slug = name
+        .toLowerCase()
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .replace(/[đĐ]/g, 'd')
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/^-+|-+$/g, '');
+    }
+
+    const images = gallery_str
+      .split('\n')
+      .map(s => s.trim())
+      .filter(s => s.length > 0);
+
+    if (featured_image && !images.includes(featured_image)) {
+      images.unshift(featured_image);
+    }
+
+    await ProductRepo.create({
+      name,
+      slug,
+      category_id,
+      brand_id,
+      custom_badge,
+      sku,
+      price,
+      unit,
+      short_description,
+      content,
+      specifications,
+      featured_image,
+      seo_title,
+      seo_description,
+      is_featured,
+      is_in_stock,
+      status,
+      images
+    });
+
+    return Astro.redirect('/admin/products');
+  } catch (err: any) {
+    errorMsg = err.message;
+  }
+}
+
+const categories = await CategoryRepo.getAll(false);
+const brands = await BrandRepo.getAll();
+---
+
+<AdminLayout title="Thêm Sản Phẩm Mới (WordPress Style / AI)" activeNav="products">
+  <div class="product-editor-page">
+    
+    <!-- Top Bar -->
+    <div class="product-topbar">
+      <div class="topbar-left">
+        <a href="/admin/products" class="btn-back">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
+          <span>Danh Sách Sản Phẩm</span>
+        </a>
+        <span class="topbar-divider">|</span>
+        <h1 class="page-title">Thêm Sản Phẩm Mới</h1>
+      </div>
+
+      <div class="topbar-right">
+        <!-- AI Generator Trigger Button -->
+        <button type="button" id="btn-open-ai-product" class="btn-ai-sparkle">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
+          <span>✨ AI Viết Sản Phẩm & SEO</span>
+        </button>
+      </div>
+    </div>
+
+    {errorMsg && <div class="error-box">{errorMsg}</div>}
+
+    <form method="POST" class="admin-form-card" id="product-form">
+      <div class="form-grid-2">
+        <div class="col-main">
+          
+          <div class="form-group-wp-title">
+            <label for="name">Tên Sản Phẩm *</label>
+            <input type="text" id="name" name="name" placeholder="Ví dụ: Xi Măng Bỉm Sơn PCB40 Con Voi..." class="wp-title-input" required />
+          </div>
+
+          <div class="wp-slug-bar">
+            <span class="slug-label">Đường dẫn:</span>
+            <span class="slug-domain">https://vlxdhoangyen.com/</span>
+            <input type="text" id="slug" name="slug" placeholder="xi-mang-bim-son-pcb40" class="slug-input" />
+            <button type="button" id="btn-sync-prod-slug" class="btn-slug-action">🔄 Tạo từ tên</button>
+          </div>
+
+          <div class="form-group" style="margin-top: 1rem;">
+            <label for="short_description">Mô Tả Ngắn Sản Phẩm (Tóm tắt nổi bật)</label>
+            <textarea id="short_description" name="short_description" rows="3" placeholder="Tóm tắt đặc tính nổi bật, quy cách và ứng dụng sản phẩm..."></textarea>
+          </div>
+
+          <div class="editor-section-card" style="margin-top: 1.5rem;">
+            <BlockEditor
+              initialContent=""
+              name="content"
+              id="product_content"
+              label="1. Nội Dung Mô Tả Chi Tiết Sản Phẩm (Bài viết giới thiệu & ưu điểm)"
+            />
+          </div>
+
+          <div class="editor-section-card" style="margin-top: 1.5rem;">
+            <BlockEditor
+              initialContent=""
+              name="specifications"
+              id="product_specs"
+              label="2. Thông Số Kỹ Thuật & Barem Quy Cách (Chèn bảng thông số, quy cách mác)"
+            />
+          </div>
+
+          <!-- Yoast SEO Box -->
+          <div class="seo-fieldset">
+            <div class="seo-header-title">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+              <h3>Tối Ưu SEO Sản Phẩm (Google Search)</h3>
+            </div>
+            
+            <div class="form-group">
+              <div class="label-flex">
+                <label for="seo_title">SEO Title (Tiêu đề Google)</label>
+                <span id="seo-title-len" class="badge-counter info">0 / 60 kt</span>
+              </div>
+              <input type="text" id="seo_title" name="seo_title" placeholder="Tên sản phẩm - Giá Tốt Quảng Trị | Siêu Thị VLXD Hoàng Yến" />
+            </div>
+
+            <div class="form-group">
+              <div class="label-flex">
+                <label for="seo_description">SEO Meta Description</label>
+                <span id="seo-desc-len" class="badge-counter info">0 / 155 kt</span>
+              </div>
+              <textarea id="seo_description" name="seo_description" rows="2" placeholder="Mô tả chuẩn SEO thu hút khách click..."></textarea>
+            </div>
+
+            <!-- SERP Preview -->
+            <div class="serp-preview-card">
+              <div class="serp-url-row">
+                <span class="serp-domain">https://vlxdhoangyen.com</span>
+                <span class="serp-path" id="serp-path-preview">/duong-dan-san-pham/</span>
+              </div>
+              <div class="serp-title" id="serp-title-preview">Tên Sản Phẩm | Siêu Thị VLXD Hoàng Yến</div>
+              <div class="serp-desc" id="serp-desc-preview">Mô tả sản phẩm xuất hiện trên công cụ tìm kiếm Google...</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="col-side">
+          <div class="side-card">
+            <h4>Xuất Bản & Trạng Thái</h4>
+            <div class="form-group">
+              <label for="status">Trạng thái</label>
+              <select id="status" name="status">
+                <option value="published">Công khai (Published)</option>
+                <option value="draft">Bản nháp (Draft)</option>
+              </select>
+            </div>
+            <div class="checkbox-group">
+              <label>
+                <input type="checkbox" name="is_in_stock" checked />
+                <span>Còn hàng trong kho</span>
+              </label>
+            </div>
+            <div class="checkbox-group">
+              <label>
+                <input type="checkbox" name="is_featured" />
+                <span>Sản phẩm nổi bật trang chủ</span>
+              </label>
+            </div>
+            <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 1rem; font-weight: 800; padding: 0.75rem;">
+              LƯU SẢN PHẨM
+            </button>
+          </div>
+
+          <div class="side-card">
+            <h4>Phân Loại & Huy Hiệu (Badge)</h4>
+            
+            <div class="form-group">
+              <label for="category_id">Danh mục sản phẩm</label>
+              <select id="category_id" name="category_id">
+                <option value="">-- Chọn danh mục --</option>
+                {categories.map(c => (
+                  <option value={c.id}>{c.parent_id ? `┗━━ ${c.name} (${c.parent_name})` : c.name}</option>
+                ))}
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label for="brand_id">Thương hiệu / Nhà máy</label>
+              <select id="brand_id" name="brand_id">
+                <option value="">-- Chọn thương hiệu --</option>
+                {brands.map(b => (
+                  <option value={b.id}>{b.name}</option>
+                ))}
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label for="custom_badge">Huy hiệu Nổi bật (Badge Tier-1)</label>
+              <select id="preset_badge_select" class="form-select" onchange="const input=document.getElementById('custom_badge'); if(this.value){input.value=this.value;}">
+                <option value="">-- Mặc định (Theo phân loại) --</option>
+                <option value="Chuẩn Nhà Máy">Chuẩn Nhà Máy</option>
+                <option value="Sản Phẩm Phân Phối">Sản Phẩm Phân Phối</option>
+                <option value="Hàng Công Trình">Hàng Công Trình</option>
+                <option value="Bán Chạy">Bán Chạy</option>
+                <option value="Mới Về">Mới Về</option>
+              </select>
+              <input 
+                type="text" 
+                id="custom_badge" 
+                name="custom_badge" 
+                placeholder="Tự nhập nội dung huy hiệu tùy chỉnh..." 
+                style="margin-top: 6px;" 
+              />
+            </div>
+
+            <div class="form-group">
+              <label for="sku">Mã sản phẩm (SKU)</label>
+              <input type="text" id="sku" name="sku" placeholder="BS-PCB40" />
+            </div>
+
+            <div class="form-group">
+              <label for="price">Giá bán (Nhập 0 nếu Liên hệ)</label>
+              <input type="number" id="price" name="price" placeholder="0" />
+            </div>
+
+            <div class="form-group">
+              <label for="unit">Đơn vị tính</label>
+              <input type="text" id="unit" name="unit" placeholder="Bao, Cây, Kg, Mét, Bộ..." defaultValue="Bao" />
+            </div>
+          </div>
+
+          <MediaManager
+            featuredImage=""
+            galleryImages={[]}
+            featuredInputName="featured_image"
+            galleryInputName="gallery"
+            allowMultiple={true}
+          />
+        </div>
+      </div>
+    </form>
+
+    <!-- AI Assistant Modal for Product -->
+    <AIAssistantModal targetType="product" />
+
+  </div>
+</AdminLayout>
+
+<style>
+  .product-editor-page {
+    max-width: 1350px;
+    margin: 0 auto;
+    padding-bottom: 4rem;
+  }
+
+  .product-topbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem 0;
+    margin-bottom: 1.5rem;
+    border-bottom: 1px solid #e2e8f0;
+    flex-wrap: wrap;
+    gap: 1rem;
+  }
+
+  .topbar-left {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .btn-back {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    color: #475569;
+    text-decoration: none;
+    font-size: 0.875rem;
+    font-weight: 600;
+  }
+  .btn-back:hover {
+    color: #0f172a;
+  }
+
+  .topbar-divider {
+    color: #cbd5e1;
+  }
+
+  .page-title {
+    font-size: 1.35rem;
+    font-weight: 800;
+    color: #0f172a;
+    margin: 0;
+  }
+
+  .btn-ai-sparkle {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 0.65rem 1.35rem;
+    background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+    color: #ffffff;
+    border: none;
+    border-radius: 9999px;
+    font-size: 0.875rem;
+    font-weight: 700;
+    cursor: pointer;
+    box-shadow: 0 4px 14px rgba(79, 70, 229, 0.3);
+    transition: all 0.2s ease;
+  }
+  .btn-ai-sparkle:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 6px 18px rgba(79, 70, 229, 0.4);
+  }
+
+  .error-box {
+    background: #fee2e2;
+    color: #b91c1c;
+    padding: 0.75rem 1rem;
+    border-radius: var(--radius-sm);
+    margin-bottom: 1rem;
+    font-weight: 600;
+  }
+
+  .admin-form-card {
+    background: #ffffff;
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-lg);
+    padding: 1.75rem;
+    box-shadow: var(--shadow-sm);
+  }
+
+  .form-grid-2 {
+    display: grid;
+    grid-template-columns: 1fr 350px;
+    gap: 2rem;
+    align-items: start;
+  }
+
+  .form-group-wp-title {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    padding: 0.75rem 1rem;
+    margin-bottom: 0.75rem;
+  }
+  .form-group-wp-title label {
+    display: block;
+    font-size: 0.8rem;
+    font-weight: 700;
+    color: #64748b;
+    text-transform: uppercase;
+    margin-bottom: 4px;
+  }
+  .wp-title-input {
+    width: 100%;
+    border: none;
+    outline: none;
+    font-size: 1.35rem;
+    font-weight: 800;
+    color: #0f172a;
+    font-family: inherit;
+    padding: 0;
+  }
+
+  .wp-slug-bar {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 0.45rem 0.75rem;
+    font-size: 0.825rem;
+  }
+  .slug-label { font-weight: 700; color: #475569; }
+  .slug-domain { color: #64748b; }
+  .slug-input {
+    flex: 1;
+    border: 1px solid #cbd5e1;
+    border-radius: 4px;
+    padding: 3px 8px;
+    font-size: 0.825rem;
+    font-family: monospace;
+  }
+  .btn-slug-action {
+    background: #e2e8f0;
+    border: none;
+    padding: 3px 8px;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    cursor: pointer;
+  }
+
+  .form-group {
+    margin-bottom: 1.25rem;
+  }
+  .form-group label {
+    display: block;
+    font-size: 0.88rem;
+    font-weight: 700;
+    margin-bottom: 0.35rem;
+    color: #334155;
+  }
+  .form-group input, .form-group select, .form-group textarea {
+    width: 100%;
+    padding: 0.65rem 0.85rem;
+    border: 1px solid var(--border-medium);
+    border-radius: var(--radius-sm);
+    font-size: 0.9rem;
+    outline: none;
+    font-family: inherit;
+    box-sizing: border-box;
+  }
+  .form-group input:focus, .form-group select:focus, .form-group textarea:focus {
+    border-color: #0284c7;
+    box-shadow: 0 0 0 3px rgba(2, 132, 199, 0.15);
+  }
+
+  .label-flex {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .badge-counter {
+    font-size: 0.72rem;
+    font-weight: 700;
+    padding: 1px 6px;
+    border-radius: 4px;
+  }
+  .badge-counter.good { background: #dcfce7; color: #15803d; }
+  .badge-counter.warning { background: #fee2e2; color: #b91c1c; }
+  .badge-counter.info { background: #f1f5f9; color: #64748b; }
+
+  .seo-fieldset {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-top: 3px solid #2563eb;
+    border-radius: var(--radius-md);
+    padding: 1.5rem;
+    margin-top: 1.5rem;
+  }
+  .seo-header-title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 1rem;
+    color: #2563eb;
+  }
+  .seo-header-title h3 {
+    font-size: 1.05rem;
+    margin: 0;
+    color: #0f172a;
+  }
+
+  .serp-preview-card {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 1rem;
+    margin-top: 1rem;
+  }
+  .serp-url-row { font-size: 0.75rem; color: #202124; margin-bottom: 4px; }
+  .serp-path { color: #5f6368; }
+  .serp-title { font-size: 1.15rem; font-weight: 500; color: #1a0dab; line-height: 1.35; margin-bottom: 4px; }
+  .serp-desc { font-size: 0.875rem; color: #4d5156; line-height: 1.5; }
+
+  .side-card {
+    background: #ffffff;
+    border: 1px solid var(--border-subtle);
+    border-radius: 12px;
+    padding: 1.25rem;
+    margin-bottom: 1.25rem;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.03);
+  }
+  .side-card h4 {
+    font-size: 0.95rem;
+    margin-bottom: 1rem;
+    padding-bottom: 0.4rem;
+    border-bottom: 1px solid var(--border-subtle);
+    font-weight: 700;
+    color: #0f172a;
+  }
+  .checkbox-group {
+    margin-bottom: 0.8rem;
+  }
+  .checkbox-group label {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+  }
+
+  @media (max-width: 1024px) {
+    .form-grid-2 { grid-template-columns: 1fr; }
+  }
+</style>
+
+<script>
+  document.addEventListener('DOMContentLoaded', () => {
+    const nameInput = document.getElementById('name') as HTMLInputElement;
+    const slugInput = document.getElementById('slug') as HTMLInputElement;
+    const btnSyncSlug = document.getElementById('btn-sync-prod-slug');
+    const shortDescInput = document.getElementById('short_description') as HTMLTextAreaElement;
+    const seoTitleInput = document.getElementById('seo_title') as HTMLInputElement;
+    const seoDescInput = document.getElementById('seo_description') as HTMLTextAreaElement;
+
+    const seoTitleLen = document.getElementById('seo-title-len');
+    const seoDescLen = document.getElementById('seo-desc-len');
+    const serpTitlePreview = document.getElementById('serp-title-preview');
+    const serpDescPreview = document.getElementById('serp-desc-preview');
+    const serpPathPreview = document.getElementById('serp-path-preview');
+
+    // AI Modal Elements
+    const btnOpenAI = document.getElementById('btn-open-ai-product');
+    const aiModal = document.getElementById('ai-assistant-modal');
+    const closeAIModal = document.getElementById('close-ai-modal');
+    const btnRunAIGenerate = document.getElementById('btn-run-ai-generate') as HTMLButtonElement;
+    const aiLoadingBox = document.getElementById('ai-loading-box');
+    const aiResultBox = document.getElementById('ai-result-box');
+    const btnApplyAI = document.getElementById('btn-apply-ai');
+
+    const aiPromptTopic = document.getElementById('ai-prompt-topic') as HTMLInputElement;
+    const aiPromptCategory = document.getElementById('ai-prompt-category') as HTMLInputElement;
+    const aiPromptKeywords = document.getElementById('ai-prompt-keywords') as HTMLInputElement;
+    const aiPromptNotes = document.getElementById('ai-prompt-notes') as HTMLTextAreaElement;
+
+    const aiResTitle = document.getElementById('ai-res-title');
+    const aiResSlug = document.getElementById('ai-res-slug');
+    const aiResSeoTitle = document.getElementById('ai-res-seotitle');
+    const aiResDesc = document.getElementById('ai-res-desc');
+    const aiResContent = document.getElementById('ai-res-content');
+    const aiResSpecs = document.getElementById('ai-res-specs');
+    const aiSpecsGroup = document.getElementById('ai-specs-preview-group');
+
+    let aiGeneratedData: any = null;
+
+    function slugify(text: string): string {
+      return text
+        .toLowerCase()
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .replace(/[đĐ]/g, 'd')
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/^-+|-+$/g, '');
+    }
+
+    function updateSERP() {
+      const sTitle = seoTitleInput?.value || nameInput?.value || 'Tên Sản Phẩm';
+      const sDesc = seoDescInput?.value || shortDescInput?.value || 'Mô tả sản phẩm xuất hiện trên công cụ tìm kiếm Google...';
+      const slug = slugInput?.value || 'duong-dan-san-pham';
+
+      if (serpTitlePreview) serpTitlePreview.textContent = sTitle;
+      if (serpDescPreview) serpDescPreview.textContent = sDesc;
+      if (serpPathPreview) serpPathPreview.textContent = `/${slug}/`;
+
+      if (seoTitleLen) {
+        const len = sTitle.length;
+        seoTitleLen.textContent = `${len} / 60 kt`;
+        seoTitleLen.className = `badge-counter ${len >= 40 && len <= 65 ? 'good' : (len > 65 ? 'warning' : 'info')}`;
+      }
+
+      if (seoDescLen) {
+        const len = sDesc.length;
+        seoDescLen.textContent = `${len} / 155 kt`;
+        seoDescLen.className = `badge-counter ${len >= 115 && len <= 165 ? 'good' : (len > 165 ? 'warning' : 'info')}`;
+      }
+    }
+
+    nameInput?.addEventListener('input', () => {
+      if (!slugInput.value || slugInput.getAttribute('data-manual') !== 'true') {
+        slugInput.value = slugify(nameInput.value);
+        updateSERP();
+      }
+      if (!seoTitleInput.value) {
+        seoTitleInput.value = nameInput.value ? `${nameInput.value} | VLXD Hoàng Yến` : '';
+        updateSERP();
+      }
+    });
+
+    btnSyncSlug?.addEventListener('click', () => {
+      slugInput.value = slugify(nameInput.value);
+      slugInput.removeAttribute('data-manual');
+      updateSERP();
+    });
+
+    slugInput?.addEventListener('input', () => {
+      slugInput.setAttribute('data-manual', 'true');
+      updateSERP();
+    });
+
+    seoTitleInput?.addEventListener('input', updateSERP);
+    seoDescInput?.addEventListener('input', updateSERP);
+    shortDescInput?.addEventListener('input', () => {
+      if (!seoDescInput.value) seoDescInput.value = shortDescInput.value;
+      updateSERP();
+    });
+
+    // AI Modal Handlers
+    btnOpenAI?.addEventListener('click', () => {
+      if (aiPromptTopic && nameInput.value) {
+        aiPromptTopic.value = nameInput.value;
+      }
+      const catSelect = document.getElementById('category_id') as HTMLSelectElement;
+      if (catSelect && catSelect.selectedOptions[0] && aiPromptCategory) {
+        aiPromptCategory.value = catSelect.selectedOptions[0].text.replace(/^[\s┗━]+/, '');
+      }
+      if (aiModal) aiModal.style.display = 'flex';
+      aiPromptTopic?.focus();
+    });
+
+    closeAIModal?.addEventListener('click', () => {
+      if (aiModal) aiModal.style.display = 'none';
+    });
+
+    btnRunAIGenerate?.addEventListener('click', async () => {
+      const product_name = aiPromptTopic?.value?.trim();
+      const category_name = aiPromptCategory?.value?.trim();
+      const keywords = aiPromptKeywords?.value?.trim();
+      const notes = aiPromptNotes?.value?.trim();
+
+      if (!product_name) {
+        alert('Vui lòng nhập tên sản phẩm cần tạo nội dung.');
+        return;
+      }
+
+      btnRunAIGenerate.disabled = true;
+      if (aiLoadingBox) aiLoadingBox.style.display = 'block';
+      if (aiResultBox) aiResultBox.style.display = 'none';
+
+      try {
+        const res = await fetch('/api/admin/ai-generate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            action: 'generate_product',
+            product_name,
+            category_name,
+            keywords,
+            notes
+          })
+        });
+
+        const json = await res.json();
+        if (res.ok && json.success) {
+          aiGeneratedData = json.data;
+
+          if (aiResTitle) aiResTitle.textContent = aiGeneratedData.title || product_name;
+          if (aiResSlug) aiResSlug.textContent = `/${aiGeneratedData.slug}/`;
+          if (aiResSeoTitle) aiResSeoTitle.textContent = aiGeneratedData.seo_title;
+          if (aiResDesc) aiResDesc.textContent = aiGeneratedData.seo_description || aiGeneratedData.short_description;
+          if (aiResContent) aiResContent.innerHTML = aiGeneratedData.content;
+          
+          if (aiGeneratedData.specifications && aiResSpecs && aiSpecsGroup) {
+            aiResSpecs.innerHTML = aiGeneratedData.specifications;
+            aiSpecsGroup.style.display = 'block';
+          }
+
+          if (aiResultBox) aiResultBox.style.display = 'block';
+        } else {
+          throw new Error(json.error || 'Có lỗi xảy ra khi tạo nội dung sản phẩm.');
+        }
+      } catch (err: any) {
+        alert('Lỗi tạo sản phẩm bằng AI: ' + err.message);
+      } finally {
+        btnRunAIGenerate.disabled = false;
+        if (aiLoadingBox) aiLoadingBox.style.display = 'none';
+      }
+    });
+
+    // Apply AI Generated Data to Product Form
+    btnApplyAI?.addEventListener('click', () => {
+      if (!aiGeneratedData) return;
+
+      if (nameInput && aiGeneratedData.title) nameInput.value = aiGeneratedData.title;
+      if (slugInput && aiGeneratedData.slug) slugInput.value = aiGeneratedData.slug;
+      if (shortDescInput) shortDescInput.value = aiGeneratedData.short_description || aiGeneratedData.seo_description;
+      if (seoTitleInput) seoTitleInput.value = aiGeneratedData.seo_title || aiGeneratedData.title;
+      if (seoDescInput) seoDescInput.value = aiGeneratedData.seo_description || aiGeneratedData.short_description;
+
+      // Update Content Editor
+      const canvasContent = document.getElementById('canvas_product_content');
+      const contentHiddenInput = document.getElementById('product_content') as HTMLTextAreaElement;
+      if (canvasContent && aiGeneratedData.content) {
+        canvasContent.innerHTML = aiGeneratedData.content;
+      }
+      if (contentHiddenInput && aiGeneratedData.content) {
+        contentHiddenInput.value = aiGeneratedData.content;
+      }
+
+      // Update Specs Editor
+      const canvasSpecs = document.getElementById('canvas_product_specs');
+      const specsHiddenInput = document.getElementById('product_specs') as HTMLTextAreaElement;
+      if (canvasSpecs && aiGeneratedData.specifications) {
+        canvasSpecs.innerHTML = aiGeneratedData.specifications;
+      }
+      if (specsHiddenInput && aiGeneratedData.specifications) {
+        specsHiddenInput.value = aiGeneratedData.specifications;
+      }
+
+      updateSERP();
+
+      if (aiModal) aiModal.style.display = 'none';
+    });
+
+  });
+</script>

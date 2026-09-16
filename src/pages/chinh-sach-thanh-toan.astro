@@ -1,0 +1,307 @@
+---
+import Layout from '../layouts/Layout.astro';
+import { SettingsRepo } from '../server/db/repo.js';
+
+const settings = await SettingsRepo.getAll();
+const breadcrumbs = [
+  { name: 'Trang Chủ', url: '/' },
+  { name: 'Chính Sách Thanh Toán', url: '/chinh-sach-thanh-toan/' }
+];
+---
+
+<Layout
+  title="Chính Sách Thanh Toán & Công Nợ | VLXD Hoàng Yến Quảng Trị"
+  description="Hướng dẫn chi tiết các phương thức thanh toán, chính sách công nợ theo hợp đồng và thông tin tài khoản ngân hàng của Siêu Thị VLXD Hoàng Yến tại Quảng Trị."
+  breadcrumbs={breadcrumbs}
+  currentPath="/chinh-sach-thanh-toan/"
+>
+  <div class="policy-page">
+    <!-- Header -->
+    <header class="policy-header">
+      <div class="container">
+        <div class="eyebrow">Quy Định Tài Chính & Công Nợ</div>
+        <h1>Chính Sách Thanh Toán</h1>
+        <p>Linh hoạt, minh bạch và hỗ trợ tối đa cho cá nhân, hộ gia đình, nhà thầu và doanh nghiệp xây dựng tại Quảng Trị.</p>
+      </div>
+    </header>
+
+    <div class="container policy-body-container">
+      <!-- Payment method icons -->
+      <div class="payment-methods-strip">
+        <div class="pay-method">
+          <span class="pay-icon">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><rect x="2" y="6" width="20" height="12" rx="2"></rect><circle cx="12" cy="12" r="2"></circle><path d="M6 12h.01M18 12h.01"></path></svg>
+          </span>
+          <span>Tiền mặt</span>
+        </div>
+        <div class="pay-method">
+          <span class="pay-icon">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M3 21h18M3 10h18M5 10v11M19 10v11M9 10v11M15 10v11M12 3l9 7H3l9-7z"></path></svg>
+          </span>
+          <span>Chuyển khoản</span>
+        </div>
+        <div class="pay-method">
+          <span class="pay-icon">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"></rect><line x1="12" y1="18" x2="12.01" y2="18"></line></svg>
+          </span>
+          <span>Ví điện tử</span>
+        </div>
+        <div class="pay-method">
+          <span class="pay-icon">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line></svg>
+          </span>
+          <span>Công nợ hợp đồng</span>
+        </div>
+        <div class="pay-method">
+          <span class="pay-icon">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"></rect><line x1="1" y1="10" x2="23" y2="10"></line></svg>
+          </span>
+          <span>Hóa đơn GTGT</span>
+        </div>
+      </div>
+
+      <div class="policy-content prose-industrial">
+
+        <h2>1. Các Phương Thức Thanh Toán Áp Dụng</h2>
+
+        <h3>1.1. Thanh toán tiền mặt (Cash)</h3>
+        <p>
+          Khách hàng có thể thanh toán trực tiếp bằng tiền mặt tại văn phòng giao dịch và kho hàng Hoàng Yến, hoặc thanh toán trực tiếp cho nhân viên/tài xế giao hàng sau khi nghiệm thu vật tư tại công trình.
+        </p>
+        <ul>
+          <li>Áp dụng cho mọi đơn hàng, không giới hạn giá trị.</li>
+          <li>Nhận biên lai thu tiền tại quầy hoặc phiếu thu từ nhân viên giao hàng ngay sau khi nhận tiền.</li>
+        </ul>
+
+        <h3>1.2. Chuyển khoản ngân hàng</h3>
+        <p>
+          Phương thức được khuyến khích cho các đơn hàng có giá trị lớn, hợp đồng cung ứng dài hạn hoặc thanh toán theo tiến độ dự án. Hóa đơn GTGT điện tử được xuất ngay sau khi ghi nhận giao dịch thành công.
+        </p>
+
+        <div class="bank-info-card">
+          <div class="bank-logo-area">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" style="color: #0284c7;"><path d="M3 21h18M3 10h18M5 10v11M19 10v11M9 10v11M15 10v11M12 3l9 7H3l9-7z"></path></svg>
+          </div>
+          <div class="bank-details">
+            <p><strong>Tên tài khoản:</strong> CÔNG TY TNHH MTV VẬT LIỆU XÂY DỰNG TỔNG HỢP HOÀNG YẾN</p>
+            <p><strong>Mã số thuế:</strong> {settings.tax_id || '3200165533'}</p>
+            <p class="bank-note">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" style="display: inline-block; vertical-align: middle; margin-right: 4px; color: #d97706;"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
+              <span>Thông tin số tài khoản ngân hàng cụ thể: vui lòng liên hệ trực tiếp qua Hotline <strong>{settings.hotline_main}</strong> để nhận thông tin xác thực và tránh sai sót giao dịch.</span>
+            </p>
+          </div>
+        </div>
+
+        <h3>1.3. Ví điện tử (MoMo, ZaloPay)</h3>
+        <p>
+          Hỗ trợ thanh toán qua ví điện tử MoMo và ZaloPay cho các đơn hàng nhỏ lẻ, thiết bị vệ sinh hoặc phụ kiện công trình. Liên hệ nhân viên kinh doanh để nhận mã QR thanh toán.
+        </p>
+
+        <h2>2. Chính Sách Công Nợ Cho Nhà Thầu & Doanh Nghiệp</h2>
+        <p>
+          Đối với các đối tác là công ty xây dựng, nhà thầu có uy tín hoặc chủ đầu tư dự án đang triển khai trên địa bàn Quảng Trị, Hoàng Yến áp dụng chính sách thanh toán linh hoạt sau khi ký kết hợp đồng cung ứng vật tư:
+        </p>
+        <ul>
+          <li>
+            <strong>Thanh toán theo đợt thi công:</strong> Phù hợp với tiến độ móng, sàn, cất nóc, hoàn thiện. Ví dụ: 30% đặt cọc, 40% khi giao đợt 1, 30% sau hoàn công hạng mục.
+          </li>
+          <li>
+            <strong>Hạn mức công nợ gối đầu:</strong> Từ 15 đến 45 ngày tùy theo lịch sử giao dịch và quy mô hợp đồng. Áp dụng cho nhà thầu đã hợp tác từ 3 tháng trở lên.
+          </li>
+          <li>
+            <strong>Xuất hóa đơn GTGT điện tử:</strong> Tất cả hóa đơn được xuất theo từng lần xuất hàng hoặc theo kỳ thanh toán trong hợp đồng, đúng quy định thuế hiện hành.
+          </li>
+          <li>
+            <strong>Bảo lãnh hợp đồng:</strong> Với dự án nhà nước hoặc công trình yêu cầu hồ sơ nghiệm thu, Hoàng Yến cung cấp đầy đủ chứng chỉ xuất xưởng, CO/CQ, phiếu kiểm tra chất lượng.
+          </li>
+        </ul>
+
+        <div class="info-box">
+          <span class="info-icon">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" style="color: #0284c7;"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
+          </span>
+          <p>
+            Để đăng ký chế độ công nợ, nhà thầu/doanh nghiệp vui lòng liên hệ trực tiếp với bộ phận kinh doanh để được xét duyệt và ký hợp đồng khung. Thời gian xét duyệt thường trong <strong>1–2 ngày làm việc</strong>.
+          </p>
+        </div>
+
+        <h2>3. Chính Sách Hoàn Tiền & Điều Chỉnh Đơn Hàng</h2>
+        <ul>
+          <li>
+            <strong>Hủy đơn trước khi xuất kho:</strong> Hoàn tiền 100% (hoặc chuyển sang đơn hàng khác) nếu khách hàng hủy trước khi xe xuất kho. Không phát sinh phí.
+          </li>
+          <li>
+            <strong>Hủy đơn sau khi hàng đã giao:</strong> Trường hợp hàng đã giao nhưng do lỗi của Hoàng Yến (sai chủng loại, thiếu số lượng), hoàn tiền hoặc bổ sung hàng trong vòng 24 giờ. Trường hợp khách hàng thay đổi nhu cầu, áp dụng theo <a href="/chinh-sach-doi-tra/">Chính Sách Đổi Trả</a>.
+          </li>
+          <li>
+            <strong>Hàng đặt trước (pre-order):</strong> Một số vật tư đặc chủng (tôn màu theo đơn, xi măng bao số lượng lớn) yêu cầu đặt cọc trước 30–50%. Tiền đặt cọc được hoàn trả nếu Hoàng Yến không giao được hàng đúng hạn.
+          </li>
+        </ul>
+
+        <h2>4. Hóa Đơn & Chứng Từ Tài Chính</h2>
+        <p>Hoàng Yến cung cấp đầy đủ chứng từ hợp lệ cho các giao dịch:</p>
+        <ul>
+          <li><strong>Hóa đơn GTGT điện tử:</strong> Phát hành theo Thông tư 78/2021/TT-BTC và các quy định hiện hành, gửi qua email đăng ký của khách hàng.</li>
+          <li><strong>Phiếu xuất kho:</strong> Kèm theo mỗi lần giao hàng, ghi rõ tên hàng, số lượng, đơn giá và chữ ký người giao – người nhận.</li>
+          <li><strong>Chứng chỉ xuất xưởng / CO / CQ:</strong> Cung cấp theo yêu cầu, đặc biệt cho các công trình cần hồ sơ hoàn công hoặc đấu thầu.</li>
+          <li><strong>Bảng kê chi tiết đơn hàng:</strong> Dành cho các nhà thầu cần đối chiếu khối lượng theo bản vẽ hoặc dự toán.</li>
+        </ul>
+
+        <h2>5. Giải Quyết Tranh Chấp Thanh Toán</h2>
+        <p>
+          Trong trường hợp phát sinh tranh chấp về số tiền thanh toán, nội dung hóa đơn hoặc điều khoản công nợ, hai bên ưu tiên giải quyết thông qua thương lượng trực tiếp. Nếu không thỏa thuận được, áp dụng theo quy định pháp luật hiện hành tại Việt Nam, tòa án có thẩm quyền là TAND Tỉnh Quảng Trị.
+        </p>
+
+        <div class="callout-box">
+          <h3 style="font-size: 1.15rem; margin-top: 0; margin-bottom: 0.5rem; font-weight: 700;">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" style="display: inline-block; vertical-align: middle; margin-right: 6px; color: #dc2626;"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>
+            <span>Liên Hệ Trao Đổi Báo Giá & Hóa Đơn</span>
+          </h3>
+          <p>Hotline: <strong><a href={`tel:${settings.hotline_main}`}>{settings.hotline_main}</a></strong></p>
+          <p>Điện thoại: <strong><a href={`tel:${settings.hotline_alt}`}>{settings.hotline_alt}</a></strong></p>
+          <p>Email: <strong><a href={`mailto:${settings.email}`}>{settings.email}</a></strong></p>
+          <p>Địa chỉ: <strong>{settings.address}</strong> — Giờ hoạt động: <strong>7:30 – 22:00 (Tất cả các ngày)</strong></p>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</Layout>
+
+<style>
+  .policy-header {
+    background: linear-gradient(135deg, var(--color-concrete-light) 0%, #e8edf3 100%);
+    border-bottom: 1px solid var(--color-border);
+    padding-top: var(--space-12);
+    padding-bottom: var(--space-12);
+  }
+
+  .policy-header p {
+    font-size: 1.1rem;
+    color: var(--color-text-muted);
+    margin-top: var(--space-2);
+    max-width: 680px;
+  }
+
+  .payment-methods-strip {
+    display: flex;
+    gap: var(--space-4);
+    margin: var(--space-8) 0 var(--space-2);
+    flex-wrap: wrap;
+  }
+
+  .pay-method {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: #fff;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-xs);
+    padding: var(--space-3) var(--space-5);
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--color-charcoal);
+  }
+
+  .pay-icon { font-size: 1.3rem; }
+
+  .policy-body-container {
+    padding-top: var(--space-8);
+    padding-bottom: var(--space-20);
+    max-width: 960px;
+  }
+
+  .policy-content h2 {
+    font-size: 1.45rem;
+    font-weight: 800;
+    margin-top: var(--space-10);
+    margin-bottom: var(--space-3);
+    padding-bottom: var(--space-2);
+    border-bottom: 2px solid var(--color-charcoal);
+  }
+
+  .policy-content h3 {
+    font-size: 1.1rem;
+    font-weight: 700;
+    margin-top: var(--space-6);
+    margin-bottom: var(--space-2);
+    color: var(--color-charcoal);
+  }
+
+  .policy-content p {
+    font-size: 1.025rem;
+    line-height: 1.75;
+    margin-bottom: var(--space-4);
+  }
+
+  .policy-content ul, .policy-content ol {
+    margin-left: var(--space-6);
+    margin-bottom: var(--space-6);
+    font-size: 1rem;
+    line-height: 1.75;
+  }
+
+  .policy-content li { margin-bottom: var(--space-3); }
+
+  .bank-info-card {
+    display: flex;
+    gap: var(--space-5);
+    align-items: flex-start;
+    background: #f8fafc;
+    border: 1px solid var(--color-border);
+    border-left: 4px solid var(--color-charcoal);
+    border-radius: var(--radius-xs);
+    padding: var(--space-5) var(--space-6);
+    margin: var(--space-4) 0 var(--space-6);
+  }
+
+  .bank-logo-area { font-size: 2rem; flex-shrink: 0; }
+
+  .bank-details p { font-size: 0.9375rem; margin-bottom: var(--space-2); }
+
+  .bank-note {
+    color: #92400e;
+    background: #fef3c7;
+    border-radius: 4px;
+    padding: 8px 12px;
+    font-size: 0.875rem !important;
+    margin-top: var(--space-2);
+  }
+
+  .info-box {
+    display: flex;
+    gap: var(--space-4);
+    align-items: flex-start;
+    background: #eff6ff;
+    border: 1px solid #bfdbfe;
+    border-radius: var(--radius-xs);
+    padding: var(--space-4) var(--space-5);
+    margin: var(--space-2) 0 var(--space-6);
+  }
+
+  .info-icon { font-size: 1.25rem; flex-shrink: 0; }
+
+  .info-box p { font-size: 0.9375rem; margin: 0; line-height: 1.6; }
+
+  .callout-box {
+    background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+    color: #e2e8f0;
+    border-radius: var(--radius-xs);
+    padding: var(--space-6) var(--space-8);
+    margin-top: var(--space-8);
+  }
+
+  .callout-box h4 {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: #fff;
+    margin-bottom: var(--space-4);
+  }
+
+  .callout-box p { font-size: 0.9375rem; color: #cbd5e1; margin-bottom: var(--space-2); }
+  .callout-box strong { color: #fff; }
+  .callout-box a { color: #93c5fd; text-decoration: none; }
+  .callout-box a:hover { text-decoration: underline; }
+
+  .policy-content a { color: var(--color-red); text-decoration: underline; }
+</style>

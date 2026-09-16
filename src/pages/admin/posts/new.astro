@@ -1,0 +1,854 @@
+---
+import AdminLayout from '../../../layouts/AdminLayout.astro';
+import BlockEditor from '../../../components/admin/BlockEditor.astro';
+import MediaManager from '../../../components/admin/MediaManager.astro';
+import AIAssistantModal from '../../../components/admin/AIAssistantModal.astro';
+import { PostRepo } from '../../../server/db/repo.js';
+
+let errorMsg = '';
+
+if (Astro.request.method === 'POST') {
+  try {
+    const formData = await Astro.request.formData();
+    const title = formData.get('title')?.toString().trim() || '';
+    let slug = formData.get('slug')?.toString().trim() || '';
+    const summary = formData.get('summary')?.toString().trim() || '';
+    const content = formData.get('content')?.toString() || '';
+    const featured_image = formData.get('featured_image')?.toString().trim() || '';
+    const seo_title = formData.get('seo_title')?.toString().trim() || title;
+    const seo_description = formData.get('seo_description')?.toString().trim() || summary;
+    const status = formData.get('status')?.toString() || 'published';
+
+    if (!title) throw new Error('Vui lòng nhập tiêu đề bài viết.');
+    if (!slug) {
+      slug = title
+        .toLowerCase()
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .replace(/[đĐ]/g, 'd')
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/^-+|-+$/g, '');
+    }
+
+    const newId = await PostRepo.create({
+      title,
+      slug,
+      summary,
+      content,
+      featured_image,
+      seo_title,
+      seo_description,
+      status
+    });
+
+    return Astro.redirect('/admin/posts');
+  } catch (err: any) {
+    errorMsg = err.message;
+  }
+}
+---
+
+<AdminLayout title="Thêm Bài Viết Mới (WordPress Style)" activeNav="posts">
+  <div class="wp-editor-page">
+    
+    <!-- Top Bar -->
+    <div class="wp-topbar">
+      <div class="topbar-left">
+        <a href="/admin/posts" class="btn-back">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
+          <span>Danh Sách Bài Viết</span>
+        </a>
+        <span class="topbar-divider">|</span>
+        <h1 class="wp-page-title">Thêm Bài Viết Mới</h1>
+      </div>
+
+      <div class="topbar-right">
+        <!-- AI Writer Trigger Button -->
+        <button type="button" id="btn-open-ai-assistant" class="btn-ai-sparkle">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
+          <span>✨ AI Viết Bài Tự Động</span>
+        </button>
+      </div>
+    </div>
+
+    {errorMsg && <div class="alert alert-error">{errorMsg}</div>}
+
+    <!-- WordPress 2-Column Form Layout -->
+    <form method="POST" id="post-wp-form" class="wp-editor-layout">
+      
+      <!-- MAIN COLUMN (Left: Title, Slug, Content, SEO) -->
+      <div class="wp-main-col">
+        
+        <!-- Title Input (Large WordPress Gutenberg Style) -->
+        <div class="wp-title-box">
+          <input 
+            type="text" 
+            id="post_title" 
+            name="title" 
+            required 
+            placeholder="Thêm tiêu đề bài viết..." 
+            class="wp-title-input" 
+          />
+        </div>
+
+        <!-- Permalink / Slug Bar -->
+        <div class="wp-slug-bar">
+          <span class="slug-label">Liên kết tĩnh:</span>
+          <span class="slug-domain">https://vlxdhoangyen.com/tin-tuc/</span>
+          <input type="text" id="post_slug" name="slug" placeholder="duong-dan-bai-viet" class="slug-input" />
+          <button type="button" id="btn-sync-slug" class="btn-slug-action" title="Tạo lại slug từ tiêu đề">🔄 Đồng bộ</button>
+        </div>
+
+        <!-- Excerpt / Summary -->
+        <div class="wp-meta-box">
+          <div class="meta-box-header">
+            <h4>Đoạn Tóm Tắt Mở Đầu (Excerpt)</h4>
+          </div>
+          <div class="meta-box-body">
+            <textarea 
+              id="post_summary" 
+              name="summary" 
+              rows="3" 
+              placeholder="Đoạn giới thiệu ngắn thu hút người đọc (120 - 160 ký tự)..."
+              class="wp-textarea"
+            ></textarea>
+          </div>
+        </div>
+
+        <!-- Gutenberg Block Editor -->
+        <div class="wp-content-box">
+          <BlockEditor 
+            id="post_content" 
+            name="content" 
+            label="Nội Dung Bài Viết Chi Tiết (Gutenberg Block Editor)" 
+          />
+        </div>
+
+        <!-- Yoast/RankMath SEO Box -->
+        <div class="wp-meta-box seo-meta-box">
+          <div class="meta-box-header">
+            <div class="seo-header-title">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+              <h4>Tối Ưu Hóa Tìm Kiếm (Yoast / RankMath SEO)</h4>
+            </div>
+          </div>
+          <div class="meta-box-body">
+            
+            <div class="form-group-wp">
+              <div class="label-flex">
+                <label for="post_seo_title">Tiêu Đề SEO (SEO Title Tag)</label>
+                <span id="seo-title-len" class="badge-counter info">0 / 60 kt</span>
+              </div>
+              <input type="text" id="post_seo_title" name="seo_title" placeholder="Tiêu đề hiển thị trên Google..." class="wp-input" />
+            </div>
+
+            <div class="form-group-wp">
+              <div class="label-flex">
+                <label for="post_seo_desc">Thẻ Mô Tả (Meta Description)</label>
+                <span id="seo-desc-len" class="badge-counter info">0 / 155 kt</span>
+              </div>
+              <textarea id="post_seo_desc" name="seo_description" rows="3" placeholder="Đoạn trích mô tả xuất hiện trên Google..." class="wp-textarea"></textarea>
+            </div>
+
+            <!-- Live Google SERP Snippet Preview -->
+            <div class="google-preview-container">
+              <div class="preview-label">Xem Trước Kết Quả Tìm Kiếm Google</div>
+              <div class="serp-preview-card">
+                <div class="serp-url-row">
+                  <span class="serp-domain">https://vlxdhoangyen.com</span>
+                  <span class="serp-path" id="serp-path-preview">/tin-tuc/duong-dan-bai-viet/</span>
+                </div>
+                <div class="serp-title" id="serp-title-preview">Tiêu Đề Bài Viết | Siêu Thị VLXD Hoàng Yến</div>
+                <div class="serp-desc" id="serp-desc-preview">Đoạn tóm tắt bài viết xuất hiện trên công cụ tìm kiếm Google...</div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+      </div>
+
+      <!-- SIDEBAR COLUMN (Right: Publish Box, Image, Category, Status) -->
+      <div class="wp-sidebar-col">
+        
+        <!-- 1. Publish Box -->
+        <div class="wp-sidebar-box publish-box">
+          <div class="sidebar-box-header">
+            <h4>Đăng Bài</h4>
+          </div>
+          <div class="sidebar-box-body">
+            <div class="publish-option">
+              <label for="post_status">Trạng thái:</label>
+              <select id="post_status" name="status" class="wp-select">
+                <option value="published" selected>Xuất bản ngay (Public)</option>
+                <option value="draft">Bản nháp (Draft)</option>
+                <option value="pending">Chờ xét duyệt</option>
+              </select>
+            </div>
+
+            <div class="publish-info-row">
+              <span>Khả năng hiển thị:</span>
+              <strong>Công khai toàn mạng</strong>
+            </div>
+
+            <div class="publish-actions-footer">
+              <button type="submit" class="btn btn-primary btn-publish">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path><polyline points="17 21 17 13 7 13 7 21"></polyline><polyline points="7 3 7 8 15 8"></polyline></svg>
+                <span>ĐĂNG BÀI VIẾT</span>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- 2. Featured Image Box (Media Manager / MySQL) -->
+        <div class="wp-sidebar-box image-box">
+          <div class="sidebar-box-header">
+            <h4>Ảnh Đại Diện Bài Viết</h4>
+          </div>
+          <div class="sidebar-box-body">
+            <div class="image-preview-wrapper" id="featured-img-preview-box">
+              <img id="featured-img-preview" src="https://vlxdhoangyen.com/wp-content/uploads/2025/07/VAT-LIEU-XAY-DUNG-1920-x-731-px-4.png" alt="Ảnh đại diện" class="featured-img-tag" />
+            </div>
+
+            <div class="form-group-wp" style="margin-top: 10px;">
+              <input type="text" id="featured_image" name="featured_image" placeholder="URL hình ảnh..." class="wp-input" />
+            </div>
+
+            <div style="margin-top: 8px;">
+              <MediaManager targetInputId="featured_image" buttonText="Chọn từ Thư Viện MySQL" />
+            </div>
+          </div>
+        </div>
+
+        <!-- 3. Chuyên Mục / Danh Mục -->
+        <div class="wp-sidebar-box">
+          <div class="sidebar-box-header">
+            <h4>Chuyên Mục Bài Viết</h4>
+          </div>
+          <div class="sidebar-box-body">
+            <div class="category-checkbox-list">
+              <label class="checkbox-item">
+                <input type="radio" name="category_slug" value="tin-tuc" checked />
+                <span>Bảng Báo Giá VLXD & Tin Tức</span>
+              </label>
+              <label class="checkbox-item">
+                <input type="radio" name="category_slug" value="kinh-nghiem" />
+                <span>Cẩm Nang Kỹ Thuật Xây Dựng</span>
+              </label>
+              <label class="checkbox-item">
+                <input type="radio" name="category_slug" value="thiet-bi-ve-sinh" />
+                <span>Thiết Bị Vệ Sinh & Nội Thất</span>
+              </label>
+            </div>
+          </div>
+        </div>
+
+        <!-- 4. Tác Giả & EEAT -->
+        <div class="wp-sidebar-box">
+          <div class="sidebar-box-header">
+            <h4>Tác Giả (EEAT)</h4>
+          </div>
+          <div class="sidebar-box-body">
+            <select class="wp-select">
+              <option>Chuyên viên Marketing – VLXD Hoàng Yến</option>
+              <option>Hoàng Yến (CEO & Sáng lập)</option>
+              <option>Thế Anh (Giám đốc điều hành)</option>
+            </select>
+          </div>
+        </div>
+
+      </div>
+
+    </form>
+
+    <!-- AI Assistant Modal Component -->
+    <AIAssistantModal targetType="post" />
+
+  </div>
+</AdminLayout>
+
+<style>
+  .wp-editor-page {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding-bottom: 4rem;
+  }
+
+  /* Topbar */
+  .wp-topbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem 0;
+    margin-bottom: 1.5rem;
+    border-bottom: 1px solid #e2e8f0;
+    flex-wrap: wrap;
+    gap: 1rem;
+  }
+
+  .topbar-left {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .btn-back {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    color: #475569;
+    text-decoration: none;
+    font-size: 0.875rem;
+    font-weight: 600;
+  }
+  .btn-back:hover {
+    color: #0f172a;
+  }
+
+  .topbar-divider {
+    color: #cbd5e1;
+  }
+
+  .wp-page-title {
+    font-size: 1.35rem;
+    font-weight: 800;
+    color: #0f172a;
+    margin: 0;
+  }
+
+  .btn-ai-sparkle {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 0.65rem 1.35rem;
+    background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+    color: #ffffff;
+    border: none;
+    border-radius: 9999px;
+    font-size: 0.875rem;
+    font-weight: 700;
+    cursor: pointer;
+    box-shadow: 0 4px 14px rgba(79, 70, 229, 0.3);
+    transition: all 0.2s ease;
+  }
+  .btn-ai-sparkle:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 6px 18px rgba(79, 70, 229, 0.4);
+  }
+
+  /* 2-Column Layout */
+  .wp-editor-layout {
+    display: grid;
+    grid-template-columns: 1fr 340px;
+    gap: 1.75rem;
+    align-items: start;
+  }
+
+  /* Main Column */
+  .wp-main-col {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+  }
+
+  .wp-title-box {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    padding: 0.85rem 1.25rem;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
+  }
+
+  .wp-title-input {
+    width: 100%;
+    border: none;
+    outline: none;
+    font-size: 1.45rem;
+    font-weight: 800;
+    color: #0f172a;
+    font-family: inherit;
+    padding: 0;
+  }
+  .wp-title-input::placeholder {
+    color: #94a3b8;
+    font-weight: 600;
+  }
+
+  .wp-slug-bar {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 0.5rem 0.85rem;
+    font-size: 0.835rem;
+  }
+
+  .slug-label {
+    font-weight: 700;
+    color: #475569;
+  }
+
+  .slug-domain {
+    color: #64748b;
+  }
+
+  .slug-input {
+    flex: 1;
+    border: 1px solid #cbd5e1;
+    border-radius: 4px;
+    padding: 3px 8px;
+    font-size: 0.835rem;
+    font-family: monospace;
+    color: #0f172a;
+  }
+
+  .btn-slug-action {
+    background: #e2e8f0;
+    border: none;
+    padding: 3px 8px;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    cursor: pointer;
+    color: #334155;
+  }
+
+  .wp-meta-box {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    overflow: hidden;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
+  }
+
+  .meta-box-header {
+    background: #f8fafc;
+    padding: 0.85rem 1.25rem;
+    border-bottom: 1px solid #e2e8f0;
+  }
+  .meta-box-header h4 {
+    margin: 0;
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: #1e293b;
+  }
+
+  .meta-box-body {
+    padding: 1.25rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .wp-content-box {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    overflow: hidden;
+  }
+
+  .seo-meta-box {
+    border-top: 3px solid #2563eb;
+  }
+
+  .seo-header-title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: #2563eb;
+  }
+  .seo-header-title h4 {
+    color: #1e293b;
+  }
+
+  .form-group-wp {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+  }
+
+  .label-flex {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #1e293b;
+  }
+
+  .badge-counter {
+    font-size: 0.72rem;
+    font-weight: 700;
+    padding: 1px 6px;
+    border-radius: 4px;
+  }
+  .badge-counter.good { background: #dcfce7; color: #15803d; }
+  .badge-counter.warning { background: #fee2e2; color: #b91c1c; }
+  .badge-counter.info { background: #f1f5f9; color: #64748b; }
+
+  .wp-input, .wp-textarea, .wp-select {
+    width: 100%;
+    padding: 0.65rem 0.85rem;
+    border: 1px solid #cbd5e1;
+    border-radius: 6px;
+    font-size: 0.9rem;
+    color: #0f172a;
+    font-family: inherit;
+    box-sizing: border-box;
+    outline: none;
+  }
+  .wp-input:focus, .wp-textarea:focus, .wp-select:focus {
+    border-color: #2563eb;
+  }
+
+  /* SERP Preview */
+  .google-preview-container {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 1rem;
+    margin-top: 0.5rem;
+  }
+
+  .preview-label {
+    font-size: 0.78rem;
+    font-weight: 700;
+    color: #475569;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+    margin-bottom: 8px;
+  }
+
+  .serp-preview-card {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 1rem;
+  }
+
+  .serp-url-row {
+    font-size: 0.75rem;
+    color: #202124;
+    margin-bottom: 4px;
+  }
+  .serp-path {
+    color: #5f6368;
+  }
+
+  .serp-title {
+    font-size: 1.15rem;
+    font-weight: 500;
+    color: #1a0dab;
+    line-height: 1.35;
+    margin-bottom: 4px;
+  }
+
+  .serp-desc {
+    font-size: 0.875rem;
+    color: #4d5156;
+    line-height: 1.5;
+  }
+
+  /* Sidebar Column */
+  .wp-sidebar-col {
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+  }
+
+  .wp-sidebar-box {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    overflow: hidden;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
+  }
+
+  .sidebar-box-header {
+    background: #f8fafc;
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid #e2e8f0;
+  }
+  .sidebar-box-header h4 {
+    margin: 0;
+    font-size: 0.9rem;
+    font-weight: 700;
+    color: #1e293b;
+  }
+
+  .sidebar-box-body {
+    padding: 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.85rem;
+  }
+
+  .publish-option {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+  .publish-option label {
+    font-size: 0.825rem;
+    font-weight: 600;
+    color: #475569;
+  }
+
+  .publish-info-row {
+    font-size: 0.825rem;
+    color: #64748b;
+    display: flex;
+    justify-content: space-between;
+    padding: 6px 0;
+    border-top: 1px solid #f1f5f9;
+  }
+
+  .publish-actions-footer {
+    padding-top: 0.75rem;
+    border-top: 1px solid #e2e8f0;
+  }
+
+  .btn-publish {
+    width: 100%;
+    padding: 0.75rem;
+    font-size: 0.95rem;
+    font-weight: 800;
+    justify-content: center;
+    box-shadow: 0 4px 12px rgba(37, 99, 235, 0.25);
+  }
+
+  .featured-img-tag {
+    width: 100%;
+    height: 160px;
+    object-fit: cover;
+    border-radius: 6px;
+    border: 1px solid #e2e8f0;
+  }
+
+  .category-checkbox-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .checkbox-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.85rem;
+    color: #334155;
+    cursor: pointer;
+  }
+
+  @media (max-width: 1024px) {
+    .wp-editor-layout {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>
+
+<script>
+  document.addEventListener('DOMContentLoaded', () => {
+    const titleInput = document.getElementById('post_title') as HTMLInputElement;
+    const slugInput = document.getElementById('post_slug') as HTMLInputElement;
+    const btnSyncSlug = document.getElementById('btn-sync-slug');
+    const summaryInput = document.getElementById('post_summary') as HTMLTextAreaElement;
+    const seoTitleInput = document.getElementById('post_seo_title') as HTMLInputElement;
+    const seoDescInput = document.getElementById('post_seo_desc') as HTMLTextAreaElement;
+    const featuredImgInput = document.getElementById('featured_image') as HTMLInputElement;
+    const featuredImgPreview = document.getElementById('featured-img-preview') as HTMLImageElement;
+
+    const seoTitleLen = document.getElementById('seo-title-len');
+    const seoDescLen = document.getElementById('seo-desc-len');
+    const serpTitlePreview = document.getElementById('serp-title-preview');
+    const serpDescPreview = document.getElementById('serp-desc-preview');
+    const serpPathPreview = document.getElementById('serp-path-preview');
+
+    // AI Modal Elements
+    const btnOpenAI = document.getElementById('btn-open-ai-assistant');
+    const aiModal = document.getElementById('ai-assistant-modal');
+    const closeAIModal = document.getElementById('close-ai-modal');
+    const btnRunAIGenerate = document.getElementById('btn-run-ai-generate') as HTMLButtonElement;
+    const aiLoadingBox = document.getElementById('ai-loading-box');
+    const aiResultBox = document.getElementById('ai-result-box');
+    const btnApplyAI = document.getElementById('btn-apply-ai');
+
+    const aiPromptTopic = document.getElementById('ai-prompt-topic') as HTMLInputElement;
+    const aiPromptCategory = document.getElementById('ai-prompt-category') as HTMLInputElement;
+    const aiPromptKeywords = document.getElementById('ai-prompt-keywords') as HTMLInputElement;
+    const aiPromptNotes = document.getElementById('ai-prompt-notes') as HTMLTextAreaElement;
+
+    const aiResTitle = document.getElementById('ai-res-title');
+    const aiResSlug = document.getElementById('ai-res-slug');
+    const aiResSeoTitle = document.getElementById('ai-res-seotitle');
+    const aiResDesc = document.getElementById('ai-res-desc');
+    const aiResContent = document.getElementById('ai-res-content');
+
+    let aiGeneratedData: any = null;
+
+    // Helper: Slugify
+    function slugify(text: string): string {
+      return text
+        .toLowerCase()
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .replace(/[đĐ]/g, 'd')
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/^-+|-+$/g, '');
+    }
+
+    // Auto generate slug on title change
+    titleInput?.addEventListener('input', () => {
+      if (!slugInput.value || slugInput.getAttribute('data-manual') !== 'true') {
+        slugInput.value = slugify(titleInput.value);
+        updateSERP();
+      }
+      if (!seoTitleInput.value) {
+        seoTitleInput.value = titleInput.value ? `${titleInput.value} | VLXD Hoàng Yến` : '';
+        updateSERP();
+      }
+    });
+
+    slugInput?.addEventListener('input', () => {
+      slugInput.setAttribute('data-manual', 'true');
+      updateSERP();
+    });
+
+    btnSyncSlug?.addEventListener('click', () => {
+      slugInput.value = slugify(titleInput.value);
+      slugInput.removeAttribute('data-manual');
+      updateSERP();
+    });
+
+    // Image preview update
+    featuredImgInput?.addEventListener('input', () => {
+      if (featuredImgPreview) {
+        featuredImgPreview.src = featuredImgInput.value || 'https://vlxdhoangyen.com/wp-content/uploads/2025/07/VAT-LIEU-XAY-DUNG-1920-x-731-px-4.png';
+      }
+    });
+
+    // SERP Realtime calculations
+    function updateSERP() {
+      const sTitle = seoTitleInput?.value || titleInput?.value || 'Tiêu Đề Bài Viết';
+      const sDesc = seoDescInput?.value || summaryInput?.value || 'Đoạn trích mô tả xuất hiện trên công cụ tìm kiếm Google...';
+      const slug = slugInput?.value || 'duong-dan-bai-viet';
+
+      if (serpTitlePreview) serpTitlePreview.textContent = sTitle;
+      if (serpDescPreview) serpDescPreview.textContent = sDesc;
+      if (serpPathPreview) serpPathPreview.textContent = `/tin-tuc/${slug}/`;
+
+      if (seoTitleLen) {
+        const len = sTitle.length;
+        seoTitleLen.textContent = `${len} / 60 kt`;
+        seoTitleLen.className = `badge-counter ${len >= 40 && len <= 65 ? 'good' : (len > 65 ? 'warning' : 'info')}`;
+      }
+
+      if (seoDescLen) {
+        const len = sDesc.length;
+        seoDescLen.textContent = `${len} / 155 kt`;
+        seoDescLen.className = `badge-counter ${len >= 115 && len <= 165 ? 'good' : (len > 165 ? 'warning' : 'info')}`;
+      }
+    }
+
+    seoTitleInput?.addEventListener('input', updateSERP);
+    seoDescInput?.addEventListener('input', updateSERP);
+    summaryInput?.addEventListener('input', () => {
+      if (!seoDescInput.value) {
+        seoDescInput.value = summaryInput.value;
+      }
+      updateSERP();
+    });
+
+    // AI Modal Triggers
+    btnOpenAI?.addEventListener('click', () => {
+      if (aiPromptTopic && titleInput.value) {
+        aiPromptTopic.value = titleInput.value;
+      }
+      if (aiModal) aiModal.style.display = 'flex';
+      aiPromptTopic?.focus();
+    });
+
+    closeAIModal?.addEventListener('click', () => {
+      if (aiModal) aiModal.style.display = 'none';
+    });
+
+    // Run AI Generation
+    btnRunAIGenerate?.addEventListener('click', async () => {
+      const topic = aiPromptTopic?.value?.trim();
+      const category_name = aiPromptCategory?.value?.trim();
+      const keywords = aiPromptKeywords?.value?.trim();
+      const notes = aiPromptNotes?.value?.trim();
+
+      if (!topic) {
+        alert('Vui lòng nhập chủ đề bài viết cần tạo.');
+        return;
+      }
+
+      btnRunAIGenerate.disabled = true;
+      if (aiLoadingBox) aiLoadingBox.style.display = 'block';
+      if (aiResultBox) aiResultBox.style.display = 'none';
+
+      try {
+        const res = await fetch('/api/admin/ai-generate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            action: 'generate_post',
+            topic,
+            category_name,
+            keywords,
+            notes
+          })
+        });
+
+        const json = await res.json();
+        if (res.ok && json.success) {
+          aiGeneratedData = json.data;
+
+          if (aiResTitle) aiResTitle.textContent = aiGeneratedData.title;
+          if (aiResSlug) aiResSlug.textContent = `/tin-tuc/${aiGeneratedData.slug}/`;
+          if (aiResSeoTitle) aiResSeoTitle.textContent = aiGeneratedData.seo_title;
+          if (aiResDesc) aiResDesc.textContent = aiGeneratedData.seo_description || aiGeneratedData.summary;
+          if (aiResContent) aiResContent.innerHTML = aiGeneratedData.content;
+
+          if (aiResultBox) aiResultBox.style.display = 'block';
+        } else {
+          throw new Error(json.error || 'Có lỗi xảy ra khi tạo bài viết.');
+        }
+      } catch (err: any) {
+        alert('Lỗi tạo bài bằng AI: ' + err.message);
+      } finally {
+        btnRunAIGenerate.disabled = false;
+        if (aiLoadingBox) aiLoadingBox.style.display = 'none';
+      }
+    });
+
+    // Apply AI Generated Data to Form
+    btnApplyAI?.addEventListener('click', () => {
+      if (!aiGeneratedData) return;
+
+      if (titleInput) titleInput.value = aiGeneratedData.title;
+      if (slugInput) slugInput.value = aiGeneratedData.slug;
+      if (summaryInput) summaryInput.value = aiGeneratedData.summary || aiGeneratedData.seo_description;
+      if (seoTitleInput) seoTitleInput.value = aiGeneratedData.seo_title || aiGeneratedData.title;
+      if (seoDescInput) seoDescInput.value = aiGeneratedData.seo_description || aiGeneratedData.summary;
+
+      // Update BlockEditor content (Canvas & Textarea)
+      const canvasEl = document.getElementById('canvas_post_content');
+      const hiddenInput = document.getElementById('post_content') as HTMLTextAreaElement;
+      if (canvasEl) {
+        canvasEl.innerHTML = aiGeneratedData.content;
+      }
+      if (hiddenInput) {
+        hiddenInput.value = aiGeneratedData.content;
+      }
+
+      updateSERP();
+
+      if (aiModal) aiModal.style.display = 'none';
+    });
+
+  });
+</script>

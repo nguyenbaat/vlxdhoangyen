@@ -1,0 +1,411 @@
+---
+import AdminLayout from '../../../layouts/AdminLayout.astro';
+import MediaManager from '../../../components/admin/MediaManager.astro';
+import { CategoryRepo } from '../../../server/db/repo.js';
+
+let errorMsg = '';
+let successMsg = '';
+
+if (Astro.request.method === 'POST') {
+  try {
+    const formData = await Astro.request.formData();
+    const action = formData.get('action')?.toString();
+
+    if (action === 'create') {
+      const name = formData.get('name')?.toString().trim() || '';
+      let slug = formData.get('slug')?.toString().trim() || '';
+      const parent_id_val = formData.get('parent_id')?.toString();
+      const parent_id = parent_id_val ? Number(parent_id_val) : null;
+      const description = formData.get('description')?.toString().trim() || '';
+      const image_url = formData.get('image_url')?.toString().trim() || '';
+      const sort_order = Number(formData.get('sort_order')) || 0;
+
+      if (!name) throw new Error('Vui lòng nhập tên danh mục.');
+      if (!slug) {
+        slug = name
+          .toLowerCase()
+          .normalize('NFD')
+          .replace(/[\u0300-\u036f]/g, '')
+          .replace(/[đĐ]/g, 'd')
+          .replace(/[^a-z0-9]+/g, '-')
+          .replace(/^-+|-+$/g, '');
+      }
+
+      await CategoryRepo.create({ name, slug, parent_id, description, image_url, sort_order });
+      successMsg = 'Đã thêm danh mục mới thành công.';
+    } else if (action === 'delete') {
+      const id = Number(formData.get('id'));
+      if (id) {
+        await CategoryRepo.delete(id);
+        successMsg = 'Đã xóa danh mục.';
+      }
+    } else if (action === 'bulk') {
+      const bulkType = formData.get('bulk_type')?.toString();
+      const ids = formData.getAll('ids[]').map(Number).filter(Boolean);
+
+      if (ids.length === 0) {
+        throw new Error('Vui lòng chọn ít nhất một danh mục.');
+      }
+
+      if (bulkType === 'bulk_inactive') {
+        await CategoryRepo.bulkUpdateStatus(ids, 0);
+        successMsg = `Đã ẩn ${ids.length} danh mục được chọn.`;
+      } else if (bulkType === 'bulk_active') {
+        await CategoryRepo.bulkUpdateStatus(ids, 1);
+        successMsg = `Đã hiện ${ids.length} danh mục được chọn.`;
+      } else if (bulkType === 'bulk_delete') {
+        await CategoryRepo.bulkDelete(ids);
+        successMsg = `Đã xóa vĩnh viễn ${ids.length} danh mục được chọn.`;
+      }
+    }
+  } catch (err: any) {
+    errorMsg = err.message;
+  }
+}
+
+const categories = await CategoryRepo.getAll(false);
+const parentCategories = categories.filter(c => !c.parent_id);
+---
+
+<AdminLayout title="Quản Lý Danh Mục Vật Tư" activeNav="categories">
+  <div class="cat-mgmt-grid">
+    <!-- TailAdmin Table Card -->
+    <div class="table-card">
+      <div class="card-header flex-header">
+        <h2>Tất Cả Danh Mục Chủng Loại ({categories.length})</h2>
+
+        <!-- Bulk Action Form -->
+        <form method="POST" id="bulk_cat_form" class="bulk-form-inline">
+          <input type="hidden" name="action" value="bulk" />
+          <select name="bulk_type" id="bulk_cat_select" class="tail-select bulk-select" required>
+            <option value="">— Hành động hàng loạt —</option>
+            <option value="bulk_inactive">Ẩn danh mục chọn</option>
+            <option value="bulk_active">Hiện danh mục chọn</option>
+            <option value="bulk_delete">Xóa vĩnh viễn chọn</option>
+          </select>
+          <button type="submit" class="btn btn-outline">Áp dụng</button>
+          <span class="selected-badge" id="cat_selected_badge">Đã chọn: 0</span>
+        </form>
+      </div>
+
+      <div class="table-responsive">
+        <form method="POST" id="cat_table_form">
+          <table class="admin-table">
+            <thead>
+              <tr>
+                <th width="40" style="text-align: center;">
+                  <input type="checkbox" id="check_all_cats" class="tail-checkbox" title="Chọn / Bỏ chọn tất cả" />
+                </th>
+                <th width="60">Ảnh</th>
+                <th>Tên Danh Mục / Chủng Loại</th>
+                <th>Slug (URL)</th>
+                <th>Thứ Tự</th>
+                <th>Trạng Thái</th>
+                <th>Sản Phẩm</th>
+                <th style="text-align: center;">Thao Tác</th>
+              </tr>
+            </thead>
+            <tbody>
+              {categories.map(c => (
+                <tr class={c.parent_id ? 'is-sub-category' : 'is-parent-category'}>
+                  <td style="text-align: center;">
+                    <input type="checkbox" name="ids[]" value={c.id} class="cat-checkbox tail-checkbox" />
+                  </td>
+                  <td class="thumb-cell">
+                    <div class="cat-thumb-frame">
+                      <img src={c.image_url || '/anh-sanpham.png'} alt="" loading="lazy" />
+                    </div>
+                  </td>
+                  <td>
+                    {c.parent_id ? (
+                      <div class="cat-title-cell sub">
+                        <span class="tree-line">┗━━</span>
+                        <strong class="cat-name-text">{c.name}</strong>
+                        <span class="type-badge sub">
+                          Con của: {c.parent_name || 'Danh mục cha'}
+                        </span>
+                        <div class="desc-preview">{c.description}</div>
+                      </div>
+                    ) : (
+                      <div class="cat-title-cell parent">
+                        <span class="icon-folder"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align: -2px; margin-right: 4px;"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg></span>
+                        <strong class="cat-name-text main">{c.name}</strong>
+                        <span class="type-badge parent">Danh mục chính</span>
+                        <div class="desc-preview">{c.description}</div>
+                      </div>
+                    )}
+                  </td>
+                  <td><a href={`/${c.slug}/`} target="_blank" class="slug-link">/{c.slug}/</a></td>
+                  <td><span class="sort-order-tag">{c.sort_order}</span></td>
+                  <td>
+                    <span class={`status-pill ${c.is_active !== 0 ? 'active' : 'inactive'}`}>
+                      {c.is_active !== 0 ? 'Công khai' : 'Bản nháp/Ẩn'}
+                    </span>
+                  </td>
+                  <td><span class="count-pill">{c.product_count}</span></td>
+                  <td style="text-align: center;">
+                    <div class="action-flex-row">
+                      <a href={`/admin/categories/edit/${c.id}`} class="btn-action edit" title="Chỉnh sửa">Sửa</a>
+                      <form method="POST" onsubmit="return confirm('Bạn có chắc chắn muốn xóa danh mục này?');" style="display:inline;">
+                        <input type="hidden" name="action" value="delete" />
+                        <input type="hidden" name="id" value={c.id} />
+                        <button type="submit" class="btn-action delete" title="Xóa">Xóa</button>
+                      </form>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </form>
+      </div>
+    </div>
+
+    <!-- TailAdmin Add Category Form Card -->
+    <div class="form-card">
+      <div class="card-header">
+        <h3>+ Thêm Danh Mục Mới</h3>
+      </div>
+
+      <div class="card-body-padding">
+        {errorMsg && <div class="tail-alert danger">{errorMsg}</div>}
+        {successMsg && <div class="tail-alert success">{successMsg}</div>}
+
+        <form method="POST" class="add-cat-form">
+          <input type="hidden" name="action" value="create" />
+
+          <div class="form-group">
+            <label for="name">Tên danh mục *</label>
+            <input type="text" id="name" name="name" placeholder="Ví dụ: Thép Cuộn Phi 6 - D8" required />
+          </div>
+
+          <div class="form-group">
+            <label for="parent_id">Danh mục cha (Để trống nếu là danh mục chính)</label>
+            <select id="parent_id" name="parent_id" class="tail-select">
+              <option value="">-- Là danh mục chính (Cấp 1) --</option>
+              {parentCategories.map(pc => (
+                <option value={pc.id}>{pc.name}</option>
+              ))}
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label for="slug">Slug (Đường dẫn tĩnh) — Để trống tự sinh</label>
+            <input type="text" id="slug" name="slug" placeholder="thep-cuon-phi-6-d8" />
+          </div>
+
+          <div class="form-group">
+            <label for="sort_order">Thứ tự hiển thị (Số nhỏ xếp trước)</label>
+            <input type="number" id="sort_order" name="sort_order" defaultValue="0" />
+          </div>
+
+          <div class="form-group">
+            <label for="description">Mô tả danh mục (Hỗ trợ SEO)</label>
+            <textarea id="description" name="description" rows="3" placeholder="Mô tả các dòng sản phẩm thuộc danh mục..."></textarea>
+          </div>
+
+          <!-- MySQL Image Manager for Category (Single Image) -->
+          <MediaManager
+            featuredImage=""
+            featuredInputName="image_url"
+            allowMultiple={false}
+          />
+
+          <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 1rem;">
+            Tạo Danh Mục Mới
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+</AdminLayout>
+
+<script is:inline>
+  document.addEventListener('DOMContentLoaded', () => {
+    const checkAll = document.getElementById('check_all_cats');
+    const catCheckboxes = document.querySelectorAll('.cat-checkbox');
+    const badge = document.getElementById('cat_selected_badge');
+    const bulkForm = document.getElementById('bulk_cat_form');
+
+    function updateCount() {
+      const selected = document.querySelectorAll('.cat-checkbox:checked').length;
+      if (badge) badge.textContent = `Đã chọn: ${selected}`;
+    }
+
+    if (checkAll) {
+      checkAll.addEventListener('change', () => {
+        catCheckboxes.forEach(cb => cb.checked = checkAll.checked);
+        updateCount();
+      });
+    }
+
+    catCheckboxes.forEach(cb => {
+      cb.addEventListener('change', () => {
+        if (checkAll) {
+          checkAll.checked = (document.querySelectorAll('.cat-checkbox:checked').length === catCheckboxes.length);
+        }
+        updateCount();
+      });
+    });
+
+    if (bulkForm) {
+      bulkForm.addEventListener('submit', (e) => {
+        const selected = document.querySelectorAll('.cat-checkbox:checked');
+        if (selected.length === 0) {
+          e.preventDefault();
+          alert('Vui lòng chọn ít nhất một danh mục!');
+          return;
+        }
+
+        const oldInputs = bulkForm.querySelectorAll('input[name="ids[]"]');
+        oldInputs.forEach(i => i.remove());
+
+        selected.forEach(cb => {
+          const input = document.createElement('input');
+          input.type = 'hidden';
+          input.name = 'ids[]';
+          input.value = cb.value;
+          bulkForm.appendChild(input);
+        });
+      });
+    }
+  });
+</script>
+
+<style>
+  .cat-mgmt-grid {
+    display: grid;
+    grid-template-columns: 1fr 360px;
+    gap: 1.5rem;
+    align-items: start;
+  }
+  @media (max-width: 1024px) {
+    .cat-mgmt-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  .card-body-padding {
+    padding: 1.5rem;
+  }
+
+  .bulk-form-inline {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+  .selected-badge {
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: #64748b;
+  }
+
+  .is-sub-category {
+    background: #fafcfd;
+  }
+  .is-parent-category {
+    background: #ffffff;
+  }
+
+  .cat-thumb-frame {
+    width: 44px;
+    height: 44px;
+    border-radius: 0.5rem;
+    overflow: hidden;
+    background: #f8fafc;
+    border: 1px solid var(--tail-border);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .cat-thumb-frame img {
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
+  }
+
+  .cat-name-text {
+    font-size: 0.9rem;
+    color: var(--tail-dark);
+  }
+  .cat-name-text.main {
+    font-size: 0.95rem;
+    font-weight: 800;
+  }
+
+  .cat-title-cell.sub {
+    padding-left: 0.5rem;
+  }
+  .tree-line {
+    color: #94a3b8;
+    font-weight: 700;
+    margin-right: 6px;
+  }
+  .icon-folder {
+    margin-right: 6px;
+  }
+  .type-badge {
+    display: inline-block;
+    font-size: 0.7rem;
+    font-weight: 700;
+    padding: 2px 8px;
+    border-radius: 9999px;
+    margin-left: 8px;
+  }
+  .type-badge.parent {
+    background: #e0f2fe;
+    color: #0369a1;
+  }
+  .type-badge.sub {
+    background: #f1f5f9;
+    color: #475569;
+    border: 1px solid #e2e8f0;
+  }
+
+  .desc-preview {
+    font-size: 0.78rem;
+    color: #64748b;
+    margin-top: 2px;
+    display: -webkit-box;
+    -webkit-line-clamp: 1;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  .slug-link {
+    font-size: 0.82rem;
+    color: var(--tail-primary);
+    text-decoration: none;
+    font-weight: 500;
+  }
+
+  .count-pill {
+    background: #f1f5f9;
+    color: #475569;
+    font-weight: 700;
+    font-size: 0.8rem;
+    padding: 2px 8px;
+    border-radius: 9999px;
+  }
+  .sort-order-tag {
+    font-weight: 600;
+    color: #64748b;
+  }
+
+  .action-flex-row {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.35rem;
+  }
+
+  .tail-alert {
+    padding: 0.85rem 1.25rem;
+    border-radius: 0.5rem;
+    font-size: 0.875rem;
+    font-weight: 600;
+    margin-bottom: 1.5rem;
+  }
+  .tail-alert.danger { background: #fde8e8; color: #ef4444; border: 1px solid #fca5a5; }
+  .tail-alert.success { background: #e8fadf; color: #10b981; border: 1px solid #a7f3d0; }
+</style>

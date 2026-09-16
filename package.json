@@ -1,0 +1,27 @@
+{
+  "name": "vlxd-hoang-yen",
+  "type": "module",
+  "version": "1.0.0",
+  "scripts": {
+    "dev": "astro dev --host",
+    "start": "node server.js",
+    "build": "astro build",
+    "preview": "astro preview",
+    "astro": "astro",
+    "db:migrate": "node src/server/db/migrate.js",
+    "db:seed": "node src/server/db/seed.js"
+  },
+  "dependencies": {
+    "@astrojs/node": "^9.0.0",
+    "@types/pg": "^8.23.1",
+    "astro": "^5.0.0",
+    "bcryptjs": "^2.4.3",
+    "mysql2": "^3.11.5",
+    "pg": "^8.23.0"
+  },
+  "devDependencies": {
+    "@types/bcryptjs": "^2.4.6",
+    "@types/node": "^22.10.2",
+    "typescript": "^5.7.2"
+  }
+}

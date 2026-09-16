@@ -1,0 +1,2093 @@
+---
+import Layout from '../layouts/Layout.astro';
+import ProductCard from '../components/ProductCard.astro';
+import TrustSignals from '../components/TrustSignals.astro';
+import { CategoryRepo, ProductRepo, SettingsRepo } from '../server/db/repo.js';
+import { CATEGORY_SEO_DATA } from '../server/data/category-seo-data.js';
+
+const { slug } = Astro.params;
+const settings = await SettingsRepo.getAll();
+
+if (slug === 'trang-chu' || slug === 'home' || slug === 'index' || slug === 'index.html' || slug === 'index.php') {
+  return Astro.redirect('/', 301);
+}
+
+// Check if slug is a category or product
+const category = slug ? await CategoryRepo.getBySlug(slug) : null;
+const product = !category && slug ? await ProductRepo.getBySlug(slug) : null;
+
+if (!category && !product) {
+  return Astro.redirect('/404');
+}
+
+// 1. If Category
+const isCategory = !!category;
+const categoryProducts = isCategory && category ? await ProductRepo.getByCategory(category.id) : [];
+const subcategories = isCategory && category ? await CategoryRepo.getChildren(category.id) : [];
+const seoData = isCategory && slug ? CATEGORY_SEO_DATA[slug] : null;
+
+let productImages: Array<{ image_url: string; alt_text?: string }> = [];
+if (product) {
+  const dbImgs = await ProductRepo.getImages(product.id);
+  if (dbImgs && dbImgs.length > 0) {
+    productImages = dbImgs;
+  } else if (product.images && product.images.length > 0) {
+    productImages = product.images.map(img => ({ image_url: img, alt_text: product.name }));
+  } else if (product.featured_image) {
+    productImages = [{ image_url: product.featured_image, alt_text: product.name }];
+  } else {
+    productImages = [{ image_url: '/anh-sanpham.png', alt_text: product.name }];
+  }
+}
+let relatedProducts: any[] = [];
+if (product) {
+  if (product.category_id) {
+    relatedProducts = (await ProductRepo.getByCategory(product.category_id)).filter(p => p.id !== product.id);
+  }
+  if (relatedProducts.length < 4) {
+    const fallback = (await ProductRepo.getFeatured(8)).filter(p => p.id !== product.id && !relatedProducts.some(rp => rp.id === p.id));
+    relatedProducts = [...relatedProducts, ...fallback].slice(0, 4);
+  }
+}
+
+// Helpers for parsing markdown formatting (bold text, bullet lists)
+function renderFormattedContent(text?: string): string {
+  if (!text) return '';
+  const lines = text.split('\n');
+  let result = '';
+  let inList = false;
+  let paragraphBuffer: string[] = [];
+
+  const flushParagraph = () => {
+    if (paragraphBuffer.length > 0) {
+      const pText = paragraphBuffer.join(' ').trim();
+      if (pText) {
+        const parsed = pText.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+        result += `<p class="seo-lead-paragraph">${parsed}</p>`;
+      }
+      paragraphBuffer = [];
+    }
+  };
+
+  const closeList = () => {
+    if (inList) {
+      result += '</ul>';
+      inList = false;
+    }
+  };
+
+  for (let i = 0; i < lines.length; i++) {
+    const rawLine = lines[i];
+    const trimmed = rawLine.trim();
+
+    if (!trimmed) {
+      flushParagraph();
+      closeList();
+      continue;
+    }
+
+    if (trimmed.startsWith('- ') || trimmed.startsWith('* ')) {
+      flushParagraph();
+      if (!inList) {
+        result += '<ul class="seo-parsed-list">';
+        inList = true;
+      }
+      const itemContent = trimmed.substring(2).trim();
+      const parsed = itemContent.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+      result += `<li>${parsed}</li>`;
+    } else {
+      closeList();
+      paragraphBuffer.push(trimmed);
+    }
+  }
+
+  flushParagraph();
+  closeList();
+
+  return result;
+}
+
+function parseInlineBold(text?: string): string {
+  if (!text) return '';
+  return text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+}
+
+// Schemas & Breadcrumbs
+let title = '';
+let description = '';
+let ogImage = '';
+let breadcrumbs: Array<{ name: string; url: string }> = [];
+let schemas: any[] = [];
+
+if (isCategory && category) {
+  title = category.seo_title || `${category.name} Tại Quảng Trị | Báo Giá VLXD Hoàng Yến`;
+  description = category.seo_description || category.description || `Cung cấp ${category.name} tại Quảng Trị. Báo giá nhanh, giao hàng tận nơi.`;
+  ogImage = category.image_url || settings.banner_url;
+  breadcrumbs = [
+    { name: 'Trang Chủ', url: '/' },
+    { name: 'Sản Phẩm', url: '/san-pham/' },
+    { name: category.name, url: `/${category.slug}/` }
+  ];
+
+  // Add Category CollectionPage Schema with EEAT Freshness
+  schemas.push({
+    '@context': 'https://schema.org',
+    '@type': 'CollectionPage',
+    '@id': `https://vlxdhoangyen.com/${category.slug}/#collectionpage`,
+    name: category.h1 || category.name,
+    description: description,
+    url: `https://vlxdhoangyen.com/${category.slug}/`,
+    inLanguage: 'vi-VN',
+    datePublished: '2025-01-15T08:00:00+07:00',
+    dateModified: `${seoData?.updatedDate || '2026-03-15'}T08:00:00+07:00`,
+    isPartOf: {
+      '@type': 'WebSite',
+      '@id': 'https://vlxdhoangyen.com/#website',
+      name: settings.brand_name,
+      url: 'https://vlxdhoangyen.com'
+    },
+    author: {
+      '@type': 'Organization',
+      name: settings.brand_name,
+      url: 'https://vlxdhoangyen.com',
+      sameAs: [
+        settings.facebook_url || 'https://www.facebook.com/sieuthivlxdhoangyen/',
+        settings.zalo_url || 'https://zalo.me/0946575579',
+        'https://maps.app.goo.gl/QUX1w34xfjRMcyW87'
+      ]
+    },
+    publisher: {
+      '@type': 'Organization',
+      name: settings.company_name,
+      url: 'https://vlxdhoangyen.com',
+      sameAs: [
+        settings.facebook_url || 'https://www.facebook.com/sieuthivlxdhoangyen/',
+        settings.zalo_url || 'https://zalo.me/0946575579',
+        'https://maps.app.goo.gl/QUX1w34xfjRMcyW87'
+      ]
+    }
+  });
+
+  // Add Category FAQ Schema if available
+  if (seoData && seoData.faqs && seoData.faqs.length > 0) {
+    schemas.push({
+      '@context': 'https://schema.org',
+      '@type': 'FAQPage',
+      mainEntity: seoData.faqs.map(faq => ({
+        '@type': 'Question',
+        name: faq.question,
+        acceptedAnswer: {
+          '@type': 'Answer',
+          text: faq.answer
+        }
+      }))
+    });
+  }
+} else if (product) {
+  title = product.seo_title || `${product.name} Tại Quảng Trị - Báo Giá | VLXD Hoàng Yến`;
+  description = product.seo_description || product.short_description || `Cung cấp ${product.name} tại Đông Hà, Quảng Trị. Báo giá theo khối lượng công trình, hỗ trợ giao hàng tận nơi.`;
+  ogImage = product.featured_image || settings.banner_url;
+  breadcrumbs = [
+    { name: 'Trang Chủ', url: '/' },
+    { name: 'Sản Phẩm', url: '/san-pham/' },
+    ...(product.category_slug ? [{ name: product.category_name || 'Danh Mục', url: `/${product.category_slug}/` }] : []),
+    { name: product.name, url: `/${product.slug}/` }
+  ];
+
+  const productSchema: any = {
+    '@context': 'https://schema.org',
+    '@type': 'Product',
+    name: product.name,
+    image: product.featured_image ? (product.featured_image.startsWith('http') ? product.featured_image : `https://vlxdhoangyen.com${product.featured_image.startsWith('/') ? '' : '/'}${product.featured_image}`) : undefined,
+    description: product.short_description || product.name,
+    sku: product.sku || undefined
+  };
+
+  if (product.brand_name) {
+    productSchema.brand = {
+      '@type': 'Brand',
+      name: product.brand_name
+    };
+  }
+
+  if (product.price && Number(product.price) > 0) {
+    productSchema.offers = {
+      '@type': 'Offer',
+      price: product.price,
+      priceCurrency: 'VND',
+      availability: product.is_in_stock ? 'https://schema.org/InStock' : 'https://schema.org/OutOfStock',
+      url: `https://vlxdhoangyen.com/${product.slug}/`
+    };
+  }
+
+  schemas.push(productSchema);
+}
+---
+
+<Layout
+  title={title}
+  description={description}
+  ogImage={ogImage}
+  breadcrumbs={breadcrumbs}
+  schemas={schemas}
+>
+  {isCategory && category ? (
+    /* ============================================================
+       CATEGORY VIEW
+       ============================================================ */
+    <div class="category-view-page">
+      <!-- Category Hero Header -->
+      <section class="category-hero-section">
+        <div class="container">
+          <div class="category-hero-inner">
+            <div class="category-hero-text">
+              <div class="eyebrow">Danh Mục Ngành Hàng</div>
+              <h1>{category.h1 || category.name}</h1>
+              
+              <div class="category-hero-desc">
+                {category.description ? category.description.split('\n\n').map(p => (
+                  <p>{p.trim()}</p>
+                )) : null}
+              </div>
+              
+              <div class="category-trust-tags">
+                <div class="luxury-pill-tag">
+                  <span class="pill-dot-icon">
+                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                  </span>
+                  <span>Hàng Chuẩn Nhà Máy</span>
+                </div>
+                <div class="luxury-pill-tag">
+                  <span class="pill-dot-icon">
+                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                  </span>
+                  <span>Nguồn Gốc Minh Bạch</span>
+                </div>
+                <div class="luxury-pill-tag">
+                  <span class="pill-dot-icon">
+                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                  </span>
+                  <span>Giao Nhận Tận Nơi</span>
+                </div>
+              </div>
+            </div>
+
+            {category.image_url && (
+              <div class="category-hero-img-box">
+                <img 
+                  src={category.image_url} 
+                  alt={`${category.name} tại Đông Hà, Quảng Trị - VLXD Hoàng Yến`} 
+                  width="400" 
+                  height="260" 
+                  loading="eager" 
+                />
+              </div>
+            )}
+          </div>
+        </div>
+      </section>
+
+      <!-- Subcategories Pills Bar -->
+      {subcategories.length > 0 && (
+        <section class="subcat-pills-bar" style="background: #ffffff; border-bottom: 1px solid var(--border-subtle); padding: 1rem 0; box-shadow: 0 4px 12px rgba(0,0,0,0.03);">
+          <div class="container" style="display: flex; align-items: center; gap: 1rem; flex-wrap: wrap;">
+            <span style="font-weight: 700; font-size: 0.9rem; color: var(--color-primary-dark);">Danh Mục Con ({category.name}):</span>
+            <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+              {subcategories.map(sub => (
+                <a
+                  href={`/${category.slug}/${sub.slug}/`}
+                  style="display: inline-block; padding: 0.4rem 0.95rem; background: #f1f5f9; color: #0f172a; border-radius: 9999px; font-size: 0.85rem; font-weight: 600; text-decoration: none; border: 1px solid #cbd5e1; transition: all 0.2s ease;"
+                >
+                  {sub.name}
+                </a>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
+
+      <!-- Category Products Grid -->
+      <section class="section">
+        <div class="container">
+          <div class="section-header-flex">
+            <div>
+              <h2>Danh Sách Sản Phẩm Thuộc Nhóm: {category.name}</h2>
+              <p>Hiển thị {categoryProducts.length} chủng loại quy cách tiêu chuẩn sẵn kho tại Đông Hà, Quảng Trị.</p>
+            </div>
+            <a href="#quote-category" class="btn btn-primary">
+              <span>Báo Giá Nhanh Nhóm Này</span>
+            </a>
+          </div>
+
+          {categoryProducts.length > 0 ? (
+            <div class="products-grid">
+              {categoryProducts.map(p => (
+                <ProductCard product={p} />
+              ))}
+            </div>
+          ) : (
+            <div class="empty-state">
+              <p>Danh mục đang được cập nhật thêm các quy cách mới. Vui lòng liên hệ hotline 0946.575.579 để nhận báo giá trực tiếp.</p>
+            </div>
+          )}
+        </div>
+      </section>
+
+      <!-- ============================================================
+           TECHNICAL SEO CONTENT & BUYER GUIDE SECTION
+           ============================================================ -->
+      {category.content && (
+        <section class="section category-custom-content-section">
+          <div class="container">
+            <div class="seo-content-card block-editor-rendered-content prose-industrial" set:html={category.content} />
+          </div>
+        </section>
+      )}
+
+      {(!category.content && seoData) && (
+        <section class="section category-seo-section">
+          <div class="container">
+            <div class="seo-content-card">
+              
+              <!-- 1. Category Overview & Scope -->
+              <div class="seo-block">
+                <h2 class="seo-main-heading">{seoData.overviewTitle}</h2>
+                <div class="seo-lead-text" set:html={renderFormattedContent(seoData.overviewContent)} />
+              </div>
+
+              <!-- 2. Technical Selection Guide & Specification Table -->
+              <div class="seo-block">
+                <h2 class="seo-sub-heading">{seoData.guideTitle}</h2>
+                <div class="seo-desc-text" set:html={renderFormattedContent(seoData.guideIntro)} />
+
+                {seoData.tableHeaders && seoData.tableHeaders.length > 0 && seoData.tableRows && seoData.tableRows.length > 0 && (
+                  <div class="table-responsive">
+                    <table class="spec-table-industrial">
+                      <thead>
+                        <tr>
+                          {seoData.tableHeaders.map(th => (
+                            <th>{th}</th>
+                          ))}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {seoData.tableRows.map(row => (
+                          <tr>
+                            {row.map(cell => (
+                              <td>{cell}</td>
+                            ))}
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+
+                <!-- Technical Notes Checklist -->
+                <div class="technical-notes-box">
+                  <h3 class="notes-heading">{seoData.notesTitle || 'Lưu ý kỹ thuật quan trọng khi chọn & thi công:'}</h3>
+                  {seoData.notesIntro && (
+                    <p style="font-size: 0.9rem; color: var(--color-text-muted); margin-bottom: 0.75rem;" set:html={parseInlineBold(seoData.notesIntro)} />
+                  )}
+                  <ul class="notes-list">
+                    {seoData.technicalNotes.map(note => (
+                      <li set:html={parseInlineBold(note)} />
+                    ))}
+                  </ul>
+                  {seoData.notesFooter && (
+                    <p style="font-size: 0.9rem; color: var(--color-text); margin-top: 0.85rem; line-height: 1.55;" set:html={parseInlineBold(seoData.notesFooter)} />
+                  )}
+                </div>
+
+                <!-- Pricing Factors Block (if available) -->
+                {seoData.pricingTitle && seoData.pricingFactors && (
+                  <div class="pricing-section-wrapper" style="margin-top: 1.75rem; padding-top: 1.5rem; border-top: 1px dashed var(--color-border);">
+                    <h2 class="notes-heading" style="margin-top: 0; font-size: 1.35rem;">{seoData.pricingTitle}</h2>
+                    {seoData.pricingIntro && (
+                      <p style="font-size: 0.9rem; color: var(--color-text-muted); margin-bottom: 0.75rem;" set:html={parseInlineBold(seoData.pricingIntro)} />
+                    )}
+                    <div class="pricing-factors-card">
+                      <ul class="pricing-factors-list">
+                        {seoData.pricingFactors.map(factor => (
+                          <li set:html={parseInlineBold(factor)} />
+                        ))}
+                      </ul>
+                      {seoData.pricingFooter && (
+                        <p style="font-size: 0.9rem; color: var(--color-text); margin-top: 0.85rem; line-height: 1.55;" set:html={parseInlineBold(seoData.pricingFooter)} />
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                <!-- Location / Where to buy Block (if available) -->
+                {seoData.locationTitle && (
+                  <div class="location-section-wrapper" style="margin-top: 1.75rem; padding-top: 1.5rem; border-top: 1px dashed var(--color-border);">
+                    <h2 class="notes-heading" style="margin-top: 0; font-size: 1.35rem;">{seoData.locationTitle}</h2>
+                    {seoData.locationContent && (
+                      <p style="font-size: 0.9rem; color: var(--color-text); line-height: 1.6; margin-bottom: 0.75rem;" set:html={parseInlineBold(seoData.locationContent)} />
+                    )}
+                    <div class="store-info-compact-card">
+                      <div class="store-info-item">
+                        <span class="info-icon">
+                          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>
+                        </span>
+                        <span><strong>Địa chỉ kho:</strong> {settings.address || '299 Lê Duẩn, Phường Đông Hà, Tỉnh Quảng Trị'}</span>
+                      </div>
+                      <div class="store-info-item">
+                        <span class="info-icon">
+                          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>
+                        </span>
+                        <span><strong>Hotline / Zalo:</strong> <a href={`tel:${settings.hotline_main}`} style="color: var(--color-red); font-weight: 700;">{settings.hotline_main}</a> &nbsp;|&nbsp; <a href={`tel:${settings.hotline_alt}`} style="color: var(--color-red); font-weight: 700;">{settings.hotline_alt}</a></span>
+                      </div>
+                      <div class="store-info-item">
+                        <span class="info-icon">
+                          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 14 14"></polyline></svg>
+                        </span>
+                        <span><strong>Giờ mở cửa:</strong> 7:30 – 22:00 (Tất cả các ngày)</span>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                <!-- Callout Hotline Box -->
+                <div class="consult-callout" style="margin-top: 1.5rem;">
+                  <p>
+                    <strong>Cần tư vấn thông tin sản phẩm hoặc nhận báo giá?</strong> Liên hệ ngay Hotline/Zalo: 
+                    <a href={`tel:${settings.hotline_main}`} class="callout-link">{settings.hotline_main}</a> để được kiểm tra quy cách & mác vật tư phù hợp nhất.
+                  </p>
+                </div>
+              </div>
+
+              <!-- Frequently Asked Questions (FAQs) -->
+              {seoData.faqs && seoData.faqs.length > 0 && (
+                <div class="seo-block faqs-block">
+                  <h2 class="seo-sub-heading">{seoData.faqTitle || `Câu Hỏi Thường Gặp Về ${category.name}`}</h2>
+                  <div class="faq-list">
+                    {seoData.faqs.map((faq, idx) => (
+                      <div class="faq-card-item">
+                        <h3 class="faq-question">
+                          <span class="faq-q-badge">Q{idx + 1}</span> {faq.question}
+                        </h3>
+                        <p class="faq-answer" set:html={parseInlineBold(faq.answer)} />
+                      </div>
+                    ))}
+                  </div>
+
+                  <!-- FAQ Disclaimer Note -->
+                  <div class="faq-disclaimer-note" style="margin-top: 1.25rem; padding: 0.9rem 1.15rem; background: #fffbeb; border: 1px solid #fef3c7; border-left: 3px solid #f59e0b; border-radius: 8px; font-size: 0.85rem; color: #92400e; line-height: 1.55;">
+                    <p style="margin: 0; display: flex; align-items: flex-start; gap: 0.5rem;">
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" style="flex-shrink: 0; margin-top: 2px; color: #d97706;"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
+                      <span><em>* Lưu ý:</em> Các câu hỏi giải đáp và số liệu trên chỉ mang tính chất tham khảo chung. Định mức, quy cách tiêu chuẩn và đơn giá vật tư thực tế có thể có sự sai sót hoặc thay đổi theo từng thời điểm, từng lô sản xuất từ nhà máy hoặc yêu cầu riêng của từng công trình. Quý khách vui lòng liên hệ Hotline/Zalo <strong>0946.575.579</strong> để kiểm tra thông tin thực tế.</span>
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              <!-- Related Categories & Materials Interlinking -->
+              {seoData.relatedLinks && seoData.relatedLinks.length > 0 && (
+                <div class="seo-block related-links-block">
+                  <h2 class="related-links-title" style="font-size: 1.2rem;">Vật Tư & Danh Mục Liên Quan</h2>
+                  <div class="related-tags-grid">
+                    {seoData.relatedLinks.map(link => (
+                      <a href={link.url} class="related-tag-btn">
+                        <span>{link.name}</span>
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
+                      </a>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+            </div>
+          </div>
+        </section>
+      )}
+
+      <!-- Trust Signals Strip for Category -->
+      <section class="section category-trust-section" style="padding-top: 0; padding-bottom: 2rem;">
+        <div class="container">
+          <TrustSignals />
+        </div>
+      </section>
+
+      <!-- Category Fast Quote Box -->
+      <section class="section section-concrete" id="quote-category">
+        <div class="container">
+          <div class="cat-quote-box">
+            <div class="cat-quote-text">
+              <h2 class="cat-quote-title">Cần Báo Giá Khối Lượng Lớn Cho: {category.name}?</h2>
+              <p>Gửi yêu cầu dự toán hoặc liên hệ trực tiếp để nhận mức chiết khấu nhà thầu tốt nhất hôm nay.</p>
+              <div class="cat-hotlines">
+                <a href={`tel:${settings.hotline_main}`} class="cat-phone-link">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>
+                  <span>Hotline: {settings.hotline_main}</span>
+                </a>
+                <a href={`tel:${settings.hotline_alt}`} class="cat-phone-link">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>
+                  <span>Điện thoại: {settings.hotline_alt}</span>
+                </a>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+    </div>
+  ) : product ? (
+    /* ============================================================
+       PRODUCT DETAIL VIEW
+       ============================================================ */
+    <div class="product-view-page">
+      <div class="container">
+        <div class="product-detail-grid">
+          <!-- Left: Gallery -->
+          <div class="product-gallery">
+            <div class="main-image-frame">
+              <img 
+                id="main-product-image"
+                src={product.featured_image || '/anh-sanpham.png'} 
+                alt={`${product.name} tại Đông Hà, Quảng Trị – VLXD Hoàng Yến`}
+                class="product-view-img"
+                loading="eager"
+                decoding="async"
+              />
+              <span class="product-stock-tag">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" style="color: #16a34a;"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                <span>Sẵn Hàng Tại Kho</span>
+              </span>
+            </div>
+
+            {productImages.length > 1 && (
+              <div class="gallery-thumbs">
+                {productImages.map((img, idx) => (
+                  <button 
+                    type="button" 
+                    class="thumb-btn"
+                    onclick={`document.getElementById('main-product-image').src = '${img.image_url}'`}
+                  >
+                    <img 
+                      src={img.image_url} 
+                      alt={img.alt_text || `${product.name} chi tiết hình ảnh ${idx + 1} – VLXD Hoàng Yến Quảng Trị`} 
+                      loading="lazy"
+                    />
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+
+          <!-- Right: Product Overview & Direct Quote Action -->
+          <div class="product-summary">
+            <div class="product-meta-top">
+              {product.brand_name && (
+                <span class="badge badge-dark">Thương hiệu: {product.brand_name}</span>
+              )}
+              {product.category_name && (
+                <span class="badge badge-concrete">{product.category_name}</span>
+              )}
+              {product.sku && (
+                <span class="badge badge-concrete">Mã SP: {product.sku}</span>
+              )}
+            </div>
+
+            <h1 class="product-view-title">{product.name}</h1>
+
+            <div class="product-price-bar">
+              <div class="price-indicator">
+                <span class="price-text">Báo Giá Theo Khối Lượng Đặt Hàng</span>
+                <span class="price-sub">Đơn vị tính: <strong>{product.unit || 'Quy cách chuẩn'}</strong></span>
+              </div>
+            </div>
+
+            {product.short_description && (
+              <div class="product-short-desc">
+                <p>{product.short_description}</p>
+              </div>
+            )}
+
+            <!-- Technical Key Highlights -->
+            <div class="product-highlights">
+              <div class="highlight-item">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line></svg>
+                <span>Đa Dạng Vật Liệu Cho Công Trình</span>
+              </div>
+              <div class="highlight-item">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+                <span>Hỗ Trợ Báo Giá Nhanh Chóng</span>
+              </div>
+              <div class="highlight-item">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path></svg>
+                <span>Tư Vấn Theo Nhu Cầu Thực Tế</span>
+              </div>
+            </div>
+
+            <!-- Direct Quote Form Inside Product Page -->
+            <div class="product-quote-box">
+              <h3 class="quote-box-title">Nhận Báo Giá Nhanh Cho Sản Phẩm Này</h3>
+              <form id="product-inquiry-form" class="inline-inquiry-form">
+                <input type="hidden" name="product_name" value={product.name} />
+                <div class="form-row">
+                  <input type="text" name="customer_name" required placeholder="Họ tên / Đơn vị *" class="form-input" />
+                  <input type="tel" name="customer_phone" required placeholder="Số điện thoại / Zalo *" class="form-input" />
+                </div>
+                <div class="form-group" style="margin-top: 10px; margin-bottom: 10px;">
+                  <input type="text" name="notes" placeholder={`Số lượng & địa điểm giao hàng (VD: 5 tấn ${product.name} giao tại Đông Hà)...`} class="form-input" />
+                </div>
+                <button type="submit" class="btn btn-primary btn-block btn-lg" id="p-submit-btn">
+                  <span>Gửi Yêu Cầu Báo Giá</span>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
+                </button>
+                <div id="p-status-msg" class="status-msg" style="display: none;"></div>
+              </form>
+            </div>
+          </div>
+        </div>
+
+        <!-- Product Structured Tabs: Mô tả sản phẩm, Thông số kỹ thuật, Đánh giá -->
+        <div class="product-tabs-section">
+          <!-- Tab Navigation Header -->
+          <div class="product-tabs-nav" role="tablist">
+            <button type="button" class="tab-btn active" data-tab="tab-description" role="tab" aria-selected="true">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+              <span>Mô Tả Sản Phẩm</span>
+            </button>
+            <button type="button" class="tab-btn" data-tab="tab-specs" role="tab" aria-selected="false">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+              <span>Thông Số Kỹ Thuật</span>
+            </button>
+            <button type="button" class="tab-btn" data-tab="tab-reviews" role="tab" aria-selected="false">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
+              <span>Đánh Giá & Nhận Xét</span>
+            </button>
+          </div>
+
+          <!-- Tab 1 Content: Mô tả sản phẩm -->
+          <div class="tab-pane active" id="tab-description" role="tabpanel">
+            <div class="tab-body-card">
+              <h3 class="tab-content-title">Mô Tả Chi Tiết: {product.name}</h3>
+              <div class="product-full-description">
+                <p class="desc-lead">{product.short_description || `Sản phẩm ${product.name} được cung ứng bởi Siêu Thị VLXD Hoàng Yến tại tỉnh Quảng Trị, đáp ứng các tiêu chuẩn kỹ thuật của nhà sản xuất.`}</p>
+                
+                <h4>Đặc Điểm & Ưu Điểm Nổi Bật</h4>
+                <ul>
+                  <li><strong>Nguồn gốc xuất xứ rõ ràng:</strong> Nhập từ các thương hiệu và nhà máy sản xuất uy tín, có đầy đủ hóa đơn chứng từ GTGT.</li>
+                  <li><strong>Độ bền & Khả năng chịu lực:</strong> Đạt tiêu chuẩn chất lượng theo quy chuẩn kỹ thuật xây dựng hiện hành.</li>
+                  <li><strong>Tiện ích thi công:</strong> Quy cách đóng gói chuẩn, dễ bốc xếp, lưu kho và kiểm đếm tải trọng tại công trình.</li>
+                  <li><strong>Bảo quản & Vận chuyển:</strong> Được bảo quản tại kho hàng khô ráo, che chắn cẩn thận và hỗ trợ vận chuyển bằng xe cẩu/xe tải chuyên dụng.</li>
+                </ul>
+
+                <h4>Ứng Dụng Trong Xây Dựng & Đời Sống</h4>
+                <p>Sản phẩm <strong>{product.name}</strong> phù hợp thi công cho các công trình nhà phố, biệt thự, nhà xưởng công nghiệp, các hạng mục xây thô kết cấu cũng như hoàn thiện nội ngoại thất trên địa bàn Quảng Trị.</p>
+
+                <div class="consult-note-box">
+                  <span class="note-icon">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><line x1="9" y1="18" x2="15" y2="18"></line><line x1="10" y1="22" x2="14" y2="22"></line><path d="M15.09 14c.18-.98.65-1.74 1.41-2.5A4.65 4.65 0 0 0 18 8 6 6 0 0 0 6 8c0 1 .23 2.23 1.5 3.5A4.61 4.61 0 0 1 8.91 14"></path></svg>
+                  </span>
+                  <p><strong>Lưu ý đặt hàng:</strong> Để nhận báo giá theo khối lượng dự toán công trình và phương án vận chuyển phù hợp, quý khách vui lòng liên hệ Hotline <strong>{settings.hotline_main}</strong>.</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Tab 2 Content: Thông số kỹ thuật -->
+          <div class="tab-pane" id="tab-specs" role="tabpanel">
+            <div class="tab-body-card">
+              <h3 class="tab-content-title">Bảng Thông Số Kỹ Thuật & Quy Cách</h3>
+              
+              <div class="specs-table-wrapper">
+                <table class="specs-table-industrial">
+                  <tbody>
+                    <tr>
+                      <th class="spec-label">Tên sản phẩm</th>
+                      <td class="spec-value"><strong>{product.name}</strong></td>
+                    </tr>
+                    <tr>
+                      <th class="spec-label">Mã sản phẩm / SKU</th>
+                      <td class="spec-value">{product.sku || 'Chuẩn quy cách nhà máy'}</td>
+                    </tr>
+                    <tr>
+                      <th class="spec-label">Thương hiệu / Hãng sản xuất</th>
+                      <td class="spec-value">{product.brand_name || 'Theo nhà sản xuất'}</td>
+                    </tr>
+                    <tr>
+                      <th class="spec-label">Danh mục ngành hàng</th>
+                      <td class="spec-value">{product.category_name || 'Vật liệu xây dựng'}</td>
+                    </tr>
+                    <tr>
+                      <th class="spec-label">Đơn vị tính</th>
+                      <td class="spec-value">{product.unit || 'Quy cách chuẩn'}</td>
+                    </tr>
+                    <tr>
+                      <th class="spec-label">Tiêu chuẩn kỹ thuật</th>
+                      <td class="spec-value">TCVN / ISO / Tiêu chuẩn cơ sở nhà sản xuất</td>
+                    </tr>
+                    <tr>
+                      <th class="spec-label">Đơn vị phân phối</th>
+                      <td class="spec-value">{settings.company_name}</td>
+                    </tr>
+                    <tr>
+                      <th class="spec-label">Kho hàng xuất phát</th>
+                      <td class="spec-value">{settings.address}</td>
+                    </tr>
+                    <tr>
+                      <th class="spec-label">Tình trạng hàng hóa</th>
+                      <td class="spec-value">
+                        <span class="spec-in-stock">
+                          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" style="color: #16a34a;"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                          <span>Sẵn hàng số lượng lớn tại kho</span>
+                        </span>
+                      </td>
+                    </tr>
+                    <tr>
+                      <th class="spec-label">Hóa đơn & Chứng từ</th>
+                      <td class="spec-value">Cung cấp hóa đơn GTGT, chứng chỉ xuất xưởng theo đơn hàng</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+
+              {product.content && (
+                <div class="specs-extra-content prose-industrial" set:html={product.content} />
+              )}
+            </div>
+          </div>
+
+          <!-- Tab 3 Content: Đánh giá -->
+          <div class="tab-pane" id="tab-reviews" role="tabpanel">
+            <div class="tab-body-card">
+              <h3 class="tab-content-title">Đánh Giá & Phản Hồi Chất Lượng</h3>
+              
+              <div class="reviews-summary-grid">
+                <div class="rating-overall-card">
+                  <div class="rating-big-score">4.9</div>
+                  <div class="rating-stars" style="display: inline-flex; align-items: center; gap: 3px; color: #f59e0b;">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
+                  </div>
+                  <div class="rating-count">Dựa trên phản hồi từ các đối tác thi công tại Quảng Trị</div>
+                </div>
+
+                <div class="rating-breakdown-card">
+                  <div class="breakdown-row">
+                    <span class="breakdown-lbl">Chất lượng & Barem vật tư</span>
+                    <div class="breakdown-bar-bg"><div class="breakdown-bar-fill" style="width: 100%;"></div></div>
+                    <span class="breakdown-val">5.0 / 5</span>
+                  </div>
+                  <div class="breakdown-row">
+                    <span class="breakdown-lbl">Tiến độ giao nhận công trình</span>
+                    <div class="breakdown-bar-bg"><div class="breakdown-bar-fill" style="width: 98%;"></div></div>
+                    <span class="breakdown-val">4.9 / 5</span>
+                  </div>
+                  <div class="breakdown-row">
+                    <span class="breakdown-lbl">Tư vấn & Hỗ trợ kỹ thuật</span>
+                    <div class="breakdown-bar-bg"><div class="breakdown-bar-fill" style="width: 96%;"></div></div>
+                    <span class="breakdown-val">4.8 / 5</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Customer Review Submission Form -->
+              <div class="submit-review-box">
+                <h4 class="review-box-heading">Gửi Nhận Xét / Đánh Giá Về Sản Phẩm</h4>
+                <form id="product-review-form" class="review-form-industrial">
+                  <div class="review-rating-select">
+                    <label class="review-label">Mức độ hài lòng:</label>
+                    <div class="star-rating-options">
+                      <label><input type="radio" name="rating" value="5" checked /> 5/5 sao (Rất hài lòng)</label>
+                      <label><input type="radio" name="rating" value="4" /> 4/5 sao (Hài lòng)</label>
+                      <label><input type="radio" name="rating" value="3" /> 3/5 sao (Bình thường)</label>
+                    </div>
+                  </div>
+
+                  <div class="form-row" style="margin-top: 12px;">
+                    <div class="form-group">
+                      <label class="form-label" for="rev-name">Họ và tên *</label>
+                      <input type="text" id="rev-name" name="reviewer_name" required placeholder="Ví dụ: Nguyễn Văn A" class="form-input" />
+                    </div>
+                    <div class="form-group">
+                      <label class="form-label" for="rev-phone">Số điện thoại / Zalo *</label>
+                      <input type="tel" id="rev-phone" name="reviewer_phone" required placeholder="09xx xxx xxx" class="form-input" />
+                    </div>
+                  </div>
+
+                  <div class="form-group" style="margin-top: 12px;">
+                    <label class="form-label" for="rev-comment">Nội dung nhận xét *</label>
+                    <textarea id="rev-comment" name="comment" rows="3" required placeholder="Chia sẻ cảm nhận về chất lượng sản phẩm hoặc dịch vụ..." class="form-textarea"></textarea>
+                  </div>
+
+                  <button type="submit" class="btn btn-primary" id="rev-submit-btn" style="margin-top: 12px;">
+                    <span>Gửi Đánh Giá</span>
+                  </button>
+                  <div id="rev-status-msg" class="status-msg" style="display: none; margin-top: 10px;"></div>
+                </form>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Section 4: Sản phẩm liên quan -->
+        {relatedProducts.length > 0 && (
+          <div class="related-section">
+            <div class="section-header">
+              <div class="eyebrow">Sản Phẩm Cùng Nhóm</div>
+              <h2>Sản Phẩm Liên Quan</h2>
+            </div>
+            <div class="products-grid">
+              {relatedProducts.map(rp => (
+                <ProductCard product={rp} />
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  ) : null}
+</Layout>
+
+<style>
+  /* Category Page Styles */
+  .category-hero-section {
+    background-color: var(--color-concrete-light);
+    border-bottom: 1px solid var(--color-border);
+    padding-top: var(--space-12);
+    padding-bottom: var(--space-12);
+  }
+
+  .category-hero-inner {
+    display: grid;
+    grid-template-columns: 1.2fr 0.8fr;
+    gap: var(--space-8);
+    align-items: center;
+  }
+
+  .category-hero-desc {
+    font-size: 1.05rem;
+    color: var(--color-text-muted);
+    line-height: 1.65;
+    margin-top: var(--space-3);
+    margin-bottom: var(--space-6);
+  }
+
+  .category-hero-desc p {
+    margin-bottom: 10px;
+    line-height: 1.65;
+    color: #475569;
+  }
+
+  .category-hero-desc p:last-child {
+    margin-bottom: 0;
+  }
+
+  /* Custom SEO Article Content */
+  .category-custom-content-section {
+    background-color: #ffffff;
+    border-top: 1px solid var(--color-border);
+  }
+
+  .block-editor-rendered-content h2 {
+    font-family: var(--font-heading);
+    font-size: clamp(1.35rem, 2.5vw, 1.75rem);
+    font-weight: 800;
+    color: #0f172a;
+    margin-top: var(--space-8);
+    margin-bottom: var(--space-3);
+    line-height: 1.35;
+  }
+
+  .block-editor-rendered-content h2:first-child {
+    margin-top: 0;
+  }
+
+  .block-editor-rendered-content h3 {
+    font-family: var(--font-heading);
+    font-size: clamp(1.15rem, 2vw, 1.35rem);
+    font-weight: 800;
+    color: #1e293b;
+    margin-top: var(--space-6);
+    margin-bottom: var(--space-3);
+    line-height: 1.4;
+  }
+
+  .block-editor-rendered-content p {
+    font-size: 1rem;
+    line-height: 1.75;
+    color: #334155;
+    margin-bottom: var(--space-4);
+  }
+
+  .block-editor-rendered-content ul {
+    list-style: disc;
+    padding-left: var(--space-6);
+    margin-bottom: var(--space-5);
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .block-editor-rendered-content li {
+    font-size: 0.95rem;
+    line-height: 1.6;
+    color: #334155;
+  }
+
+  .category-trust-tags {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px;
+    margin-top: 1.25rem;
+  }
+
+  .luxury-pill-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    padding: 7px 14px;
+    border-radius: 9999px;
+    font-size: 0.8125rem;
+    font-weight: 600;
+    color: #1e293b;
+    box-shadow: 0 2px 6px rgba(15, 23, 42, 0.04);
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .luxury-pill-tag:hover {
+    border-color: #cbd5e1;
+    background: #f8fafc;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(15, 23, 42, 0.07);
+  }
+
+  .pill-dot-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: #ecfdf5;
+    color: #16a34a;
+    flex-shrink: 0;
+  }
+
+  .category-hero-img-box {
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-xs);
+    overflow: hidden;
+    background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+    padding: var(--space-4);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .category-hero-img-box img {
+    max-width: 100%;
+    max-height: 280px;
+    object-fit: contain;
+    filter: drop-shadow(0 8px 16px rgba(0, 0, 0, 0.08));
+  }
+
+  .cat-quote-box {
+    background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+    border: 1px solid var(--color-border);
+    border-left: 4px solid var(--color-red);
+    padding: var(--space-6) var(--space-8);
+    border-radius: var(--radius-md, 12px);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.04);
+  }
+
+  .cat-quote-title {
+    font-size: 1.35rem;
+    font-weight: 800;
+    color: var(--color-text, #0f172a);
+    margin-bottom: var(--space-2);
+    font-family: var(--font-heading);
+  }
+
+  .cat-quote-text p {
+    color: var(--color-text-muted);
+    margin-bottom: var(--space-4);
+    font-size: 0.95rem;
+    line-height: 1.5;
+  }
+
+  .cat-hotlines {
+    display: flex;
+    gap: var(--space-6);
+    flex-wrap: wrap;
+  }
+
+  .cat-phone-link {
+    font-family: var(--font-heading);
+    font-size: 1.1rem;
+    font-weight: 800;
+    color: var(--color-red);
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    transition: opacity var(--transition-fast);
+  }
+
+  .cat-phone-link:hover {
+    opacity: 0.85;
+    text-decoration: underline;
+  }
+
+  /* ============================================================
+     CATEGORY TECHNICAL SEO & BUYER GUIDE STYLING
+     ============================================================ */
+  .category-seo-section {
+    background-color: #ffffff;
+    border-top: 1px solid var(--color-border);
+    padding-top: var(--space-12);
+    padding-bottom: var(--space-12);
+  }
+
+  .seo-content-card {
+    background-color: #ffffff;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-xs);
+    padding: var(--space-8);
+    box-shadow: var(--shadow-subtle);
+  }
+
+  .seo-block {
+    margin-bottom: var(--space-10);
+    padding-bottom: var(--space-8);
+    border-bottom: 1px solid var(--color-border);
+  }
+
+  .seo-block:last-child {
+    margin-bottom: 0;
+    padding-bottom: 0;
+    border-bottom: none;
+  }
+
+  .seo-main-heading {
+    font-size: clamp(1.4rem, 2.5vw, 1.85rem);
+    font-weight: 800;
+    color: var(--color-charcoal);
+    margin-bottom: var(--space-3);
+    line-height: 1.3;
+  }
+
+  .seo-sub-heading {
+    font-size: clamp(1.2rem, 2vw, 1.45rem);
+    font-weight: 800;
+    color: var(--color-charcoal);
+    margin-bottom: var(--space-3);
+  }
+
+  .seo-lead-text {
+    font-size: 1.05rem;
+    line-height: 1.7;
+    color: var(--color-text);
+  }
+
+  .seo-lead-paragraph {
+    margin-bottom: 0.95rem;
+    line-height: 1.75;
+    color: var(--color-text);
+    font-size: 0.98rem;
+  }
+
+  .seo-lead-paragraph:last-child {
+    margin-bottom: 0;
+  }
+
+  .seo-lead-paragraph strong,
+  .seo-desc-text strong,
+  .notes-list li strong,
+  .pricing-factors-list li strong {
+    color: var(--color-primary-dark, #0f172a);
+    font-weight: 700;
+  }
+
+  .seo-desc-text {
+    font-size: 0.95rem;
+    line-height: 1.6;
+    color: var(--color-text-muted);
+    margin-bottom: var(--space-5);
+  }
+
+  .seo-parsed-list {
+    list-style: none;
+    padding: 0;
+    margin: 0.85rem 0 1.25rem 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+
+  .seo-parsed-list li {
+    position: relative;
+    padding-left: 1.5rem;
+    font-size: 0.95rem;
+    line-height: 1.65;
+    color: var(--color-text);
+  }
+
+  .seo-parsed-list li::before {
+    content: "■";
+    position: absolute;
+    left: 0.15rem;
+    top: 0.05rem;
+    font-size: 0.65rem;
+    color: var(--color-red, #dc2626);
+  }
+
+  .seo-parsed-list li strong {
+    color: var(--color-primary-dark, #0f172a);
+    font-weight: 700;
+  }
+
+  /* Industrial Specification Table */
+  .table-responsive {
+    width: 100%;
+    overflow-x: auto;
+    margin-bottom: var(--space-6);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-xs);
+  }
+
+  .spec-table-industrial {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.9rem;
+    text-align: left;
+    min-width: 600px;
+  }
+
+  .spec-table-industrial th {
+    background-color: var(--color-charcoal);
+    color: #ffffff;
+    font-family: var(--font-heading);
+    font-weight: 700;
+    padding: 12px 16px;
+    border: 1px solid var(--color-charcoal-light);
+    white-space: nowrap;
+  }
+
+  .spec-table-industrial td {
+    padding: 12px 16px;
+    border: 1px solid var(--color-border);
+    color: var(--color-text);
+    line-height: 1.5;
+  }
+
+  .spec-table-industrial tbody tr:nth-child(even) {
+    background-color: var(--color-concrete-light);
+  }
+
+  .spec-table-industrial tbody tr:hover {
+    background-color: rgba(220, 38, 38, 0.04);
+  }
+
+  /* Technical Notes Checklist Box */
+  .technical-notes-box {
+    background-color: var(--color-concrete-light);
+    border: 1px solid var(--color-border-strong);
+    border-left: 4px solid var(--color-charcoal);
+    padding: var(--space-5) var(--space-6);
+    border-radius: var(--radius-xs);
+    margin-bottom: var(--space-6);
+  }
+
+  .notes-heading {
+    font-family: var(--font-heading);
+    font-size: 1rem;
+    font-weight: 800;
+    color: var(--color-charcoal);
+    margin-bottom: var(--space-3);
+  }
+
+  .notes-list {
+    list-style: disc;
+    padding-left: var(--space-5);
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    font-size: 0.9rem;
+    color: var(--color-text);
+    line-height: 1.55;
+  }
+
+  /* Brands Pills Grid */
+  .brands-pills-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 10px;
+    margin-top: 10px;
+  }
+
+  .brand-pill-card {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background-color: var(--color-concrete-light);
+    border: 1px solid var(--color-border);
+    padding: 10px 14px;
+    border-radius: var(--radius-xs);
+    font-size: 0.875rem;
+    font-weight: 700;
+    color: var(--color-charcoal);
+  }
+
+  .brand-check {
+    color: #2e7d32;
+    font-weight: 800;
+  }
+
+  /* Pricing Factors Box */
+  .pricing-factors-card {
+    background-color: var(--color-concrete-light);
+    border: 1px solid var(--color-border);
+    border-left: 4px solid var(--color-charcoal);
+    padding: 14px 18px;
+    border-radius: var(--radius-xs);
+    margin-top: 10px;
+  }
+
+  .pricing-factors-list {
+    list-style: disc;
+    padding-left: var(--space-5);
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    font-size: 0.9rem;
+    color: var(--color-text);
+    line-height: 1.55;
+    margin: 0;
+  }
+
+  /* Store Location Compact Card */
+  .store-info-compact-card {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    background-color: var(--color-concrete-light);
+    border: 1px solid var(--color-border);
+    border-left: 4px solid var(--color-red);
+    padding: 14px 18px;
+    border-radius: var(--radius-xs);
+    margin-top: 10px;
+  }
+
+  .store-info-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 0.9rem;
+    color: var(--color-charcoal);
+  }
+
+  .info-icon {
+    font-size: 1.1rem;
+    flex-shrink: 0;
+  }
+
+  /* Consult Callout Box */
+  .consult-callout {
+    background-color: rgba(220, 38, 38, 0.06);
+    border: 1px solid rgba(220, 38, 38, 0.25);
+    padding: 12px 18px;
+    border-radius: var(--radius-xs);
+    font-size: 0.925rem;
+    color: var(--color-charcoal);
+  }
+
+  .callout-link {
+    font-family: var(--font-heading);
+    font-weight: 800;
+    color: var(--color-red);
+    text-decoration: underline;
+  }
+
+  /* E-E-A-T Editorial Badge */
+  .eeat-badge-card {
+    display: flex;
+    align-items: center;
+    gap: var(--space-4);
+    background-color: var(--color-concrete-light);
+    border: 1px dashed var(--color-border-strong);
+    padding: 14px 18px;
+    border-radius: var(--radius-xs);
+    margin-bottom: var(--space-8);
+  }
+
+  .eeat-icon {
+    font-size: 1.5rem;
+    flex-shrink: 0;
+  }
+
+  .eeat-details p {
+    font-size: 0.8125rem;
+    color: var(--color-text-muted);
+    line-height: 1.45;
+  }
+
+  .eeat-details strong {
+    color: var(--color-charcoal);
+  }
+
+  /* FAQs Block */
+  .faq-list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-4);
+  }
+
+  .faq-card-item {
+    background-color: var(--color-concrete-light);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-xs);
+    padding: var(--space-5);
+  }
+
+  .faq-question {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--color-charcoal);
+    margin-bottom: var(--space-2);
+  }
+
+  .faq-q-badge {
+    background-color: var(--color-red);
+    color: #ffffff;
+    font-family: var(--font-heading);
+    font-size: 0.75rem;
+    font-weight: 800;
+    padding: 2px 8px;
+    border-radius: var(--radius-xs);
+    flex-shrink: 0;
+  }
+
+  .faq-answer {
+    font-size: 0.925rem;
+    color: var(--color-text);
+    line-height: 1.6;
+    padding-left: 36px;
+  }
+
+  /* Related Interlinking Block */
+  .related-links-title {
+    font-family: var(--font-heading);
+    font-size: 1.05rem;
+    font-weight: 800;
+    color: var(--color-charcoal);
+    margin-bottom: var(--space-4);
+  }
+
+  .related-tags-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-3);
+  }
+
+  .related-tag-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background-color: #ffffff;
+    border: 1px solid var(--color-border-strong);
+    padding: 8px 14px;
+    font-family: var(--font-heading);
+    font-size: 0.8125rem;
+    font-weight: 700;
+    color: var(--color-charcoal);
+    border-radius: var(--radius-xs);
+    text-decoration: none;
+    transition: all var(--transition-fast);
+  }
+
+  .related-tag-btn:hover {
+    background-color: var(--color-charcoal);
+    color: #ffffff;
+    border-color: var(--color-charcoal);
+  }
+
+  /* Legal & Quality Trust Block */
+  .legal-trust-block {
+    background-color: var(--color-concrete-light);
+    border: 1px solid var(--color-border);
+    border-top: 3px solid var(--color-red);
+    padding: var(--space-6);
+    border-radius: var(--radius-xs);
+  }
+
+  .trust-box-title {
+    font-family: var(--font-heading);
+    font-size: 1rem;
+    font-weight: 800;
+    color: var(--color-charcoal);
+    margin-bottom: var(--space-4);
+  }
+
+  .trust-grid-badges {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: var(--space-4);
+    margin-bottom: var(--space-5);
+  }
+
+  .trust-badge-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    background-color: #ffffff;
+    border: 1px solid var(--color-border);
+    padding: 10px 14px;
+    border-radius: var(--radius-xs);
+  }
+
+  .badge-icon-txt {
+    font-family: var(--font-heading);
+    font-size: 0.8125rem;
+    font-weight: 800;
+    color: var(--color-red);
+    white-space: nowrap;
+  }
+
+  .badge-lbl-txt {
+    font-size: 0.8125rem;
+    color: var(--color-text);
+    line-height: 1.4;
+  }
+
+  .legal-corp-meta {
+    border-top: 1px solid var(--color-border);
+    padding-top: var(--space-3);
+    font-size: 0.8125rem;
+    color: var(--color-text-muted);
+    line-height: 1.5;
+  }
+
+  .legal-corp-meta strong {
+    color: var(--color-charcoal);
+  }
+
+  /* Product Page Styles */
+  .product-view-page {
+    padding-top: var(--space-8);
+    padding-bottom: var(--space-20);
+  }
+
+  .product-detail-grid {
+    display: grid;
+    grid-template-columns: 1fr 1.1fr;
+    gap: var(--space-12);
+    align-items: flex-start;
+    margin-bottom: var(--space-16);
+  }
+
+  /* Gallery */
+  .product-gallery {
+    position: sticky;
+    top: 100px;
+  }
+
+  .main-image-frame {
+    position: relative;
+    border: 1px solid var(--color-border-strong);
+    background-color: var(--color-concrete-light);
+    border-radius: var(--radius-xs);
+    overflow: hidden;
+    aspect-ratio: 4 / 3;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .product-view-img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    padding: var(--space-6);
+  }
+
+  .product-stock-tag {
+    position: absolute;
+    top: 12px;
+    left: 12px;
+    background-color: #2e7d32;
+    color: #ffffff;
+    font-family: var(--font-heading);
+    font-size: 0.75rem;
+    font-weight: 700;
+    padding: 4px 10px;
+    border-radius: var(--radius-xs);
+  }
+
+  .gallery-thumbs {
+    display: flex;
+    gap: var(--space-3);
+    margin-top: var(--space-3);
+  }
+
+  .thumb-btn {
+    width: 72px;
+    height: 72px;
+    border: 1px solid var(--color-border);
+    background-color: var(--color-concrete-light);
+    border-radius: var(--radius-xs);
+    cursor: pointer;
+    overflow: hidden;
+    padding: 4px;
+  }
+
+  .thumb-btn:hover {
+    border-color: var(--color-charcoal);
+  }
+
+  .thumb-btn img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+  }
+
+  /* Summary */
+  .product-meta-top {
+    display: flex;
+    gap: var(--space-2);
+    flex-wrap: wrap;
+    margin-bottom: var(--space-3);
+  }
+
+  .product-view-title {
+    font-size: clamp(1.6rem, 3vw, 2.25rem);
+    line-height: 1.2;
+    margin-bottom: var(--space-4);
+  }
+
+  .product-price-bar {
+    background-color: var(--color-concrete-light);
+    border: 1px solid var(--color-border);
+    padding: var(--space-4);
+    border-radius: var(--radius-xs);
+    margin-bottom: var(--space-5);
+  }
+
+  .price-text {
+    display: block;
+    font-family: var(--font-heading);
+    font-size: 1.15rem;
+    font-weight: 800;
+    color: var(--color-red);
+  }
+
+  .price-sub {
+    font-size: 0.8125rem;
+    color: var(--color-text-muted);
+  }
+
+  .product-short-desc {
+    font-size: 0.9375rem;
+    color: var(--color-text);
+    line-height: 1.6;
+    margin-bottom: var(--space-6);
+  }
+
+  .product-highlights {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+    padding-top: var(--space-4);
+    padding-bottom: var(--space-4);
+    border-top: 1px solid var(--color-border);
+    border-bottom: 1px solid var(--color-border);
+    margin-bottom: var(--space-6);
+  }
+
+  .highlight-item {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--color-charcoal);
+  }
+
+  .highlight-item svg {
+    color: var(--color-red);
+    flex-shrink: 0;
+  }
+
+  /* Quote Box */
+  .product-quote-box {
+    background-color: var(--color-concrete-light);
+    border: 1px solid var(--color-border-strong);
+    padding: var(--space-5);
+    border-radius: var(--radius-xs);
+  }
+
+  .quote-box-title {
+    font-size: 1.05rem;
+    font-weight: 800;
+    margin-bottom: var(--space-3);
+    color: var(--color-charcoal);
+  }
+
+  .form-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--space-3);
+  }
+
+  /* Technical Content / Product Tabs */
+  .product-tabs-section {
+    margin-top: var(--space-12);
+    margin-bottom: var(--space-16);
+    border-top: 1px solid var(--color-border);
+    padding-top: var(--space-8);
+  }
+
+  .product-tabs-nav {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    border-bottom: 2px solid var(--color-border);
+    margin-bottom: var(--space-6);
+    overflow-x: auto;
+  }
+
+  .tab-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 20px;
+    background: transparent;
+    border: none;
+    border-bottom: 3px solid transparent;
+    font-family: var(--font-heading);
+    font-size: 0.9375rem;
+    font-weight: 700;
+    color: var(--color-text-muted);
+    cursor: pointer;
+    transition: all var(--transition-fast);
+    white-space: nowrap;
+    margin-bottom: -2px;
+  }
+
+  .tab-btn:hover {
+    color: var(--color-charcoal);
+  }
+
+  .tab-btn.active {
+    color: var(--color-red);
+    border-bottom-color: var(--color-red);
+    background-color: var(--color-concrete-light);
+    border-radius: var(--radius-xs) var(--radius-xs) 0 0;
+  }
+
+  .tab-pane {
+    display: none;
+  }
+
+  .tab-pane.active {
+    display: block;
+    animation: fadeInTab 0.25s ease-in-out;
+  }
+
+  @keyframes fadeInTab {
+    from { opacity: 0; transform: translateY(4px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .tab-body-card {
+    background-color: #ffffff;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-xs);
+    padding: var(--space-8);
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.03);
+  }
+
+  .tab-content-title {
+    font-size: 1.35rem;
+    font-weight: 800;
+    color: var(--color-charcoal);
+    margin-bottom: var(--space-5);
+    padding-bottom: var(--space-3);
+    border-bottom: 1px solid var(--color-border);
+  }
+
+  /* Description Tab */
+  .desc-lead {
+    font-size: 1.05rem;
+    line-height: 1.65;
+    color: var(--color-charcoal);
+    margin-bottom: var(--space-5);
+  }
+
+  .product-full-description h4 {
+    font-size: 1.1rem;
+    margin-top: var(--space-5);
+    margin-bottom: var(--space-3);
+    color: var(--color-charcoal);
+  }
+
+  .product-full-description ul {
+    margin-left: var(--space-5);
+    margin-bottom: var(--space-5);
+  }
+
+  .product-full-description li {
+    margin-bottom: var(--space-2);
+    line-height: 1.6;
+  }
+
+  .consult-note-box {
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+    background-color: var(--color-concrete-light);
+    border-left: 4px solid var(--color-red);
+    padding: var(--space-4);
+    border-radius: var(--radius-xs);
+    margin-top: var(--space-6);
+  }
+
+  .consult-note-box .note-icon {
+    font-size: 1.25rem;
+  }
+
+  .consult-note-box p {
+    margin: 0;
+    font-size: 0.9375rem;
+    line-height: 1.55;
+  }
+
+  /* Specs Table */
+  .specs-table-wrapper {
+    overflow-x: auto;
+    margin-bottom: var(--space-6);
+  }
+
+  .specs-table-industrial {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.9375rem;
+  }
+
+  .specs-table-industrial tr {
+    border-bottom: 1px solid var(--color-border);
+  }
+
+  .specs-table-industrial tr:nth-child(even) {
+    background-color: var(--color-concrete-light);
+  }
+
+  .spec-label {
+    width: 30%;
+    padding: 12px 16px;
+    text-align: left;
+    font-weight: 700;
+    color: var(--color-charcoal);
+    border-right: 1px solid var(--color-border);
+  }
+
+  .spec-value {
+    padding: 12px 16px;
+    color: var(--color-text);
+  }
+
+  .spec-in-stock {
+    color: #2e7d32;
+    font-weight: 700;
+  }
+
+  /* Reviews Tab */
+  .reviews-summary-grid {
+    display: grid;
+    grid-template-columns: 240px 1fr;
+    gap: var(--space-6);
+    align-items: center;
+    background-color: var(--color-concrete-light);
+    border: 1px solid var(--color-border);
+    padding: var(--space-6);
+    border-radius: var(--radius-xs);
+    margin-bottom: var(--space-8);
+  }
+
+  .rating-overall-card {
+    text-align: center;
+    border-right: 1px solid var(--color-border);
+    padding-right: var(--space-6);
+  }
+
+  .rating-big-score {
+    font-family: var(--font-heading);
+    font-size: 3rem;
+    font-weight: 900;
+    color: var(--color-charcoal);
+    line-height: 1;
+    margin-bottom: 4px;
+  }
+
+  .rating-stars {
+    color: #f59e0b;
+    font-size: 1.35rem;
+    letter-spacing: 2px;
+    margin-bottom: 6px;
+  }
+
+  .rating-count {
+    font-size: 0.75rem;
+    color: var(--color-text-muted);
+  }
+
+  .rating-breakdown-card {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .breakdown-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-size: 0.8125rem;
+  }
+
+  .breakdown-lbl {
+    width: 180px;
+    color: var(--color-charcoal);
+    font-weight: 600;
+    flex-shrink: 0;
+  }
+
+  .breakdown-bar-bg {
+    flex-grow: 1;
+    height: 8px;
+    background-color: #e2e8f0;
+    border-radius: 4px;
+    overflow: hidden;
+  }
+
+  .breakdown-bar-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #f59e0b, #eab308);
+    border-radius: 4px;
+  }
+
+  .breakdown-val {
+    width: 50px;
+    text-align: right;
+    font-weight: 700;
+    color: var(--color-charcoal);
+    flex-shrink: 0;
+  }
+
+  .submit-review-box {
+    border-top: 1px solid var(--color-border);
+    padding-top: var(--space-6);
+  }
+
+  .review-box-heading {
+    font-size: 1.15rem;
+    font-weight: 800;
+    margin-bottom: var(--space-4);
+    color: var(--color-charcoal);
+  }
+
+  .star-rating-options {
+    display: flex;
+    gap: 16px;
+    margin-top: 6px;
+    flex-wrap: wrap;
+  }
+
+  .star-rating-options label {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 0.875rem;
+    cursor: pointer;
+  }
+
+  .prose-industrial {
+    font-size: 1rem;
+    line-height: 1.7;
+    color: var(--color-text);
+  }
+
+  .prose-industrial h3 {
+    font-size: 1.3rem;
+    margin-top: var(--space-6);
+    margin-bottom: var(--space-3);
+    color: var(--color-charcoal);
+  }
+
+  .prose-industrial ul {
+    margin-left: var(--space-6);
+    margin-bottom: var(--space-5);
+  }
+
+  .prose-industrial li {
+    margin-bottom: var(--space-2);
+  }
+
+  /* Related */
+  .related-section {
+    border-top: 1px solid var(--color-border);
+    padding-top: var(--space-12);
+  }
+
+  .products-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: var(--space-6);
+  }
+
+  .section-header-flex {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    margin-bottom: var(--space-8);
+  }
+
+  /* Responsive */
+  @media (max-width: 992px) {
+    .product-detail-grid {
+      grid-template-columns: 1fr;
+    }
+
+    .category-hero-inner {
+      grid-template-columns: 1fr;
+    }
+
+    .reviews-summary-grid {
+      grid-template-columns: 1fr;
+    }
+
+    .rating-overall-card {
+      border-right: none;
+      border-bottom: 1px solid var(--color-border);
+      padding-right: 0;
+      padding-bottom: var(--space-4);
+    }
+
+    .products-grid {
+      grid-template-columns: repeat(2, 1fr);
+    }
+  }
+
+  @media (max-width: 640px) {
+    .form-row {
+      grid-template-columns: 1fr;
+    }
+
+    .products-grid {
+      grid-template-columns: 1fr;
+    }
+
+    .breakdown-row {
+      flex-wrap: wrap;
+    }
+
+    .breakdown-lbl {
+      width: 100%;
+    }
+  }
+</style>
+
+<script>
+  // Tab Switching Handler
+  const tabBtns = document.querySelectorAll('.tab-btn');
+  const tabPanes = document.querySelectorAll('.tab-pane');
+
+  tabBtns.forEach(btn => {
+    btn.addEventListener('click', () => {
+      const targetId = btn.getAttribute('data-tab');
+      if (!targetId) return;
+
+      tabBtns.forEach(b => {
+        b.classList.remove('active');
+        b.setAttribute('aria-selected', 'false');
+      });
+      tabPanes.forEach(p => p.classList.remove('active'));
+
+      btn.classList.add('active');
+      btn.setAttribute('aria-selected', 'true');
+      const targetPane = document.getElementById(targetId);
+      if (targetPane) {
+        targetPane.classList.add('active');
+      }
+    });
+  });
+
+  // Product Detail Form Handling
+  const productForm = document.getElementById('product-inquiry-form') as HTMLFormElement;
+  const pSubmitBtn = document.getElementById('p-submit-btn') as HTMLButtonElement;
+  const pStatusMsg = document.getElementById('p-status-msg');
+
+  if (productForm && pSubmitBtn && pStatusMsg) {
+    productForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      pSubmitBtn.disabled = true;
+      pSubmitBtn.innerHTML = '<span>Đang gửi thông tin...</span>';
+
+      const formData = new FormData(productForm);
+      const payload = {
+        customer_name: formData.get('customer_name'),
+        customer_phone: formData.get('customer_phone'),
+        notes: formData.get('notes'),
+        product_name: formData.get('product_name')
+      };
+
+      try {
+        const res = await fetch('/api/inquiry', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+
+        const data = await res.json();
+        if (res.ok && data.success) {
+          pStatusMsg.className = 'status-msg success';
+          pStatusMsg.style.display = 'block';
+          pStatusMsg.textContent = 'Đã nhận yêu cầu! Đội ngũ tư vấn Hoàng Yến sẽ liên hệ báo giá chi tiết sớm nhất.';
+          productForm.reset();
+        } else {
+          throw new Error(data.error || 'Có lỗi xảy ra.');
+        }
+      } catch (err: any) {
+        pStatusMsg.className = 'status-msg error';
+        pStatusMsg.style.display = 'block';
+        pStatusMsg.textContent = 'Lỗi: ' + err.message;
+      } finally {
+        pSubmitBtn.disabled = false;
+        pSubmitBtn.innerHTML = '<span>Gửi Yêu Cầu Báo Giá</span>';
+      }
+    });
+  }
+
+  // Product Review Form Handling
+  const reviewForm = document.getElementById('product-review-form') as HTMLFormElement;
+  const revSubmitBtn = document.getElementById('rev-submit-btn') as HTMLButtonElement;
+  const revStatusMsg = document.getElementById('rev-status-msg');
+
+  if (reviewForm && revSubmitBtn && revStatusMsg) {
+    reviewForm.addEventListener('submit', (e) => {
+      e.preventDefault();
+      revSubmitBtn.disabled = true;
+      revSubmitBtn.innerHTML = '<span>Đang gửi đánh giá...</span>';
+
+      setTimeout(() => {
+        revStatusMsg.className = 'status-msg success';
+        revStatusMsg.style.display = 'block';
+        revStatusMsg.textContent = 'Cảm ơn quý khách đã gửi đánh giá! Nhận xét sẽ được kiểm duyệt và hiển thị.';
+        reviewForm.reset();
+        revSubmitBtn.disabled = false;
+        revSubmitBtn.innerHTML = '<span>Gửi Đánh Giá</span>';
+      }, 500);
+    });
+  }
+</script>

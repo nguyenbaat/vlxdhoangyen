@@ -1,0 +1,335 @@
+---
+import Layout from '../layouts/Layout.astro';
+import { SettingsRepo } from '../server/db/repo.js';
+
+const settings = await SettingsRepo.getAll();
+const breadcrumbs = [
+  { name: 'Trang Chủ', url: '/' },
+  { name: 'Câu Hỏi Thường Gặp', url: '/cau-hoi-thuong-gap/' }
+];
+
+const faqs = [
+  {
+    cat: "Sản phẩm & Hàng hóa",
+    items: [
+      {
+        q: "Hoàng Yến phân phối những loại vật liệu xây dựng nào?",
+        a: "Siêu Thị VLXD Hoàng Yến cung cấp đầy đủ hai nhóm vật tư chính: (1) Vật liệu xây thô: Thép xây dựng Hòa Phát, TISCO (D6–D25); Xi măng Sông Gianh, Bỉm Sơn, Nghi Sơn, Vicem Hà Tiên, Công Thanh (PCB30, PCB40); Gạch tuynel 2 lỗ, 6 lỗ; Tôn lạnh mạ màu Đông Á; Xà gồ thép C mạ kẽm; Lưới thép B40; Xốp nhựa EPS; Kẽm buộc; Đinh vít bắn tôn. (2) Thiết bị vệ sinh & nội thất: Bồn cầu Caesar, Lavabo Caesar, Vòi sen Caesar, Bồn tắm Mowoen. Danh mục cập nhật thường xuyên — liên hệ hotline để hỏi về chủng loại đặc chủng chưa có trên website."
+      },
+      {
+        q: "Hàng hóa tại Hoàng Yến có nguồn gốc như thế nào? Có xuất hóa đơn GTGT không?",
+        a: "Sản phẩm tại Siêu Thị VLXD Hoàng Yến được nhập từ các nhà sản xuất uy tín, có thông số kỹ thuật và nhãn mác theo quy cách của hãng. Cửa hàng xuất đầy đủ hóa đơn GTGT điện tử (VAT) hợp pháp theo quy định cho khách hàng khi có nhu cầu, kèm chứng từ xuất xưởng liên quan."
+      },
+      {
+        q: "Thép Hòa Phát tại Hoàng Yến có đúng barem trọng lượng không?",
+        a: "Thép xây dựng được nhập theo barem tiêu chuẩn của nhà máy sản xuất. Khách hàng có thể kiểm tra thực tế quy cách, ký hiệu dập nổi trên thân thép hoặc kiểm tra trọng lượng tại thời điểm nhận hàng tại công trình."
+      },
+      {
+        q: "Hoàng Yến có cung cấp hàng theo quy cách đặt trước không?",
+        a: "Đối với một số sản phẩm cần quy cách riêng hoặc khối lượng lớn, khách hàng có thể liên hệ đặt trước. Thời gian cung ứng sẽ được thỏa thuận cụ thể tùy từng mặt hàng. Quý khách vui lòng liên hệ hotline để được hỗ trợ chi tiết."
+      }
+    ]
+  },
+  {
+    cat: "Giao nhận & Vận chuyển",
+    items: [
+      {
+        q: "Hoàng Yến có hỗ trợ giao hàng tận công trình không? Chi phí vận chuyển như thế nào?",
+        a: "Hoàng Yến có phương tiện vận chuyển hỗ trợ giao hàng đến công trình tại khu vực Đông Hà và các vùng lân cận tại Quảng Trị. Phương án và chi phí vận chuyển sẽ được trao đổi cụ thể tùy theo chủng loại hàng hóa, khối lượng và khoảng cách giao nhận."
+      },
+      {
+        q: "Thời gian giao hàng được sắp xếp như thế nào?",
+        a: "Thời gian giao nhận phụ thuộc vào vị trí công trình, tình trạng hàng và lịch điều vận phương tiện. Khách hàng nên liên hệ trước để nhân viên kiểm tra và sắp xếp thời gian thuận tiện cho tiến độ công trình."
+      },
+      {
+        q: "Tôi cần kiểm tra gì khi nhận hàng tại công trình?",
+        a: "Khi giao hàng tại công trình, nhân viên giao nhận sẽ xuất trình Phiếu xuất kho hoặc hóa đơn chứng từ liên quan. Khách hàng hoặc người nhận vui lòng kiểm đếm thực tế quy cách, số lượng và tình trạng sản phẩm trước khi ký nhận."
+      },
+      {
+        q: "Hoàng Yến có hỗ trợ bốc xếp hàng hóa tại công trình không?",
+        a: "Cửa hàng có hỗ trợ phương tiện vận chuyển và phương án hạ bốc hàng phù hợp cho từng loại vật tư. Phương án bốc xếp cụ thể sẽ được thống nhất khi đặt lịch giao."
+      }
+    ]
+  },
+  {
+    cat: "Giá cả & Thanh toán",
+    items: [
+      {
+        q: "Làm sao để nhận báo giá từ VLXD Hoàng Yến?",
+        a: "Khách hàng có thể liên hệ trực tiếp qua Hotline/Zalo 0946.575.579 và cung cấp thông tin: (1) Loại vật tư cần mua, (2) Quy cách/mác sản phẩm nếu có, (3) Số lượng dự kiến. Nhân viên sẽ kiểm tra và phản hồi báo giá theo thời điểm mua hàng."
+      },
+      {
+        q: "Đơn hàng khối lượng lớn có được hỗ trợ giá tốt hơn không?",
+        a: "Chính sách giá của Hoàng Yến được áp dụng linh hoạt theo khối lượng đặt mua thực tế của từng đơn hàng hoặc hợp đồng công trình. Khách hàng mua số lượng lớn có thể liên hệ trực tiếp để trao đổi mức giá phù hợp."
+      },
+      {
+        q: "Hoàng Yến có chính sách công nợ không?",
+        a: "Chính sách công nợ và phương thức thanh toán được xem xét, thỏa thuận trực tiếp trong hợp đồng kinh tế đối với từng nhà thầu và đơn vị thi công. Khách hàng có nhu cầu vui lòng liên hệ bộ phận kinh doanh để trao đổi chi tiết."
+      },
+      {
+        q: "Cửa hàng chấp nhận những hình thức thanh toán nào?",
+        a: "Hoàng Yến chấp nhận thanh toán bằng tiền mặt và chuyển khoản ngân hàng. Quý khách chuyển khoản vui lòng liên hệ trực tiếp để nhận thông tin tài khoản chính thức của công ty. Hóa đơn GTGT được cung cấp theo quy định."
+      }
+    ]
+  },
+  {
+    cat: "Đổi trả & Bảo hành",
+    items: [
+      {
+        q: "Nếu phát hiện hàng hóa có sai lệch khi nhận hàng thì xử lý như thế nào?",
+        a: "Khách hàng vui lòng kiểm đếm thực tế ngay khi nhận hàng. Nếu có sai lệch về số lượng hoặc quy cách, vui lòng ghi nhận tại biên bản giao nhận và thông báo ngay đến Hotline 0946.575.579 để cửa hàng kiểm tra và hỗ trợ giải quyết kịp thời."
+      },
+      {
+        q: "Chính sách bảo hành sản phẩm tại Hoàng Yến như thế nào?",
+        a: "Đối với các thiết bị và sản phẩm có chế độ bảo hành từ hãng sản xuất, thời gian và điều kiện bảo hành được áp dụng theo quy định của từng thương hiệu. Khách hàng vui lòng giữ lại hóa đơn chứng từ mua hàng để được hỗ trợ khi cần."
+      },
+      {
+        q: "Cửa hàng có hỗ trợ đổi trả hàng hóa không?",
+        a: "Việc đổi trả tùy thuộc vào từng nhóm sản phẩm và tình trạng thực tế của vật tư (còn nguyên vẹn bao bì, chưa qua sử dụng). Quý khách vui lòng liên hệ trực tiếp cửa hàng để được hỗ trợ cụ thể theo chính sách hiện hành."
+      }
+    ]
+  },
+  {
+    cat: "Về Hoàng Yến",
+    items: [
+      {
+        q: "VLXD Hoàng Yến có phải là Đại lý cấp 1 và hoạt động từ năm nào?",
+        a: "Siêu Thị VLXD Hoàng Yến là Đại lý cấp 1 cung cấp VLXD tại tỉnh Quảng Trị, thành lập từ năm 2003 với hơn 20 năm kinh nghiệm và được hơn 1.250+ nhà thầu tin chọn trong suốt 20+ năm qua."
+      },
+      {
+        q: "Thông tin pháp lý của Siêu Thị VLXD Hoàng Yến như thế nào?",
+        a: "Siêu Thị Vật Liệu Xây Dựng Hoàng Yến hoạt động dưới pháp nhân CÔNG TY TNHH MTV VẬT LIỆU XÂY DỰNG TỔNG HỢP HOÀNG YẾN — Mã số thuế: 3200165533. Địa chỉ: 299 Lê Duẩn, Phường Đông Hà, Tỉnh Quảng Trị."
+      },
+      {
+        q: "Địa chỉ và giờ hoạt động của cửa hàng?",
+        a: "Địa chỉ: 299 Lê Duẩn, Phường Đông Hà, Tỉnh Quảng Trị. Giờ hoạt động: 7:30 – 22:00 (Tất cả các ngày)."
+      },
+      {
+        q: "Tôi cần tư vấn lựa chọn vật tư phù hợp, Hoàng Yến có hỗ trợ không?",
+        a: "Có. Siêu Thị VLXD Hoàng Yến hỗ trợ tư vấn thông tin sản phẩm, chủng loại và quy cách phù hợp với nhu cầu sử dụng của công trình. Khách hàng có thể liên hệ Hotline/Zalo 0946.575.579 để được hỗ trợ."
+      }
+    ]
+  }
+];
+---
+
+<Layout
+  title="Câu Hỏi Thường Gặp Về VLXD Hoàng Yến | FAQ"
+  description="Giải đáp các câu hỏi thường gặp về sản phẩm, giá cả, giao nhận vật tư, chính sách thanh toán, bảo hành và thông tin doanh nghiệp của Siêu Thị VLXD Hoàng Yến Quảng Trị."
+  breadcrumbs={breadcrumbs}
+  currentPath="/cau-hoi-thuong-gap/"
+>
+  <div class="faq-page">
+    <!-- Header -->
+    <header class="faq-header">
+      <div class="container">
+        <div class="eyebrow">Giải Đáp Thắc Mắc</div>
+        <h1>Câu Hỏi Thường Gặp</h1>
+        <p>Tổng hợp các câu hỏi phổ biến nhất từ khách hàng, nhà thầu và chủ công trình về sản phẩm, dịch vụ và chính sách của VLXD Hoàng Yến tại Quảng Trị.</p>
+      </div>
+    </header>
+
+    <div class="container faq-body">
+      <!-- Quick contact strip -->
+      <div class="quick-contact-bar">
+        <span>Không tìm thấy câu trả lời?</span>
+        <a href={`tel:${settings.hotline_main}`} class="btn btn-primary btn-sm">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" style="display: inline-block; vertical-align: middle; margin-right: 4px;"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>
+          <span>Gọi ngay {settings.hotline_main}</span>
+        </a>
+        <a href="/lien-he/" class="btn btn-outline btn-sm">Gửi câu hỏi →</a>
+      </div>
+
+      <!-- FAQ Accordion sections -->
+      {faqs.map((section, si) => (
+        <div class="faq-section">
+          <h2 class="faq-cat-title">{section.cat}</h2>
+          <div class="faq-list">
+            {section.items.map((item, qi) => (
+              <details class="faq-item" id={`faq-${si}-${qi}`}>
+                <summary class="faq-question">
+                  <span class="faq-q-text">{item.q}</span>
+                  <span class="faq-chevron">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                      <polyline points="6 9 12 15 18 9"></polyline>
+                    </svg>
+                  </span>
+                </summary>
+                <div class="faq-answer">
+                  <p>{item.a}</p>
+                </div>
+              </details>
+            ))}
+          </div>
+        </div>
+      ))}
+
+      <!-- Still have questions CTA -->
+      <div class="faq-cta-block">
+        <div class="cta-text">
+          <h3>Vẫn còn thắc mắc?</h3>
+          <p>Đội ngũ Hoàng Yến luôn sẵn sàng hỗ trợ qua điện thoại, Zalo hoặc trực tiếp tại cửa hàng.</p>
+        </div>
+        <div class="cta-actions">
+          <a href={`tel:${settings.hotline_main}`} class="btn btn-primary btn-lg">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" style="display: inline-block; vertical-align: middle; margin-right: 6px;"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>
+            <span>Hotline: {settings.hotline_main}</span>
+          </a>
+          <a href={`tel:${settings.hotline_alt}`} class="btn btn-secondary btn-lg">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" style="display: inline-block; vertical-align: middle; margin-right: 6px;"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>
+            <span>Điện thoại: {settings.hotline_alt}</span>
+          </a>
+          <a href="/lien-he/" class="btn btn-outline btn-lg">Trang Liên Hệ</a>
+        </div>
+      </div>
+    </div>
+  </div>
+</Layout>
+
+<style>
+  .faq-header {
+    background: linear-gradient(135deg, var(--color-concrete-light) 0%, #e8edf3 100%);
+    border-bottom: 1px solid var(--color-border);
+    padding-top: var(--space-12);
+    padding-bottom: var(--space-12);
+  }
+
+  .faq-header p {
+    font-size: 1.1rem;
+    color: var(--color-text-muted);
+    margin-top: var(--space-2);
+    max-width: 680px;
+  }
+
+  .faq-body {
+    padding-top: var(--space-8);
+    padding-bottom: var(--space-20);
+    max-width: 900px;
+  }
+
+  .quick-contact-bar {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    background: #fff;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-xs);
+    padding: var(--space-3) var(--space-5);
+    margin-bottom: var(--space-10);
+    flex-wrap: wrap;
+    font-size: 0.9375rem;
+    color: var(--color-text-muted);
+  }
+
+  .faq-section {
+    margin-bottom: var(--space-10);
+  }
+
+  .faq-cat-title {
+    font-size: 1.2rem;
+    font-weight: 800;
+    color: var(--color-charcoal);
+    margin-bottom: var(--space-4);
+    padding-bottom: var(--space-2);
+    border-bottom: 2px solid var(--color-charcoal);
+  }
+
+  .faq-list {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .faq-item {
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-xs);
+    overflow: hidden;
+    background: #fff;
+    transition: border-color 0.2s;
+  }
+
+  .faq-item[open] {
+    border-color: var(--color-charcoal);
+  }
+
+  .faq-question {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: var(--space-4);
+    padding: var(--space-4) var(--space-5);
+    cursor: pointer;
+    list-style: none;
+    font-weight: 700;
+    font-size: 1rem;
+    color: var(--color-charcoal);
+    user-select: none;
+    transition: background-color 0.15s;
+  }
+
+  .faq-question::-webkit-details-marker { display: none; }
+
+  .faq-question:hover {
+    background-color: var(--color-concrete-light);
+  }
+
+  .faq-item[open] .faq-question {
+    background-color: var(--color-charcoal);
+    color: #fff;
+  }
+
+  .faq-chevron {
+    flex-shrink: 0;
+    transition: transform 0.25s;
+  }
+
+  .faq-item[open] .faq-chevron {
+    transform: rotate(180deg);
+  }
+
+  .faq-q-text { flex: 1; }
+
+  .faq-answer {
+    padding: var(--space-5) var(--space-6);
+    border-top: 1px solid var(--color-border);
+    background: #fafafa;
+  }
+
+  .faq-answer p {
+    font-size: 0.9875rem;
+    line-height: 1.75;
+    color: var(--color-text-muted);
+    margin: 0;
+  }
+
+  .faq-cta-block {
+    background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+    border-radius: var(--radius-xs);
+    padding: var(--space-8) var(--space-8);
+    margin-top: var(--space-12);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-6);
+    flex-wrap: wrap;
+  }
+
+  .cta-text h3 {
+    font-size: 1.3rem;
+    font-weight: 800;
+    color: #fff;
+    margin-bottom: var(--space-1);
+  }
+
+  .cta-text p {
+    color: #94a3b8;
+    font-size: 0.9rem;
+    margin: 0;
+  }
+
+  .cta-actions {
+    display: flex;
+    gap: var(--space-3);
+    flex-wrap: wrap;
+  }
+</style>

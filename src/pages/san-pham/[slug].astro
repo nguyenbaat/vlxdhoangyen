@@ -1,0 +1,1140 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import ProductCard from '../../components/ProductCard.astro';
+import { BrandRepo, ProductRepo, SettingsRepo } from '../../server/db/repo.js';
+import { BRAND_SEO_DATA } from '../../server/data/brand-seo-data.js';
+
+const { slug } = Astro.params;
+const brand = slug ? await BrandRepo.getBySlug(slug) : null;
+
+if (!brand) {
+  return Astro.redirect('/404');
+}
+
+const settings = await SettingsRepo.getAll();
+const brandProducts = await ProductRepo.getByBrand(brand.id);
+const allBrands = await BrandRepo.getAll();
+const otherBrands = allBrands.filter(b => b.id !== brand.id);
+
+// Brand SEO Data
+const brandSEO = BRAND_SEO_DATA[brand.slug];
+const isTier1 = false;
+const tierBadgeText = 'THƯƠNG HIỆU PHÂN PHỐI';
+
+const title = brandSEO?.metaTitle || `${brand.name} Tại Quảng Trị | VLXD Hoàng Yến`;
+const description = brandSEO?.metaDescription || `Cung cấp sản phẩm ${brand.name} tại Quảng Trị. Liên hệ Siêu Thị VLXD Hoàng Yến để nhận tư vấn và báo giá công trình.`;
+const canonicalUrl = `https://vlxdhoangyen.com/san-pham/${brand.slug}/`;
+
+const breadcrumbs = [
+  { name: 'Trang Chủ', url: '/' },
+  { name: 'Sản Phẩm', url: '/san-pham/' },
+  { name: `${brand.name}`, url: `/san-pham/${brand.slug}/` }
+];
+
+// JSON-LD Schemas
+const schemas: any[] = [
+  {
+    '@context': 'https://schema.org',
+    '@type': 'BreadcrumbList',
+    itemListElement: breadcrumbs.map((b, idx) => ({
+      '@type': 'ListItem',
+      position: idx + 1,
+      name: b.name,
+      item: `https://vlxdhoangyen.com${b.url}`
+    }))
+  },
+  {
+    '@context': 'https://schema.org',
+    '@type': 'Brand',
+    name: brand.name,
+    logo: `https://vlxdhoangyen.com${brand.logo_url}`,
+    description: brandSEO?.overview || brand.description
+  }
+];
+
+if (brandSEO && brandSEO.faqs && brandSEO.faqs.length > 0) {
+  schemas.push({
+    '@context': 'https://schema.org',
+    '@type': 'FAQPage',
+    mainEntity: brandSEO.faqs.map(faq => ({
+      '@type': 'Question',
+      name: faq.question,
+      acceptedAnswer: {
+        '@type': 'Answer',
+        text: faq.answer
+      }
+    }))
+  });
+}
+---
+
+<Layout
+  title={title}
+  description={description}
+  breadcrumbs={breadcrumbs}
+  canonical={canonicalUrl}
+  schemas={schemas}
+  currentPath={`/san-pham/${brand.slug}/`}
+>
+  <div class="brand-page-container">
+    
+    <!-- ==========================================
+         SECTION 1: BRAND HERO
+         ========================================== -->
+    <section class="brand-hero-section">
+      <div class="container">
+        <div class="brand-hero-card">
+          
+          <!-- Left Info Column -->
+          <div class="brand-hero-left">
+            <div class="brand-badge-row">
+              <span class="brand-status-pill official">
+                THƯƠNG HIỆU PHÂN PHỐI
+              </span>
+              <span class="brand-location-tag">Quảng Trị • Đông Hà</span>
+            </div>
+
+            <h1 class="brand-hero-title">
+              Thương Hiệu {brand.name}
+            </h1>
+
+            {brandSEO?.tagline && (
+              <p class="brand-tagline">{brandSEO.tagline}</p>
+            )}
+
+            <p class="brand-short-desc">
+              {brandSEO?.overview || brand.description || `Siêu Thị VLXD Hoàng Yến phân phối các dòng sản phẩm của ${brand.name} tại thị trường Quảng Trị, cung cấp hóa đơn chứng từ hợp lệ và hỗ trợ báo giá theo công trình.`}
+            </p>
+
+            <!-- 3 Compact Value Props -->
+            <div class="brand-quick-stats">
+              <div class="stat-pill">
+                <span class="stat-icon">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" style="color: #1d4ed8;"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path><polyline points="9 12 11 14 15 10"></polyline></svg>
+                </span>
+                <div class="stat-info">
+                  <strong>Chuẩn Nhà Máy</strong>
+                  <span>Chứng từ theo quy cách hãng</span>
+                </div>
+              </div>
+              <div class="stat-pill">
+                <span class="stat-icon">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" style="color: #15803d;"><rect x="1" y="3" width="15" height="13"></rect><polygon points="16 8 20 8 23 11 23 16 16 8"></polygon><circle cx="5.5" cy="18.5" r="2.5"></circle><circle cx="18.5" cy="18.5" r="2.5"></circle></svg>
+                </span>
+                <div class="stat-info">
+                  <strong>Giao Tận Nơi</strong>
+                  <span>Xe vận chuyển công trình</span>
+                </div>
+              </div>
+              <div class="stat-pill">
+                <span class="stat-icon">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" style="color: #b45309;"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"></rect><line x1="1" y1="10" x2="23" y2="10"></line></svg>
+                </span>
+                <div class="stat-info">
+                  <strong>Báo Giá Công Trình</strong>
+                  <span>Theo khối lượng đặt hàng</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="brand-hero-actions">
+              <a href="#brand-products-section" class="btn btn-primary btn-lg">
+                <span>Xem Sản Phẩm Sẵn Kho ({brandProducts.length})</span>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"></line><polyline points="19 12 12 19 5 12"></polyline></svg>
+              </a>
+              <a href="tel:0946575579" class="btn btn-secondary btn-lg">
+                <span>Hotline: 0946.575.579</span>
+              </a>
+            </div>
+          </div>
+
+          <!-- Right Compact Logo Card -->
+          <div class="brand-hero-right">
+            <div class="logo-box-wrapper">
+              <div class="logo-box-inner">
+                <img src={brand.logo_url || '/anh-logo.png'} alt={`Logo ${brand.name}`} class="brand-logo-img" />
+              </div>
+              <div class="logo-card-details">
+                <div class="auth-text">
+                  <strong>Thương Hiệu Phân Phối</strong>
+                  <span>299 Lê Duẩn, P. Đông Hà</span>
+                </div>
+                <a href={`https://zalo.me/${settings.hotline_main || '0946575579'}`} target="_blank" rel="noopener noreferrer" class="btn-zalo-direct">
+                  Nhận Báo Giá Zalo
+                </a>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </section>
+
+    <!-- ==========================================
+         SECTION 2: BRAND PROFILE (Giới thiệu sơ lược về thương hiệu)
+         ========================================== -->
+    <section class="section section-brand-profile">
+      <div class="container">
+        {brand.content ? (
+          <div class="brand-custom-content block-editor-rendered-content" set:html={brand.content} />
+        ) : (
+          <div class="profile-layout-grid">
+          
+          <div class="profile-content-col">
+            <div class="section-header-compact">
+              <span class="sub-heading">Hồ Sơ Thương Hiệu</span>
+              <h2>Giới Thiệu Sơ Lược Về {brand.name}</h2>
+            </div>
+
+            <div class="profile-rich-body">
+              <div class="profile-block">
+                <h3>1. Tổng quan & Lịch sử hình thành</h3>
+                <p>
+                  {brandSEO?.historyAndOrigin || brand.description || `${brand.name} là một trong những thương hiệu vật tư xây dựng hàng đầu với lịch sử phát triển uy tín, ứng dụng dây chuyền công nghệ hiện đại và kiểm soát chất lượng nghiêm ngặt.`}
+                </p>
+              </div>
+
+              {brandSEO?.keyStrengths && brandSEO.keyStrengths.length > 0 && (
+                <div class="profile-block">
+                  <h3>2. Ưu điểm nổi bật & Giá trị cốt lõi</h3>
+                  <ul class="strength-list">
+                    {brandSEO.keyStrengths.map(st => (
+                      <li>
+                        <span class="check-bullet">
+                          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" style="color: #16a34a;"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                        </span>
+                        <span>{st}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              {brandSEO?.standards && brandSEO.standards.length > 0 && (
+                <div class="profile-block">
+                  <h3>3. Tiêu chuẩn kỹ thuật & Chứng chỉ chất lượng</h3>
+                  <div class="standards-tags-grid">
+                    {brandSEO.standards.map(std => (
+                      <div class="std-badge">
+                        <span class="std-icon">
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line></svg>
+                        </span>
+                        <span>{std}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              <div class="profile-block highlight-agency-block">
+                <h3>4. Phân phối sản phẩm tại Siêu Thị VLXD Hoàng Yến</h3>
+                <p>
+                  {brandSEO?.agencyRole || `Tại Quảng Trị, Siêu Thị VLXD Hoàng Yến cung cấp các sản phẩm thương hiệu ${brand.name}, đảm bảo thông tin xuất xứ rõ ràng, đầy đủ hóa đơn GTGT theo quy định.`}
+                </p>
+                <div class="agency-commitments">
+                  <div class="commit-item">
+                    <strong>Hàng Chuẩn Nhà Máy</strong>
+                    <span>Sản phẩm có nguồn gốc xuất xứ rõ ràng từ nhà máy sản xuất.</span>
+                  </div>
+                  <div class="commit-item">
+                    <strong>Báo Giá Minh Bạch</strong>
+                    <span>Bảng giá niêm yết rõ ràng, hỗ trợ dự toán chính xác theo bản vẽ.</span>
+                  </div>
+                  <div class="commit-item">
+                    <strong>Đội Xe Vận Chuyển</strong>
+                    <span>Giao hàng linh hoạt theo tiến độ đổ sàn, lợp mái và hoàn thiện.</span>
+                  </div>
+                </div>
+              </div>
+
+            </div>
+          </div>
+
+          <!-- Sidebar quick info -->
+          <div class="profile-sidebar-col">
+            <div class="brand-summary-card">
+              <h4 class="summary-title">Thông Tin Phân Phối</h4>
+              <ul class="summary-meta-list">
+                <li>
+                  <span class="meta-label">Thương hiệu:</span>
+                  <span class="meta-value"><strong>{brand.name}</strong></span>
+                </li>
+                <li>
+                  <span class="meta-label">Phân hạng:</span>
+                  <span class={`meta-value ${isTier1 ? 'tier1-val' : ''}`}>
+                    {tierBadgeText}
+                  </span>
+                </li>
+                <li>
+                  <span class="meta-label">Khu vực phân phối:</span>
+                  <span class="meta-value">TP. Đông Hà & khu vực lân cận</span>
+                </li>
+                <li>
+                  <span class="meta-label">Địa chỉ kho:</span>
+                  <span class="meta-value">299 Lê Duẩn, P. Đông Hà, Quảng Trị</span>
+                </li>
+                <li>
+                  <span class="meta-label">Hotline tư vấn:</span>
+                  <span class="meta-value"><a href="tel:0946575579" class="phone-link">0946.575.579</a></span>
+                </li>
+                <li>
+                  <span class="meta-label">Chứng từ kèm theo:</span>
+                  <span class="meta-value">CO/CQ, Hóa đơn VAT, Phiếu xuất kho</span>
+                </li>
+              </ul>
+
+              <div class="sidebar-cta-box">
+                <p class="cta-note">Cần báo giá số lượng lớn cho dự án hoặc công trình?</p>
+                <a href="#request-quote" class="btn btn-primary btn-block">Gửi Yêu Cầu Báo Giá</a>
+              </div>
+            </div>
+
+            <!-- Other brands list -->
+            <div class="other-brands-card">
+              <h4>Đối Tác Thương Hiệu Khác</h4>
+              <div class="other-brands-pills">
+                {otherBrands.map(ob => (
+                  <a href={`/san-pham/${ob.slug}/`} class="other-brand-link">
+                    <span>{ob.name}</span>
+                  </a>
+                ))}
+              </div>
+            </div>
+
+          </div>
+        </div>
+        )}
+      </div>
+    </section>
+
+    <!-- ==========================================
+         SECTION 3: BRAND PRODUCTS
+         ========================================== -->
+    <section class="section section-products" id="brand-products-section">
+      <div class="container">
+        <div class="section-header-flex">
+          <div>
+            <div class="eyebrow">Sản Phẩm Sẵn Kho</div>
+            <h2>Danh Sách Sản Phẩm {brand.name}</h2>
+            <p>Hiển thị các dòng sản phẩm của {brand.name} tại Siêu Thị VLXD Hoàng Yến.</p>
+          </div>
+          <a href="/san-pham/" class="btn btn-outline">
+            <span>Xem Tất Cả Sản Phẩm</span>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
+          </a>
+        </div>
+
+        {brandProducts.length > 0 ? (
+          <div class="products-grid">
+            {brandProducts.map(p => (
+              <ProductCard product={p} />
+            ))}
+          </div>
+        ) : (
+          <div class="empty-state-box">
+            <div class="empty-state-icon">
+              <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" style="color: #94a3b8;"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line></svg>
+            </div>
+            <h3>Sản Phẩm Đang Được Cập Nhật</h3>
+            <p>Các mã sản phẩm của thương hiệu {brand.name} đang được kiểm kê và nhập kho thêm. Quý khách vui lòng gọi trực tiếp hotline để nhận bảng báo giá quy cách chi tiết.</p>
+            <a href="tel:0946575579" class="btn btn-primary">Gọi Hotline 0946.575.579</a>
+          </div>
+        )}
+      </div>
+    </section>
+
+    <!-- ==========================================
+         SECTION 4: FAQS SECTION
+         ========================================== -->
+    {brandSEO?.faqs && brandSEO.faqs.length > 0 && (
+      <section class="section section-brand-faqs">
+        <div class="container">
+          <div class="section-header-centered">
+            <div class="eyebrow">Giải Đáp Thắc Mắc</div>
+            <h2>Câu Hỏi Thường Gặp Về {brand.name}</h2>
+            <p>Những thông tin khách hàng và nhà thầu thường quan tâm khi chọn mua sản phẩm {brand.name}.</p>
+          </div>
+
+          <div class="brand-faqs-grid">
+            {brandSEO.faqs.map(faq => (
+              <div class="brand-faq-card">
+                <h3 class="faq-q">
+                  <span class="faq-q-icon">?</span>
+                  <span>{faq.question}</span>
+                </h3>
+                <p class="faq-a">{faq.answer}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+    )}
+
+    <!-- ==========================================
+         SECTION 5: INDUSTRIAL QUOTE BANNER
+         ========================================== -->
+    <section class="section-brand-cta" id="request-quote">
+      <div class="container">
+        <div class="brand-cta-card">
+          <div class="cta-content">
+            <span class="cta-eyebrow">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" style="display: inline-block; vertical-align: middle; margin-right: 4px; color: #f59e0b;"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>
+              <span>BÁO GIÁ NHANH TRONG 15 PHÚT</span>
+            </span>
+            <h2>Nhận Báo Giá Sỉ {brand.name} Tại Quảng Trị</h2>
+            <p>Quý nhà thầu, công ty xây dựng và gia chủ cần dự toán chi phí chi tiết vật tư {brand.name}, vui lòng gửi thông tin hoặc liên hệ trực tiếp với bộ phận kinh doanh của Hoàng Yến.</p>
+            
+            <div class="cta-contact-points">
+              <div class="point-item">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>
+                <span>Hotline / Zalo: <strong>0946.575.579</strong></span>
+              </div>
+              <div class="point-item">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>
+                <span>Cửa hàng: <strong>299 Lê Duẩn, P. Đông Hà, Quảng Trị</strong></span>
+              </div>
+            </div>
+          </div>
+
+          <div class="cta-actions">
+            <a href="tel:0946575579" class="btn btn-primary btn-lg btn-cta-main">
+              <span>Gọi Báo Giá Ngay</span>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
+            </a>
+            <a href={`https://zalo.me/${settings.hotline_main || '0946575579'}`} target="_blank" rel="noopener noreferrer" class="btn btn-secondary btn-lg btn-cta-zalo">
+              <span>Chat Zalo Báo Giá</span>
+            </a>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </div>
+</Layout>
+
+<style>
+  .brand-page-container {
+    background-color: #f8fafc;
+    min-height: 100vh;
+  }
+
+  /* 1. Hero Card Container */
+  .brand-hero-section {
+    padding-top: var(--space-8);
+    padding-bottom: var(--space-8);
+  }
+
+  .brand-hero-card {
+    background-color: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    padding: 36px 40px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04);
+    display: grid;
+    grid-template-columns: 1fr 280px;
+    gap: 40px;
+    align-items: center;
+  }
+
+  .brand-hero-left {
+    min-width: 0;
+  }
+
+  .brand-badge-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 12px;
+    flex-wrap: wrap;
+  }
+
+  .brand-status-pill {
+    font-family: var(--font-heading);
+    font-size: 0.75rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    padding: 5px 12px;
+    border-radius: 4px;
+    display: inline-block;
+  }
+
+  .brand-status-pill.tier1 {
+    background-color: #dc2626;
+    color: #ffffff;
+    box-shadow: 0 2px 8px rgba(220, 38, 38, 0.3);
+  }
+
+  .brand-status-pill.official {
+    background-color: #0f172a;
+    color: #ffffff;
+  }
+
+  .brand-location-tag {
+    font-family: var(--font-heading);
+    font-size: 0.8125rem;
+    font-weight: 700;
+    color: var(--color-red);
+    text-transform: uppercase;
+  }
+
+  .brand-hero-title {
+    font-size: clamp(1.85rem, 3vw, 2.4rem);
+    font-weight: 800;
+    color: #0f172a;
+    line-height: 1.25;
+    margin-bottom: 8px;
+    letter-spacing: -0.01em;
+  }
+
+  .brand-tagline {
+    font-family: var(--font-heading);
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: var(--color-red);
+    margin-bottom: 12px;
+  }
+
+  .brand-short-desc {
+    font-size: 0.95rem;
+    line-height: 1.65;
+    color: #475569;
+    margin-bottom: 24px;
+  }
+
+  /* 3 Quick Value Props */
+  .brand-quick-stats {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+    margin-bottom: 24px;
+  }
+
+  .stat-pill {
+    background-color: #f8fafc;
+    border: 1px solid #e2e8f0;
+    padding: 10px 12px;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .stat-icon {
+    font-size: 1.3rem;
+    flex-shrink: 0;
+    line-height: 1;
+  }
+
+  .stat-info strong {
+    display: block;
+    font-size: 0.8125rem;
+    color: #0f172a;
+    font-weight: 700;
+    line-height: 1.3;
+  }
+
+  .stat-info span {
+    font-size: 0.7rem;
+    color: #64748b;
+    line-height: 1.2;
+    display: block;
+  }
+
+  .brand-hero-actions {
+    display: flex;
+    gap: 14px;
+    flex-wrap: wrap;
+  }
+
+  /* Right Logo Card */
+  .brand-hero-right {
+    width: 280px;
+    flex-shrink: 0;
+  }
+
+  .logo-box-wrapper {
+    background-color: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    overflow: hidden;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.04);
+  }
+
+  .logo-box-inner {
+    padding: 20px;
+    background-color: #ffffff;
+    height: 130px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-bottom: 1px solid #e2e8f0;
+  }
+
+  .brand-logo-img {
+    max-width: 190px !important;
+    max-height: 85px !important;
+    width: auto !important;
+    height: auto !important;
+    object-fit: contain !important;
+    display: block !important;
+    margin: 0 auto !important;
+  }
+
+  .logo-card-details {
+    padding: 16px;
+    background-color: #f8fafc;
+    text-align: center;
+  }
+
+  .auth-text strong {
+    display: block;
+    font-family: var(--font-heading);
+    font-size: 0.875rem;
+    color: #0f172a;
+    font-weight: 800;
+  }
+
+  .auth-text span {
+    display: block;
+    font-size: 0.75rem;
+    color: #64748b;
+    margin-top: 2px;
+    margin-bottom: 12px;
+  }
+
+  .btn-zalo-direct {
+    display: block;
+    background-color: #0068ff;
+    color: #ffffff !important;
+    font-family: var(--font-heading);
+    font-weight: 700;
+    font-size: 0.8125rem;
+    padding: 8px 12px;
+    border-radius: 4px;
+    text-decoration: none;
+    transition: background-color var(--transition-fast);
+  }
+
+  .btn-zalo-direct:hover {
+    background-color: #0052cc;
+  }
+
+  /* 2. Brand Profile Section */
+  .section-brand-profile {
+    padding-top: var(--space-8);
+    padding-bottom: var(--space-12);
+  }
+
+  .profile-layout-grid {
+    display: grid;
+    grid-template-columns: 1fr 320px;
+    gap: 32px;
+  }
+
+  .section-header-compact {
+    margin-bottom: 20px;
+  }
+
+  .section-header-compact .sub-heading {
+    font-family: var(--font-heading);
+    font-size: 0.75rem;
+    font-weight: 800;
+    color: var(--color-red);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    display: block;
+    margin-bottom: 4px;
+  }
+
+  .section-header-compact h2 {
+    font-size: 1.65rem;
+    font-weight: 800;
+    color: #0f172a;
+  }
+
+  .profile-rich-body {
+    background-color: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 32px;
+  }
+
+  .profile-block {
+    margin-bottom: 28px;
+    padding-bottom: 24px;
+    border-bottom: 1px solid #f1f5f9;
+  }
+
+  .profile-block:last-child {
+    margin-bottom: 0;
+    padding-bottom: 0;
+    border-bottom: none;
+  }
+
+  .profile-block h3 {
+    font-size: 1.15rem;
+    font-weight: 800;
+    color: #0f172a;
+    margin-bottom: 12px;
+  }
+
+  .profile-block p {
+    font-size: 0.9375rem;
+    line-height: 1.7;
+    color: #334155;
+  }
+
+  .strength-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .strength-list li {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    font-size: 0.9375rem;
+    line-height: 1.55;
+    color: #334155;
+  }
+
+  .check-bullet {
+    background-color: #dcfce7;
+    color: #16a34a;
+    font-weight: 900;
+    font-size: 0.75rem;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    margin-top: 2px;
+  }
+
+  .standards-tags-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+
+  .std-badge {
+    background-color: #f8fafc;
+    border: 1px solid #e2e8f0;
+    padding: 8px 12px;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #0f172a;
+  }
+
+  .highlight-agency-block {
+    background-color: #fef2f2;
+    border: 1px solid #fecaca;
+    padding: 24px;
+    border-radius: 6px;
+  }
+
+  .highlight-agency-block h3 {
+    color: #991b1b;
+  }
+
+  .agency-commitments {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+    margin-top: 16px;
+  }
+
+  .commit-item {
+    background-color: #ffffff;
+    border: 1px solid #fca5a5;
+    padding: 12px;
+    border-radius: 4px;
+  }
+
+  .commit-item strong {
+    display: block;
+    font-family: var(--font-heading);
+    font-size: 0.8125rem;
+    color: #991b1b;
+    margin-bottom: 4px;
+  }
+
+  .commit-item span {
+    font-size: 0.75rem;
+    color: #475569;
+    line-height: 1.4;
+    display: block;
+  }
+
+  /* Sidebar */
+  .brand-summary-card, .other-brands-card {
+    background-color: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 24px;
+    margin-bottom: 24px;
+  }
+
+  .summary-title {
+    font-size: 1.05rem;
+    font-weight: 800;
+    color: #0f172a;
+    margin-bottom: 16px;
+    padding-bottom: 8px;
+    border-bottom: 2px solid var(--color-red);
+  }
+
+  .summary-meta-list {
+    list-style: none;
+    padding: 0;
+    margin: 0 0 20px 0;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .summary-meta-list li {
+    display: flex;
+    flex-direction: column;
+    font-size: 0.875rem;
+    border-bottom: 1px dashed #e2e8f0;
+    padding-bottom: 8px;
+  }
+
+  .meta-label {
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    color: #64748b;
+    font-weight: 700;
+  }
+
+  .meta-value {
+    color: #0f172a;
+    margin-top: 2px;
+  }
+
+  .meta-value.tier1-val {
+    color: var(--color-red);
+    font-weight: 800;
+  }
+
+  .phone-link {
+    font-family: var(--font-heading);
+    font-weight: 800;
+    color: var(--color-red);
+    font-size: 1.05rem;
+  }
+
+  .sidebar-cta-box {
+    background-color: #f8fafc;
+    border: 1px solid #e2e8f0;
+    padding: 16px;
+    border-radius: 6px;
+    text-align: center;
+  }
+
+  .cta-note {
+    font-size: 0.8125rem;
+    color: #64748b;
+    margin-bottom: 12px;
+  }
+
+  .btn-block {
+    display: block;
+    width: 100%;
+    text-align: center;
+  }
+
+  .other-brands-card h4 {
+    font-size: 0.95rem;
+    font-weight: 800;
+    color: #0f172a;
+    margin-bottom: 12px;
+  }
+
+  .other-brands-pills {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  .other-brand-link {
+    background-color: #f1f5f9;
+    border: 1px solid #e2e8f0;
+    padding: 6px 10px;
+    font-size: 0.78125rem;
+    font-weight: 600;
+    color: #0f172a;
+    border-radius: 4px;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    transition: all var(--transition-fast);
+  }
+
+  .other-brand-link:hover {
+    background-color: var(--color-red);
+    color: #ffffff;
+    border-color: var(--color-red);
+  }
+
+  .badge-mini {
+    background-color: #dc2626;
+    color: #ffffff;
+    font-size: 0.65rem;
+    font-weight: 800;
+    padding: 2px 4px;
+    border-radius: 2px;
+  }
+
+  /* 3. Products Grid */
+  .section-products {
+    background-color: #ffffff;
+    border-top: 1px solid #e2e8f0;
+    border-bottom: 1px solid #e2e8f0;
+    padding-top: var(--space-12);
+    padding-bottom: var(--space-12);
+  }
+
+  .section-header-flex {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    margin-bottom: var(--space-8);
+  }
+
+  .section-header-flex h2 {
+    font-size: 1.75rem;
+    font-weight: 800;
+    color: #0f172a;
+  }
+
+  .products-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: var(--space-6);
+  }
+
+  .empty-state-box {
+    background-color: #f8fafc;
+    border: 2px dashed #cbd5e1;
+    border-radius: 8px;
+    padding: var(--space-12);
+    text-align: center;
+    max-width: 600px;
+    margin: 0 auto;
+  }
+
+  .empty-state-icon {
+    font-size: 2.5rem;
+    margin-bottom: var(--space-2);
+  }
+
+  .empty-state-box h3 {
+    font-size: 1.25rem;
+    font-weight: 800;
+    color: #0f172a;
+    margin-bottom: var(--space-2);
+  }
+
+  .empty-state-box p {
+    font-size: 0.9rem;
+    color: #64748b;
+    line-height: 1.6;
+    margin-bottom: var(--space-5);
+  }
+
+  /* 4. FAQs */
+  .section-brand-faqs {
+    padding-top: var(--space-12);
+    padding-bottom: var(--space-12);
+  }
+
+  .section-header-centered {
+    text-align: center;
+    max-width: 700px;
+    margin: 0 auto var(--space-10) auto;
+  }
+
+  .section-header-centered h2 {
+    font-size: 1.75rem;
+    font-weight: 800;
+    color: #0f172a;
+  }
+
+  .brand-faqs-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: var(--space-6);
+  }
+
+  .brand-faq-card {
+    background-color: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 24px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  }
+
+  .faq-q {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    font-size: 0.95rem;
+    font-weight: 800;
+    color: #0f172a;
+    line-height: 1.4;
+    margin-bottom: 10px;
+  }
+
+  .faq-q-icon {
+    background-color: var(--color-red);
+    color: #ffffff;
+    font-size: 0.75rem;
+    font-weight: 900;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    margin-top: 1px;
+  }
+
+  .faq-a {
+    font-size: 0.875rem;
+    line-height: 1.6;
+    color: #64748b;
+  }
+
+  /* 5. CTA */
+  .section-brand-cta {
+    padding: var(--space-10) 0;
+  }
+
+  .brand-cta-card {
+    background: linear-gradient(135deg, #09111e, #111e33, #0a1322);
+    border-radius: 8px;
+    padding: 40px;
+    color: #ffffff;
+    display: grid;
+    grid-template-columns: 1.3fr 0.7fr;
+    gap: 32px;
+    align-items: center;
+    border: 1px solid #1e293b;
+    box-shadow: 0 16px 36px rgba(0, 0, 0, 0.25);
+  }
+
+  .cta-eyebrow {
+    display: inline-block;
+    background-color: #dc2626;
+    color: #ffffff;
+    font-size: 0.75rem;
+    font-weight: 800;
+    letter-spacing: 0.05em;
+    padding: 4px 10px;
+    border-radius: 4px;
+    margin-bottom: 12px;
+  }
+
+  .cta-content h2 {
+    color: #ffffff;
+    font-size: 1.65rem;
+    font-weight: 800;
+    margin-bottom: 12px;
+  }
+
+  .cta-content p {
+    color: #94a3b8;
+    font-size: 0.9375rem;
+    line-height: 1.6;
+    margin-bottom: 20px;
+  }
+
+  .cta-contact-points {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .point-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.9rem;
+    color: #cbd5e1;
+  }
+
+  .point-item svg {
+    color: var(--color-red);
+    flex-shrink: 0;
+  }
+
+  .cta-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+
+  .btn-cta-main {
+    background: linear-gradient(135deg, #dc2626, #b91c1c);
+    font-weight: 800;
+    box-shadow: 0 4px 14px rgba(220, 38, 38, 0.4);
+    text-align: center;
+  }
+
+  .btn-cta-zalo {
+    background-color: #0068ff !important;
+    border-color: #0068ff !important;
+    color: #ffffff !important;
+    font-weight: 700;
+    text-align: center;
+  }
+
+  @media (max-width: 1024px) {
+    .brand-hero-card {
+      grid-template-columns: 1fr;
+      padding: 28px 24px;
+    }
+    .brand-hero-right {
+      width: 100%;
+    }
+    .profile-layout-grid, .brand-cta-card {
+      grid-template-columns: 1fr;
+    }
+    .products-grid, .brand-faqs-grid {
+      grid-template-columns: repeat(2, 1fr);
+    }
+    .agency-commitments {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  @media (max-width: 640px) {
+    .brand-quick-stats {
+      grid-template-columns: 1fr;
+    }
+    .products-grid, .brand-faqs-grid {
+      grid-template-columns: 1fr;
+    }
+    .section-header-flex {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: var(--space-4);
+    }
+  }
+</style>
