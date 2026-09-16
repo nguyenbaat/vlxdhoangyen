@@ -6,6 +6,6 @@ export default defineConfig({
   site: 'https://vlxdhoangyen.com',
   output: 'server',
   adapter: node({
-    mode: 'middleware'
+    mode: 'standalone'
   })
 });
