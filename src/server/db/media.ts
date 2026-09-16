@@ -429,6 +429,10 @@ export async function getMediaMeta(id: number): Promise<MediaItem | null> {
 
 export async function getMediaByParam(param: string | number): Promise<{ data: Buffer; mime_type: string } | null> {
   const str = String(param).trim();
+  if (!str) return null;
+
+  const ext = path.extname(str).toLowerCase();
+  const base = ext ? path.basename(str, ext) : str;
 
   // 1. Try DB (MySQL or PostgreSQL)
   try {
@@ -444,9 +448,11 @@ export async function getMediaByParam(param: string | number): Promise<{ data: B
           return { data: idRows[0].data as Buffer, mime_type: String(idRows[0].mime_type) };
         }
       }
-      const [fnRows] = await mp.execute<RowDataPacket[]>(
-        'SELECT data, mime_type FROM media_assets WHERE filename = ? LIMIT 1',
-        [str]
+
+      // Query by exact filename, base without ext, or base.%
+      const [fnRows] = await mp.query<RowDataPacket[]>(
+        'SELECT data, mime_type FROM media_assets WHERE filename = ? OR filename = ? OR filename LIKE ? ORDER BY id DESC LIMIT 1',
+        [str, base, `${base}.%`]
       );
       if (fnRows.length) {
         return { data: fnRows[0].data as Buffer, mime_type: String(fnRows[0].mime_type) };
@@ -462,9 +468,11 @@ export async function getMediaByParam(param: string | number): Promise<{ data: B
           return { data: idRes.rows[0].data as Buffer, mime_type: String(idRes.rows[0].mime_type) };
         }
       }
+
+      // Query by exact filename, base without ext, or base.%
       const fnRes = await pp.query(
-        'SELECT data, mime_type FROM media_assets WHERE filename = $1 LIMIT 1',
-        [str]
+        'SELECT data, mime_type FROM media_assets WHERE filename = $1 OR filename = $2 OR filename ILIKE $3 ORDER BY id DESC LIMIT 1',
+        [str, base, `${base}.%`]
       );
       if (fnRes.rows.length) {
         return { data: fnRes.rows[0].data as Buffer, mime_type: String(fnRes.rows[0].mime_type) };
@@ -483,13 +491,25 @@ export async function getMediaByParam(param: string | number): Promise<{ data: B
     path.join(process.cwd(), 'public')
   ];
 
+  const candidateNames = [
+    str,
+    base,
+    `${base}.png`,
+    `${base}.webp`,
+    `${base}.jpg`,
+    `${base}.jpeg`,
+    `${base}.svg`
+  ];
+
   for (const d of searchDirs) {
-    const filePath = path.join(d, str);
-    if (fs.existsSync(filePath) && fs.statSync(filePath).isFile()) {
-      const data = fs.readFileSync(filePath);
-      const ext = path.extname(filePath).toLowerCase();
-      const mime_type = ext === '.png' ? 'image/png' : (ext === '.webp' ? 'image/webp' : (ext === '.gif' ? 'image/gif' : (ext === '.svg' ? 'image/svg+xml' : 'image/jpeg')));
-      return { data, mime_type };
+    for (const name of candidateNames) {
+      const filePath = path.join(d, name);
+      if (fs.existsSync(filePath) && fs.statSync(filePath).isFile()) {
+        const data = fs.readFileSync(filePath);
+        const fExt = path.extname(filePath).toLowerCase();
+        const mime_type = fExt === '.png' ? 'image/png' : (fExt === '.webp' ? 'image/webp' : (fExt === '.gif' ? 'image/gif' : (fExt === '.svg' ? 'image/svg+xml' : 'image/jpeg')));
+        return { data, mime_type };
+      }
     }
   }
 
