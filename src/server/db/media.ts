@@ -37,6 +37,9 @@ export function ensureMediaTable(): Promise<void> {
           try {
             await mp.query(`ALTER TABLE media_assets ADD COLUMN alt_text VARCHAR(255) DEFAULT '' AFTER file_size`);
           } catch (e) {}
+          try {
+            await mp.query(`UPDATE media_assets SET filename = CONCAT('media-', id, '.jpg') WHERE filename IS NULL OR filename = '' OR filename REGEXP '^[0-9]+$'`);
+          } catch (e) {}
         } else {
           const pp = pool as PGPool;
           await pp.query(`
@@ -52,6 +55,9 @@ export function ensureMediaTable(): Promise<void> {
           `);
           try {
             await pp.query(`ALTER TABLE media_assets ADD COLUMN IF NOT EXISTS alt_text VARCHAR(255) DEFAULT ''`);
+          } catch (e) {}
+          try {
+            await pp.query(`UPDATE media_assets SET filename = CONCAT('media-', id, '.jpg') WHERE filename IS NULL OR filename = '' OR filename ~ '^[0-9]+$'`);
           } catch (e) {}
         }
       } catch (err: any) {

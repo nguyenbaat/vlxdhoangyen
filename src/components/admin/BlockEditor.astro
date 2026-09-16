@@ -296,7 +296,11 @@ const {
     let isHtmlMode = false;
 
     // Load initial content into Canvas
-    canvas.innerHTML = textarea.value || '<p><br></p>';
+    if (textarea.value && textarea.value.trim()) {
+      canvas.innerHTML = textarea.value;
+    } else {
+      canvas.innerHTML = '<p><br></p>';
+    }
 
     // Sync Canvas -> Textarea
     function syncContent() {
@@ -308,6 +312,15 @@ const {
     canvas.addEventListener('input', syncContent);
     canvas.addEventListener('keyup', syncContent);
     canvas.addEventListener('blur', syncContent);
+    canvas.addEventListener('change', syncContent);
+
+    // Ensure sync on closest form submit
+    const parentForm = wrapper.closest('form') || textarea.closest('form');
+    if (parentForm) {
+      parentForm.addEventListener('submit', () => {
+        syncContent();
+      });
+    }
 
     // Mode Toggle
     btnVisual.addEventListener('click', () => {

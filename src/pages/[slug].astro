@@ -660,23 +660,22 @@ if (isCategory && category) {
             </button>
           </div>
 
-          <!-- Tab 1 Content: Mô tả sản phẩm -->
+          <!-- Tab 1 Content: Mô tả sản phẩm (Nội dung chi tiết do admin soạn thảo) -->
           <div class="tab-pane active" id="tab-description" role="tabpanel">
             <div class="tab-body-card">
               <h3 class="tab-content-title">Mô Tả Chi Tiết: {product.name}</h3>
-              <div class="product-full-description">
-                <p class="desc-lead">{product.short_description || `Sản phẩm ${product.name} được cung ứng bởi Siêu Thị VLXD Hoàng Yến tại tỉnh Quảng Trị, đáp ứng các tiêu chuẩn kỹ thuật của nhà sản xuất.`}</p>
-                
-                <h4>Đặc Điểm & Ưu Điểm Nổi Bật</h4>
-                <ul>
-                  <li><strong>Nguồn gốc xuất xứ rõ ràng:</strong> Nhập từ các thương hiệu và nhà máy sản xuất uy tín, có đầy đủ hóa đơn chứng từ GTGT.</li>
-                  <li><strong>Độ bền & Khả năng chịu lực:</strong> Đạt tiêu chuẩn chất lượng theo quy chuẩn kỹ thuật xây dựng hiện hành.</li>
-                  <li><strong>Tiện ích thi công:</strong> Quy cách đóng gói chuẩn, dễ bốc xếp, lưu kho và kiểm đếm tải trọng tại công trình.</li>
-                  <li><strong>Bảo quản & Vận chuyển:</strong> Được bảo quản tại kho hàng khô ráo, che chắn cẩn thận và hỗ trợ vận chuyển bằng xe cẩu/xe tải chuyên dụng.</li>
-                </ul>
+              <div class="product-full-description prose-industrial">
+                {product.short_description && (
+                  <p class="desc-lead">{product.short_description}</p>
+                )}
 
-                <h4>Ứng Dụng Trong Xây Dựng & Đời Sống</h4>
-                <p>Sản phẩm <strong>{product.name}</strong> phù hợp thi công cho các công trình nhà phố, biệt thự, nhà xưởng công nghiệp, các hạng mục xây thô kết cấu cũng như hoàn thiện nội ngoại thất trên địa bàn Quảng Trị.</p>
+                {product.content ? (
+                  <div class="product-article-body" set:html={product.content} />
+                ) : (
+                  <div class="product-article-fallback">
+                    <p>Sản phẩm <strong>{product.name}</strong> được phân phối chính hãng bởi Siêu Thị Vật Liệu Xây Dựng Hoàng Yến tại Quảng Trị, cam kết đạt tiêu chuẩn kỹ thuật nhà sản xuất và hỗ trợ vận chuyển tận công trình.</p>
+                  </div>
+                )}
 
                 <div class="consult-note-box">
                   <span class="note-icon">
@@ -688,7 +687,7 @@ if (isCategory && category) {
             </div>
           </div>
 
-          <!-- Tab 2 Content: Thông số kỹ thuật -->
+          <!-- Tab 2 Content: Thông số kỹ thuật & Barem quy cách -->
           <div class="tab-pane" id="tab-specs" role="tabpanel">
             <div class="tab-body-card">
               <h3 class="tab-content-title">Bảng Thông Số Kỹ Thuật & Quy Cách</h3>
@@ -745,8 +744,8 @@ if (isCategory && category) {
                 </table>
               </div>
 
-              {product.content && (
-                <div class="specs-extra-content prose-industrial" set:html={product.content} />
+              {product.specifications && (
+                <div class="specs-extra-content prose-industrial" style="margin-top: 1.5rem;" set:html={product.specifications} />
               )}
             </div>
           </div>
