@@ -10,6 +10,7 @@
     "dev": "astro dev --host",
     "start": "node ./dist/server/entry.mjs",
     "build": "astro build",
+    "postbuild": "node scripts/postbuild.mjs",
     "preview": "astro preview",
     "astro": "astro",
     "db:migrate": "node src/server/db/migrate.js",
