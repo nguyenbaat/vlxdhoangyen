@@ -1,9 +1,18 @@
 ---
+import { CategoryRepo } from '../../server/db/repo.js';
+
 interface Props {
   targetType?: 'post' | 'product';
 }
 
 const { targetType = 'post' } = Astro.props;
+
+let productCategories: Array<{ id: number; name: string }> = [];
+if (targetType === 'product') {
+  try {
+    productCategories = await CategoryRepo.getAll(false);
+  } catch (e) {}
+}
 ---
 
 <div id="ai-assistant-modal" class="ai-modal-backdrop" style="display: none;" data-target-type={targetType}>
@@ -42,13 +51,21 @@ const { targetType = 'post' } = Astro.props;
 
         <div class="form-grid-2-ai">
           <div class="form-group-ai">
-            <label for="ai-prompt-category">Danh Mục / Chuyên Mục</label>
-            <input 
-              type="text" 
-              id="ai-prompt-category" 
-              class="ai-input" 
-              placeholder={targetType === 'product' ? 'Ví dụ: Thép Xây Dựng, Xi Măng, Thiết Bị Vệ Sinh...' : 'Ví dụ: Tin Báo Giá, Cẩm Nang Xây Dựng...'} 
-            />
+            <label for="ai-prompt-category">{targetType === 'product' ? 'Danh Mục Sản Phẩm' : 'Chuyên Mục Bài Viết'}</label>
+            {targetType === 'product' ? (
+              <select id="ai-prompt-category" class="ai-input ai-select">
+                <option value="">-- Chọn danh mục sản phẩm --</option>
+                {productCategories.map(cat => (
+                  <option value={cat.name}>{cat.name}</option>
+                ))}
+              </select>
+            ) : (
+              <select id="ai-prompt-category" class="ai-input ai-select">
+                <option value="Bảng Báo Giá VLXD & Tin Tức">Bảng Báo Giá VLXD & Tin Tức</option>
+                <option value="Cẩm Nang Kỹ Thuật Xây Dựng">Cẩm Nang Kỹ Thuật Xây Dựng</option>
+                <option value="Thiết Bị Vệ Sinh & Nội Thất">Thiết Bị Vệ Sinh & Nội Thất</option>
+              </select>
+            )}
           </div>
 
           <div class="form-group-ai">

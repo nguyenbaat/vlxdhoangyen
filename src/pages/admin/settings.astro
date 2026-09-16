@@ -200,28 +200,31 @@ const settings = await SettingsRepo.getAll();
             </div>
 
             <div class="form-group">
-              <label for="gemini_model">Gemini Model (Chọn hoặc tự nhập Model ID)</label>
+              <label for="gemini_model_select">Gemini Model (Chọn từ danh sách hoặc tự nhập)</label>
               <div class="model-select-wrap">
+                <select id="gemini_model_select" class="form-select">
+                  <option value="gemini-3.6-flash" selected={settings.gemini_model === 'gemini-3.6-flash'}>gemini-3.6-flash (Mới nhất 3.6 - Cân bằng tốc độ & trí thông minh)</option>
+                  <option value="gemini-3.5-flash" selected={settings.gemini_model === 'gemini-3.5-flash'}>gemini-3.5-flash (Gemini 3.5 Flash)</option>
+                  <option value="gemini-3.5-flash-lite" selected={settings.gemini_model === 'gemini-3.5-flash-lite'}>gemini-3.5-flash-lite (Gemini 3.5 Flash-Lite - Tiết kiệm chi phí)</option>
+                  <option value="gemini-3.1-flash-lite" selected={settings.gemini_model === 'gemini-3.1-flash-lite'}>gemini-3.1-flash-lite (Gemini 3.1 Flash-Lite)</option>
+                  <option value="gemini-2.5-flash" selected={settings.gemini_model === 'gemini-2.5-flash'}>gemini-2.5-flash (Gemini 2.5 Flash - Khuyên dùng)</option>
+                  <option value="gemini-2.5-pro" selected={settings.gemini_model === 'gemini-2.5-pro'}>gemini-2.5-pro (Gemini 2.5 Pro - Suy luận chuyên sâu)</option>
+                  <option value="gemini-2.0-flash" selected={settings.gemini_model === 'gemini-2.0-flash'}>gemini-2.0-flash (Gemini 2.0 Flash)</option>
+                  <option value="gemini-1.5-flash" selected={settings.gemini_model === 'gemini-1.5-flash'}>gemini-1.5-flash (Gemini 1.5 Flash)</option>
+                  <option value="gemini-1.5-pro" selected={settings.gemini_model === 'gemini-1.5-pro'}>gemini-1.5-pro (Gemini 1.5 Pro)</option>
+                  <option value="__custom__" selected={!['gemini-3.6-flash','gemini-3.5-flash','gemini-3.5-flash-lite','gemini-3.1-flash-lite','gemini-2.5-flash','gemini-2.5-pro','gemini-2.0-flash','gemini-1.5-flash','gemini-1.5-pro'].includes(settings.gemini_model || 'gemini-3.6-flash')}>Tự nhập Model ID khác...</option>
+                </select>
                 <input 
                   type="text" 
                   id="gemini_model" 
                   name="gemini_model" 
-                  list="gemini-models-list" 
                   value={settings.gemini_model || 'gemini-3.6-flash'} 
-                  placeholder="Chọn hoặc nhập Model ID (vd: gemini-3.6-flash)..."
-                  class="form-input"
+                  class="form-input" 
+                  style={['gemini-3.6-flash','gemini-3.5-flash','gemini-3.5-flash-lite','gemini-3.1-flash-lite','gemini-2.5-flash','gemini-2.5-pro','gemini-2.0-flash','gemini-1.5-flash','gemini-1.5-pro'].includes(settings.gemini_model || 'gemini-3.6-flash') ? 'display:none; margin-top: 8px;' : 'margin-top: 8px;'}
+                  placeholder="Nhập Model ID chính xác (vd: gemini-2.5-flash)..."
                 />
-                <datalist id="gemini-models-list">
-                  <option value="gemini-3.6-flash">gemini-3.6-flash (Mới nhất 3.6 - Cân bằng tốc độ & trí thông minh, đa phương thức)</option>
-                  <option value="gemini-3.5-flash">gemini-3.5-flash (Gemini 3.5 Flash - Tối ưu tác vụ lập trình & tác nhân)</option>
-                  <option value="gemini-3.5-flash-lite">gemini-3.5-flash-lite (Gemini 3.5 Flash-Lite - Siêu nhanh, tiết kiệm chi phí nhất)</option>
-                  <option value="gemini-3.1-flash-lite">gemini-3.1-flash-lite (Gemini 3.1 Flash-Lite - Ổn định)</option>
-                  <option value="gemini-2.5-flash">gemini-2.5-flash (Gemini 2.5 Flash)</option>
-                  <option value="gemini-2.5-pro">gemini-2.5-pro (Gemini 2.5 Pro)</option>
-                  <option value="gemini-2.0-flash">gemini-2.0-flash (Gemini 2.0 Flash)</option>
-                </datalist>
               </div>
-              <small class="key-hint">💡 Đã hỗ trợ trọn bộ dòng Gemini 3 (3.6 Flash, 3.5 Flash, 3.5 Flash-Lite, 3.1 Flash-Lite).</small>
+              <small class="key-hint">💡 Đã hỗ trợ trọn bộ dòng Gemini 3 (3.6 Flash, 3.5 Flash, 3.5 Flash-Lite, 3.1 Flash-Lite) và 2.5.</small>
             </div>
           </div>
         </div>
@@ -252,24 +255,26 @@ const settings = await SettingsRepo.getAll();
             </div>
 
             <div class="form-group">
-              <label for="openai_model">OpenAI Model (Chọn hoặc tự nhập)</label>
+              <label for="openai_model_select">OpenAI Model (Chọn từ danh sách hoặc tự nhập)</label>
               <div class="model-select-wrap">
+                <select id="openai_model_select" class="form-select">
+                  <option value="gpt-4o-mini" selected={settings.openai_model === 'gpt-4o-mini'}>gpt-4o-mini (Tiết kiệm, tốc độ cao & chất lượng tốt)</option>
+                  <option value="gpt-4o" selected={settings.openai_model === 'gpt-4o'}>gpt-4o (Model flagship thông minh toàn diện)</option>
+                  <option value="gpt-4.5-preview" selected={settings.openai_model === 'gpt-4.5-preview'}>gpt-4.5-preview (Thế hệ GPT-4.5 mới nhất)</option>
+                  <option value="o3-mini" selected={settings.openai_model === 'o3-mini'}>o3-mini (Tư duy logic & toán học cao cấp)</option>
+                  <option value="o1" selected={settings.openai_model === 'o1'}>o1 (Mô hình suy luận chuyên sâu)</option>
+                  <option value="gpt-3.5-turbo" selected={settings.openai_model === 'gpt-3.5-turbo'}>gpt-3.5-turbo (Cơ bản)</option>
+                  <option value="__custom__" selected={!['gpt-4o-mini','gpt-4o','gpt-4.5-preview','o3-mini','o1','gpt-3.5-turbo'].includes(settings.openai_model || 'gpt-4o-mini')}>Tự nhập Model ID khác...</option>
+                </select>
                 <input 
                   type="text" 
                   id="openai_model" 
                   name="openai_model" 
-                  list="openai-models-list" 
                   value={settings.openai_model || 'gpt-4o-mini'} 
-                  placeholder="Chọn hoặc nhập Model ID (vd: gpt-4o-mini)..."
-                  class="form-input"
+                  class="form-input" 
+                  style={['gpt-4o-mini','gpt-4o','gpt-4.5-preview','o3-mini','o1','gpt-3.5-turbo'].includes(settings.openai_model || 'gpt-4o-mini') ? 'display:none; margin-top: 8px;' : 'margin-top: 8px;'}
+                  placeholder="Nhập Model ID chính xác (vd: gpt-4o)..."
                 />
-                <datalist id="openai-models-list">
-                  <option value="gpt-4o-mini">gpt-4o-mini (Tiết kiệm, tốc độ cao & chất lượng tốt)</option>
-                  <option value="gpt-4o">gpt-4o (Model flagship thông minh toàn diện)</option>
-                  <option value="gpt-4.5-preview">gpt-4.5-preview (Thế hệ GPT-4.5 mới nhất)</option>
-                  <option value="o3-mini">o3-mini (Tư duy logic & toán học cao cấp)</option>
-                  <option value="o1">o1 (Mô hình suy luận chuyên sâu)</option>
-                </datalist>
               </div>
               <small class="key-hint">💡 Hỗ trợ gpt-4o, gpt-4o-mini, gpt-4.5-preview, o3-mini...</small>
             </div>
@@ -507,6 +512,33 @@ Quy tắc:
           }
         }
       });
+    });
+
+    // Model Select Change Handlers
+    const geminiSelect = document.getElementById('gemini_model_select') as HTMLSelectElement;
+    const geminiInput = document.getElementById('gemini_model') as HTMLInputElement;
+    geminiSelect?.addEventListener('change', () => {
+      if (geminiSelect.value === '__custom__') {
+        geminiInput.style.display = 'block';
+        geminiInput.value = '';
+        geminiInput.focus();
+      } else {
+        geminiInput.style.display = 'none';
+        geminiInput.value = geminiSelect.value;
+      }
+    });
+
+    const openaiSelect = document.getElementById('openai_model_select') as HTMLSelectElement;
+    const openaiInput = document.getElementById('openai_model') as HTMLInputElement;
+    openaiSelect?.addEventListener('change', () => {
+      if (openaiSelect.value === '__custom__') {
+        openaiInput.style.display = 'block';
+        openaiInput.value = '';
+        openaiInput.focus();
+      } else {
+        openaiInput.style.display = 'none';
+        openaiInput.value = openaiSelect.value;
+      }
     });
 
     // Test AI Connection button

@@ -696,8 +696,13 @@ const galleryString = product.images ? product.images.join('\n') : product.featu
         aiPromptTopic.value = nameInput.value;
       }
       const catSelect = document.getElementById('category_id') as HTMLSelectElement;
-      if (catSelect && catSelect.selectedOptions[0] && aiPromptCategory) {
-        aiPromptCategory.value = catSelect.selectedOptions[0].text.replace(/^[\s┗━]+/, '');
+      if (catSelect && aiPromptCategory) {
+        const selText = catSelect.selectedOptions[0]?.text.replace(/^[\s┗━]+/, '').trim();
+        if (selText && !selText.startsWith('--')) {
+          aiPromptCategory.value = selText;
+        } else {
+          aiPromptCategory.value = '';
+        }
       }
       if (aiModal) aiModal.style.display = 'flex';
       aiPromptTopic?.focus();
