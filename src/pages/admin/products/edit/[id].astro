@@ -13,7 +13,7 @@ if (!prodId) {
   return Astro.redirect('/admin/products');
 }
 
-const product = await ProductRepo.getBySlug(id || '') || await db.queryOne<any>('SELECT * FROM products WHERE id = $1', [prodId]);
+const product = await ProductRepo.getById(prodId) || await ProductRepo.getBySlug(id || '');
 if (!product) {
   return Astro.redirect('/admin/products');
 }
