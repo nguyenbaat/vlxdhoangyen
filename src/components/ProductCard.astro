@@ -22,15 +22,26 @@ interface Props {
 const { product } = Astro.props;
 const fallbackImage = '/anh-sanpham.png';
 
-// Status badge based strictly on verified product data
-let statusBadge: { label: string; styleClass: string } = { label: 'CHÍNH HÃNG', styleClass: 'badge-brand' };
+// Clean, non-duplicate badges
+const badges: Array<{ label: string; styleClass: string }> = [];
 
-if (product.brand_name) {
-  statusBadge = { label: product.brand_name.toUpperCase(), styleClass: 'badge-brand' };
-} else if (product.category_name) {
-  statusBadge = { label: product.category_name.toUpperCase(), styleClass: 'badge-category' };
-} else if (product.is_in_stock !== 0) {
-  statusBadge = { label: 'CÒN HÀNG', styleClass: 'badge-in-stock' };
+if (product.custom_badge && product.custom_badge.trim()) {
+  badges.push({ label: product.custom_badge.trim(), styleClass: 'badge-tier1' });
+}
+
+if (product.brand_name && product.brand_name.trim()) {
+  const brandTrimmed = product.brand_name.trim();
+  if (!badges.some(b => b.label.toLowerCase() === brandTrimmed.toLowerCase())) {
+    badges.push({ label: brandTrimmed, styleClass: 'badge-brand' });
+  }
+}
+
+if (badges.length === 0) {
+  if (product.category_name && product.category_name.trim()) {
+    badges.push({ label: product.category_name.trim(), styleClass: 'badge-brand' });
+  } else if (product.is_in_stock !== 0) {
+    badges.push({ label: 'SẴN HÀNG', styleClass: 'badge-san-kho' });
+  }
 }
 ---
 
@@ -47,12 +58,9 @@ if (product.brand_name) {
       class="card-img"
     />
     <div class="card-badges">
-      {product.brand_name && (
-        <span class="badge badge-brand">{product.brand_name}</span>
-      )}
-      <span class={`badge ${statusBadge.styleClass}`}>
-        {statusBadge.label}
-      </span>
+      {badges.map(b => (
+        <span class={`badge ${b.styleClass}`}>{b.label}</span>
+      ))}
     </div>
   </a>
 
