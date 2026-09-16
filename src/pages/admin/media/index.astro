@@ -409,6 +409,51 @@ const totalStorageBytes = dbData.totalSize + staticItems.reduce((acc, i) => acc 
             </div>
           </div>
 
+          <!-- Watermark Options Panel in Upload Modal -->
+          <div class="modal-watermark-panel" id="modal_watermark_panel">
+            <div class="mwm-header">
+              <label class="mwm-toggle-label">
+                <input type="checkbox" id="modal_wm_enable" checked class="mwm-checkbox" />
+                <span class="mwm-title">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#0284c7" stroke-width="2.5"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                  <strong>Đóng dấu Watermark bản quyền khi tải ảnh</strong>
+                </span>
+              </label>
+              <span class="mwm-hint">Chống sao chép hình ảnh VLXD Hoàng Yến</span>
+            </div>
+
+            <div class="mwm-options-row" id="modal_wm_options_body">
+              <div class="mwm-field">
+                <span class="mwm-sublabel">Kiểu đóng dấu:</span>
+                <div class="mwm-radios">
+                  <label class="mwm-radio-item">
+                    <input type="radio" name="modal_wm_type" value="text" checked />
+                    <span>🔤 Chữ dập nổi (<code>vlxdhoangyen.com</code>)</span>
+                  </label>
+                  <label class="mwm-radio-item">
+                    <input type="radio" name="modal_wm_type" value="logo" />
+                    <span>🖼️ Biểu tượng Logo (<code>favicon.png</code>)</span>
+                  </label>
+                  <label class="mwm-radio-item">
+                    <input type="radio" name="modal_wm_type" value="both" />
+                    <span>✨ Cả Logo + Chữ dập nổi <code>vlxdhoangyen.com</code></span>
+                  </label>
+                </div>
+              </div>
+
+              <div class="mwm-field">
+                <span class="mwm-sublabel">Vị trí đóng dấu:</span>
+                <select id="modal_wm_position" class="mwm-select">
+                  <option value="bottom-right" selected>Góc dưới phải (Mặc định)</option>
+                  <option value="bottom-left">Góc dưới trái</option>
+                  <option value="top-right">Góc trên phải</option>
+                  <option value="center">Chính giữa khung hình (Badge)</option>
+                  <option value="diagonal">Dải chéo mờ toàn ảnh (Diagonal)</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
           <div class="form-group-tail" style="margin-top: 1.25rem;">
             <label for="upload_alt_default">Thẻ ALT Mặc Định (Tùy chọn)</label>
             <input type="text" id="upload_alt_default" name="upload_alt" class="tail-input" placeholder="Nhập thẻ ALT chung cho các ảnh tải lên đợt này..." />
@@ -419,7 +464,7 @@ const totalStorageBytes = dbData.totalSize + staticItems.reduce((acc, i) => acc 
             <button type="button" class="btn btn-secondary" id="btn_cancel_upload">Hủy</button>
             <button type="submit" class="btn btn-primary" id="btn_submit_upload">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
-              <span>TIẾN HÀNH TẢI LÊN</span>
+              <span id="btn_upload_text">TIẾN HÀNH TẢI LÊN</span>
             </button>
           </div>
         </form>
@@ -1020,6 +1065,106 @@ const totalStorageBytes = dbData.totalSize + staticItems.reduce((acc, i) => acc 
     margin-top: 6px;
   }
 
+  /* Watermark in Modal */
+  .modal-watermark-panel {
+    margin-top: 1.25rem;
+    padding: 0.9rem 1.1rem;
+    background: #ffffff;
+    border: 1px solid #e0e7ff;
+    border-radius: 10px;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.03);
+  }
+  .mwm-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    padding-bottom: 0.6rem;
+    border-bottom: 1px solid #f1f5f9;
+  }
+  .mwm-toggle-label {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    cursor: pointer;
+    user-select: none;
+  }
+  .mwm-checkbox {
+    width: 18px;
+    height: 18px;
+    accent-color: #0284c7;
+    cursor: pointer;
+  }
+  .mwm-title {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.88rem;
+    color: #0f172a;
+  }
+  .mwm-hint {
+    font-size: 0.74rem;
+    color: #64748b;
+  }
+  .mwm-options-row {
+    display: flex;
+    gap: 1.25rem;
+    margin-top: 0.75rem;
+    flex-wrap: wrap;
+  }
+  .mwm-field {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+    flex: 1;
+    min-width: 220px;
+  }
+  .mwm-sublabel {
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: #475569;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+  }
+  .mwm-radios {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+  }
+  .mwm-radio-item {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-size: 0.82rem;
+    color: #334155;
+    cursor: pointer;
+  }
+  .mwm-radio-item input {
+    accent-color: #0284c7;
+    cursor: pointer;
+  }
+  .mwm-radio-item code {
+    background: #f1f5f9;
+    padding: 1px 4px;
+    border-radius: 3px;
+    font-size: 0.76rem;
+    color: #0369a1;
+  }
+  .mwm-select {
+    padding: 0.5rem 0.75rem;
+    font-size: 0.82rem;
+    border: 1px solid #cbd5e1;
+    border-radius: 6px;
+    background: #ffffff;
+    color: #0f172a;
+    outline: none;
+  }
+  .mwm-select:focus {
+    border-color: #0284c7;
+    box-shadow: 0 0 0 2px rgba(2, 132, 199, 0.15);
+  }
+
   /* Toast Notification */
   .media-toast {
     position: fixed;
@@ -1178,6 +1323,210 @@ const totalStorageBytes = dbData.totalSize + staticItems.reduce((acc, i) => acc 
       confirmDelete(id, name);
     });
 
+    // Watermark Generator Function (HTML5 Canvas)
+    async function applyWatermark(file, options = {}) {
+      if (!file || !file.type.startsWith('image/') || file.type === 'image/svg+xml') {
+        return file;
+      }
+
+      const {
+        type = 'text',
+        text = 'vlxdhoangyen.com',
+        logoUrl = '/favicon.png',
+        position = 'bottom-right'
+      } = options;
+
+      return new Promise((resolve) => {
+        const reader = new FileReader();
+        reader.onload = () => {
+          const img = new Image();
+          img.onload = async () => {
+            try {
+              const canvas = document.createElement('canvas');
+              canvas.width = img.naturalWidth;
+              canvas.height = img.naturalHeight;
+              const ctx = canvas.getContext('2d');
+              if (!ctx) {
+                resolve(file);
+                return;
+              }
+
+              // 1. Draw original base image
+              ctx.drawImage(img, 0, 0);
+
+              const w = canvas.width;
+              const h = canvas.height;
+              const minDim = Math.min(w, h);
+
+              // Relative responsive font and logo sizing
+              const baseFontSize = Math.max(16, Math.round(minDim * 0.038));
+              const logoSize = Math.max(26, Math.round(minDim * 0.075));
+              const padding = Math.max(16, Math.round(minDim * 0.03));
+
+              // Load logo if needed
+              let logoImg = null;
+              if (type === 'logo' || type === 'both') {
+                try {
+                  logoImg = await new Promise((res) => {
+                    const lImg = new Image();
+                    lImg.crossOrigin = 'anonymous';
+                    lImg.onload = () => res(lImg);
+                    lImg.onerror = () => res(null);
+                    lImg.src = logoUrl;
+                  });
+                } catch (e) {
+                  logoImg = null;
+                }
+              }
+
+              ctx.save();
+
+              if (position === 'diagonal') {
+                // Diagonal Center Stamp
+                ctx.translate(w / 2, h / 2);
+                ctx.rotate(-Math.PI / 6); // -30 deg
+
+                const diagFontSize = Math.max(22, Math.round(minDim * 0.055));
+                ctx.font = `900 ${diagFontSize}px 'Inter', 'Segoe UI', Arial, sans-serif`;
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+
+                // Embossed shadow + outline + fill
+                ctx.fillStyle = 'rgba(0, 0, 0, 0.4)';
+                ctx.fillText(text, 2, 2);
+
+                ctx.strokeStyle = 'rgba(0, 0, 0, 0.6)';
+                ctx.lineWidth = Math.max(2, diagFontSize * 0.06);
+                ctx.strokeText(text, 0, 0);
+
+                ctx.fillStyle = 'rgba(255, 255, 255, 0.88)';
+                ctx.fillText(text, 0, 0);
+
+                if (logoImg && (type === 'logo' || type === 'both')) {
+                  const dLogoSize = logoSize * 1.4;
+                  ctx.drawImage(logoImg, -text.length * diagFontSize * 0.28 - dLogoSize - 12, -dLogoSize / 2, dLogoSize, dLogoSize);
+                }
+              } else {
+                // Embossed Badge / Pill Watermark
+                const font = `bold ${baseFontSize}px 'Inter', 'Segoe UI', Arial, sans-serif`;
+                ctx.font = font;
+                let textWidth = (type === 'text' || type === 'both') ? ctx.measureText(text).width : 0;
+
+                let badgeW = 0;
+                let badgeH = 0;
+                const itemGap = 8;
+                const padX = 14;
+                const padY = 8;
+
+                if (type === 'both' && logoImg) {
+                  badgeW = logoSize + itemGap + textWidth + padX * 2;
+                  badgeH = Math.max(logoSize, baseFontSize) + padY * 2;
+                } else if (type === 'logo' && logoImg) {
+                  badgeW = logoSize + padX * 1.5;
+                  badgeH = logoSize + padY * 1.5;
+                } else {
+                  badgeW = textWidth + padX * 2;
+                  badgeH = baseFontSize * 1.4 + padY * 2;
+                }
+
+                let posX = w - badgeW - padding;
+                let posY = h - badgeH - padding;
+
+                if (position === 'bottom-left') {
+                  posX = padding;
+                  posY = h - badgeH - padding;
+                } else if (position === 'top-right') {
+                  posX = w - badgeW - padding;
+                  posY = padding;
+                } else if (position === 'top-left') {
+                  posX = padding;
+                  posY = padding;
+                } else if (position === 'center') {
+                  posX = (w - badgeW) / 2;
+                  posY = (h - badgeH) / 2;
+                }
+
+                // Draw translucent embossed backdrop pill
+                const radius = Math.min(8, badgeH / 2);
+                ctx.save();
+                ctx.beginPath();
+                if (ctx.roundRect) {
+                  ctx.roundRect(posX, posY, badgeW, badgeH, radius);
+                } else {
+                  ctx.rect(posX, posY, badgeW, badgeH);
+                }
+                ctx.fillStyle = 'rgba(15, 23, 42, 0.55)';
+                ctx.fill();
+                ctx.strokeStyle = 'rgba(255, 255, 255, 0.25)';
+                ctx.lineWidth = 1;
+                ctx.stroke();
+                ctx.restore();
+
+                let curX = posX + padX;
+                const midY = posY + badgeH / 2;
+
+                // Draw Logo
+                if (logoImg && (type === 'logo' || type === 'both')) {
+                  const lY = midY - logoSize / 2;
+                  ctx.shadowColor = 'rgba(0, 0, 0, 0.5)';
+                  ctx.shadowBlur = 4;
+                  ctx.drawImage(logoImg, curX, lY, logoSize, logoSize);
+                  ctx.shadowBlur = 0;
+                  curX += logoSize + itemGap;
+                }
+
+                // Draw Embossed Text
+                if (type === 'text' || type === 'both') {
+                  ctx.font = font;
+                  ctx.textBaseline = 'middle';
+                  ctx.textAlign = 'left';
+
+                  // 3D Embossed shadow
+                  ctx.shadowColor = 'rgba(0, 0, 0, 0.9)';
+                  ctx.shadowBlur = 3;
+                  ctx.shadowOffsetX = 1;
+                  ctx.shadowOffsetY = 1;
+
+                  // Dark border stroke
+                  ctx.strokeStyle = 'rgba(0, 0, 0, 0.7)';
+                  ctx.lineWidth = Math.max(1.5, baseFontSize * 0.06);
+                  ctx.strokeText(text, curX, midY);
+
+                  // Crisp white text fill
+                  ctx.fillStyle = '#ffffff';
+                  ctx.fillText(text, curX, midY);
+                }
+              }
+
+              ctx.restore();
+
+              // Output converted blob to File object
+              const mime = file.type === 'image/png' ? 'image/png' : 'image/jpeg';
+              canvas.toBlob((blob) => {
+                if (!blob) {
+                  resolve(file);
+                  return;
+                }
+                const newFile = new File([blob], file.name, {
+                  type: mime,
+                  lastModified: Date.now()
+                });
+                resolve(newFile);
+              }, mime, 0.92);
+
+            } catch (err) {
+              console.error('[Watermark] Processing error:', err);
+              resolve(file);
+            }
+          };
+          img.onerror = () => resolve(file);
+          img.src = reader.result;
+        };
+        reader.onerror = () => resolve(file);
+        reader.readAsDataURL(file);
+      });
+    }
+
     // 5. Upload Modal Handlers
     const uploadModal = document.getElementById('upload_media_modal');
     const openUploadModalBtn = document.getElementById('btn_open_upload_modal');
@@ -1187,6 +1536,18 @@ const totalStorageBytes = dbData.totalSize + staticItems.reduce((acc, i) => acc 
     const modalFileInput = document.getElementById('modal_file_input');
     const btnBrowseFiles = document.getElementById('btn_browse_files');
     const selectedFilesPreview = document.getElementById('upload_selected_files_list');
+    const formUploadMedia = document.getElementById('form_upload_media');
+    const btnSubmitUpload = document.getElementById('btn_submit_upload');
+    const btnUploadText = document.getElementById('btn_upload_text');
+    const modalWmEnable = document.getElementById('modal_wm_enable');
+    const modalWmOptionsBody = document.getElementById('modal_wm_options_body');
+
+    if (modalWmEnable && modalWmOptionsBody) {
+      modalWmEnable.addEventListener('change', () => {
+        modalWmOptionsBody.style.opacity = modalWmEnable.checked ? '1' : '0.45';
+        modalWmOptionsBody.style.pointerEvents = modalWmEnable.checked ? 'auto' : 'none';
+      });
+    }
 
     openUploadModalBtn?.addEventListener('click', () => {
       if (uploadModal) uploadModal.style.display = 'flex';
@@ -1234,6 +1595,45 @@ const totalStorageBytes = dbData.totalSize + staticItems.reduce((acc, i) => acc 
         if (dt && dt.files && dt.files.length > 0 && modalFileInput) {
           modalFileInput.files = dt.files;
           modalFileInput.dispatchEvent(new Event('change'));
+        }
+      });
+    }
+
+    let isUploading = false;
+    if (formUploadMedia) {
+      formUploadMedia.addEventListener('submit', async (e) => {
+        if (isUploading) return;
+        const isWatermarkEnabled = modalWmEnable?.checked;
+
+        if (isWatermarkEnabled && modalFileInput && modalFileInput.files && modalFileInput.files.length > 0) {
+          e.preventDefault();
+          isUploading = true;
+
+          const wmTypeEl = document.querySelector('input[name="modal_wm_type"]:checked');
+          const wmType = wmTypeEl ? wmTypeEl.value : 'text';
+          const wmPositionEl = document.getElementById('modal_wm_position');
+          const wmPosition = wmPositionEl ? wmPositionEl.value : 'bottom-right';
+
+          if (btnSubmitUpload) btnSubmitUpload.disabled = true;
+          if (btnUploadText) btnUploadText.textContent = 'ĐANG ĐÓNG DẤU & XỬ LÝ ẢNH...';
+
+          try {
+            const dt = new DataTransfer();
+            for (let i = 0; i < modalFileInput.files.length; i++) {
+              const processedFile = await applyWatermark(modalFileInput.files[i], {
+                type: wmType,
+                text: 'vlxdhoangyen.com',
+                logoUrl: '/favicon.png',
+                position: wmPosition
+              });
+              dt.items.add(processedFile);
+            }
+            modalFileInput.files = dt.files;
+            formUploadMedia.submit();
+          } catch (err) {
+            console.error('[Upload Modal] Error applying watermark:', err);
+            formUploadMedia.submit();
+          }
         }
       });
     }

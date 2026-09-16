@@ -94,6 +94,52 @@ const initialJsonStr = JSON.stringify(parsedInitialItems);
           <span>Kho ảnh MySQL / Thư viện</span>
         </button>
       </div>
+
+      <!-- Watermark Settings Panel -->
+      <div class="mm-watermark-panel" id="mm_watermark_panel">
+        <div class="mm-wm-header">
+          <label class="mm-wm-toggle-label">
+            <input type="checkbox" id="mm_wm_enable" checked class="mm-wm-checkbox" />
+            <span class="mm-wm-title">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#0284c7" stroke-width="2.5"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+              <strong>Đóng dấu Watermark bản quyền khi tải ảnh</strong>
+            </span>
+          </label>
+          <span class="mm-wm-hint">Tự động đóng dấu bảo vệ hình ảnh chống sao chép</span>
+        </div>
+
+        <div class="mm-wm-options-row" id="mm_wm_options_body">
+          <div class="mm-wm-field">
+            <span class="mm-wm-sublabel">Kiểu đóng dấu:</span>
+            <div class="mm-wm-radios">
+              <label class="mm-wm-radio-item">
+                <input type="radio" name="mm_wm_type" value="text" checked />
+                <span>🔤 Chữ dập nổi (<code>vlxdhoangyen.com</code>)</span>
+              </label>
+              <label class="mm-wm-radio-item">
+                <input type="radio" name="mm_wm_type" value="logo" />
+                <span>🖼️ Biểu tượng Logo (<code>favicon.png</code>)</span>
+              </label>
+              <label class="mm-wm-radio-item">
+                <input type="radio" name="mm_wm_type" value="both" />
+                <span>✨ Cả Logo + Chữ dập nổi <code>vlxdhoangyen.com</code></span>
+              </label>
+            </div>
+          </div>
+
+          <div class="mm-wm-field">
+            <span class="mm-wm-sublabel">Vị trí đóng dấu:</span>
+            <select id="mm_wm_position" class="mm-wm-select">
+              <option value="bottom-right" selected>Góc dưới phải (Mặc định)</option>
+              <option value="bottom-left">Góc dưới trái</option>
+              <option value="top-right">Góc trên phải</option>
+              <option value="center">Chính giữa khung hình (Badge)</option>
+              <option value="diagonal">Dải chéo mờ toàn ảnh (Diagonal)</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
     </div>
   </div>
 
@@ -274,6 +320,108 @@ const initialJsonStr = JSON.stringify(parsedInitialItems);
   }
   .mm-btn-primary:hover {
     background: #0369a1;
+  }
+
+  /* Watermark Panel */
+  .mm-watermark-panel {
+    width: 100%;
+    margin-top: 1rem;
+    padding: 0.85rem 1rem;
+    background: #ffffff;
+    border: 1px solid #e0e7ff;
+    border-radius: 8px;
+    text-align: left;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.03);
+  }
+  .mm-wm-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    padding-bottom: 0.6rem;
+    border-bottom: 1px solid #f1f5f9;
+  }
+  .mm-wm-toggle-label {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    cursor: pointer;
+    user-select: none;
+  }
+  .mm-wm-checkbox {
+    width: 18px;
+    height: 18px;
+    accent-color: #0284c7;
+    cursor: pointer;
+  }
+  .mm-wm-title {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.86rem;
+    color: #0f172a;
+  }
+  .mm-wm-hint {
+    font-size: 0.74rem;
+    color: #64748b;
+  }
+  .mm-wm-options-row {
+    display: flex;
+    gap: 1.25rem;
+    margin-top: 0.75rem;
+    flex-wrap: wrap;
+  }
+  .mm-wm-field {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+    flex: 1;
+    min-width: 220px;
+  }
+  .mm-wm-sublabel {
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: #475569;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+  }
+  .mm-wm-radios {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+  }
+  .mm-wm-radio-item {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-size: 0.8rem;
+    color: #334155;
+    cursor: pointer;
+  }
+  .mm-wm-radio-item input {
+    accent-color: #0284c7;
+    cursor: pointer;
+  }
+  .mm-wm-radio-item code {
+    background: #f1f5f9;
+    padding: 1px 4px;
+    border-radius: 3px;
+    font-size: 0.75rem;
+    color: #0369a1;
+  }
+  .mm-wm-select {
+    padding: 0.45rem 0.65rem;
+    font-size: 0.8rem;
+    border: 1px solid #cbd5e1;
+    border-radius: 6px;
+    background: #ffffff;
+    color: #0f172a;
+    outline: none;
+  }
+  .mm-wm-select:focus {
+    border-color: #0284c7;
+    box-shadow: 0 0 0 2px rgba(2, 132, 199, 0.15);
   }
 
   .mm-status {
@@ -830,18 +978,256 @@ const initialJsonStr = JSON.stringify(parsedInitialItems);
       });
     }
 
-    // Upload Files Core Function
+    // Watermark Toggle UI listener
+    const wmEnableCheckbox = document.getElementById('mm_wm_enable');
+    const wmOptionsBody = document.getElementById('mm_wm_options_body');
+    if (wmEnableCheckbox && wmOptionsBody) {
+      wmEnableCheckbox.addEventListener('change', () => {
+        wmOptionsBody.style.opacity = wmEnableCheckbox.checked ? '1' : '0.45';
+        wmOptionsBody.style.pointerEvents = wmEnableCheckbox.checked ? 'auto' : 'none';
+      });
+    }
+
+    // Watermark Generator Function (HTML5 Canvas)
+    async function applyWatermark(file, options = {}) {
+      if (!file || !file.type.startsWith('image/') || file.type === 'image/svg+xml') {
+        return file;
+      }
+
+      const {
+        type = 'text',
+        text = 'vlxdhoangyen.com',
+        logoUrl = '/favicon.png',
+        position = 'bottom-right'
+      } = options;
+
+      return new Promise((resolve) => {
+        const reader = new FileReader();
+        reader.onload = () => {
+          const img = new Image();
+          img.onload = async () => {
+            try {
+              const canvas = document.createElement('canvas');
+              canvas.width = img.naturalWidth;
+              canvas.height = img.naturalHeight;
+              const ctx = canvas.getContext('2d');
+              if (!ctx) {
+                resolve(file);
+                return;
+              }
+
+              // 1. Draw original base image
+              ctx.drawImage(img, 0, 0);
+
+              const w = canvas.width;
+              const h = canvas.height;
+              const minDim = Math.min(w, h);
+
+              // Relative responsive font and logo sizing
+              const baseFontSize = Math.max(16, Math.round(minDim * 0.038));
+              const logoSize = Math.max(26, Math.round(minDim * 0.075));
+              const padding = Math.max(16, Math.round(minDim * 0.03));
+
+              // Load logo if needed
+              let logoImg = null;
+              if (type === 'logo' || type === 'both') {
+                try {
+                  logoImg = await new Promise((res) => {
+                    const lImg = new Image();
+                    lImg.crossOrigin = 'anonymous';
+                    lImg.onload = () => res(lImg);
+                    lImg.onerror = () => res(null);
+                    lImg.src = logoUrl;
+                  });
+                } catch (e) {
+                  logoImg = null;
+                }
+              }
+
+              ctx.save();
+
+              if (position === 'diagonal') {
+                // Diagonal Center Stamp
+                ctx.translate(w / 2, h / 2);
+                ctx.rotate(-Math.PI / 6); // -30 deg
+
+                const diagFontSize = Math.max(22, Math.round(minDim * 0.055));
+                ctx.font = `900 ${diagFontSize}px 'Inter', 'Segoe UI', Arial, sans-serif`;
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+
+                // Embossed shadow + outline + fill
+                ctx.fillStyle = 'rgba(0, 0, 0, 0.4)';
+                ctx.fillText(text, 2, 2);
+
+                ctx.strokeStyle = 'rgba(0, 0, 0, 0.6)';
+                ctx.lineWidth = Math.max(2, diagFontSize * 0.06);
+                ctx.strokeText(text, 0, 0);
+
+                ctx.fillStyle = 'rgba(255, 255, 255, 0.88)';
+                ctx.fillText(text, 0, 0);
+
+                if (logoImg && (type === 'logo' || type === 'both')) {
+                  const dLogoSize = logoSize * 1.4;
+                  ctx.drawImage(logoImg, -text.length * diagFontSize * 0.28 - dLogoSize - 12, -dLogoSize / 2, dLogoSize, dLogoSize);
+                }
+              } else {
+                // Embossed Badge / Pill Watermark
+                const font = `bold ${baseFontSize}px 'Inter', 'Segoe UI', Arial, sans-serif`;
+                ctx.font = font;
+                let textWidth = (type === 'text' || type === 'both') ? ctx.measureText(text).width : 0;
+
+                let badgeW = 0;
+                let badgeH = 0;
+                const itemGap = 8;
+                const padX = 14;
+                const padY = 8;
+
+                if (type === 'both' && logoImg) {
+                  badgeW = logoSize + itemGap + textWidth + padX * 2;
+                  badgeH = Math.max(logoSize, baseFontSize) + padY * 2;
+                } else if (type === 'logo' && logoImg) {
+                  badgeW = logoSize + padX * 1.5;
+                  badgeH = logoSize + padY * 1.5;
+                } else {
+                  badgeW = textWidth + padX * 2;
+                  badgeH = baseFontSize * 1.4 + padY * 2;
+                }
+
+                let posX = w - badgeW - padding;
+                let posY = h - badgeH - padding;
+
+                if (position === 'bottom-left') {
+                  posX = padding;
+                  posY = h - badgeH - padding;
+                } else if (position === 'top-right') {
+                  posX = w - badgeW - padding;
+                  posY = padding;
+                } else if (position === 'top-left') {
+                  posX = padding;
+                  posY = padding;
+                } else if (position === 'center') {
+                  posX = (w - badgeW) / 2;
+                  posY = (h - badgeH) / 2;
+                }
+
+                // Draw translucent embossed backdrop pill
+                const radius = Math.min(8, badgeH / 2);
+                ctx.save();
+                ctx.beginPath();
+                if (ctx.roundRect) {
+                  ctx.roundRect(posX, posY, badgeW, badgeH, radius);
+                } else {
+                  ctx.rect(posX, posY, badgeW, badgeH);
+                }
+                ctx.fillStyle = 'rgba(15, 23, 42, 0.55)';
+                ctx.fill();
+                ctx.strokeStyle = 'rgba(255, 255, 255, 0.25)';
+                ctx.lineWidth = 1;
+                ctx.stroke();
+                ctx.restore();
+
+                let curX = posX + padX;
+                const midY = posY + badgeH / 2;
+
+                // Draw Logo
+                if (logoImg && (type === 'logo' || type === 'both')) {
+                  const lY = midY - logoSize / 2;
+                  ctx.shadowColor = 'rgba(0, 0, 0, 0.5)';
+                  ctx.shadowBlur = 4;
+                  ctx.drawImage(logoImg, curX, lY, logoSize, logoSize);
+                  ctx.shadowBlur = 0;
+                  curX += logoSize + itemGap;
+                }
+
+                // Draw Embossed Text
+                if (type === 'text' || type === 'both') {
+                  ctx.font = font;
+                  ctx.textBaseline = 'middle';
+                  ctx.textAlign = 'left';
+
+                  // 3D Embossed shadow
+                  ctx.shadowColor = 'rgba(0, 0, 0, 0.9)';
+                  ctx.shadowBlur = 3;
+                  ctx.shadowOffsetX = 1;
+                  ctx.shadowOffsetY = 1;
+
+                  // Dark border stroke
+                  ctx.strokeStyle = 'rgba(0, 0, 0, 0.7)';
+                  ctx.lineWidth = Math.max(1.5, baseFontSize * 0.06);
+                  ctx.strokeText(text, curX, midY);
+
+                  // Crisp white text fill
+                  ctx.fillStyle = '#ffffff';
+                  ctx.fillText(text, curX, midY);
+                }
+              }
+
+              ctx.restore();
+
+              // Output converted blob to File object
+              const mime = file.type === 'image/png' ? 'image/png' : 'image/jpeg';
+              canvas.toBlob((blob) => {
+                if (!blob) {
+                  resolve(file);
+                  return;
+                }
+                const newFile = new File([blob], file.name, {
+                  type: mime,
+                  lastModified: Date.now()
+                });
+                resolve(newFile);
+              }, mime, 0.92);
+
+            } catch (err) {
+              console.error('[Watermark] Processing error:', err);
+              resolve(file);
+            }
+          };
+          img.onerror = () => resolve(file);
+          img.src = reader.result;
+        };
+        reader.onerror = () => resolve(file);
+        reader.readAsDataURL(file);
+      });
+    }
+
+    // Upload Files Core Function with Watermark Integration
     async function handleUploadFiles(files) {
       if (!files || files.length === 0) return;
 
+      const isWatermarkEnabled = (document.getElementById('mm_wm_enable'))?.checked;
+      const wmTypeEl = document.querySelector('input[name="mm_wm_type"]:checked');
+      const wmType = wmTypeEl ? wmTypeEl.value : 'text';
+      const wmPositionEl = document.getElementById('mm_wm_position');
+      const wmPosition = wmPositionEl ? wmPositionEl.value : 'bottom-right';
+
       if (statusMsg) {
         statusMsg.style.display = 'block';
-        statusMsg.textContent = `Đang tải ${files.length} ảnh lên hệ thống & MySQL...`;
+        statusMsg.textContent = isWatermarkEnabled
+          ? `Đang đóng dấu Watermark & tải ${files.length} ảnh lên hệ thống...`
+          : `Đang tải ${files.length} ảnh lên hệ thống & MySQL...`;
+      }
+
+      // Process watermark on client before uploading
+      const processedFiles = [];
+      for (let i = 0; i < files.length; i++) {
+        if (isWatermarkEnabled) {
+          const wmFile = await applyWatermark(files[i], {
+            type: wmType,
+            text: 'vlxdhoangyen.com',
+            logoUrl: '/favicon.png',
+            position: wmPosition
+          });
+          processedFiles.push(wmFile);
+        } else {
+          processedFiles.push(files[i]);
+        }
       }
 
       const formData = new FormData();
-      for (let i = 0; i < files.length; i++) {
-        formData.append('files', files[i]);
+      for (let i = 0; i < processedFiles.length; i++) {
+        formData.append('files', processedFiles[i]);
       }
 
       try {
@@ -864,7 +1250,7 @@ const initialJsonStr = JSON.stringify(parsedInitialItems);
           }
           syncStateToInputs();
           if (statusMsg) {
-            statusMsg.textContent = `✅ Đã tải lên ${data.urls.length} ảnh thành công!`;
+            statusMsg.textContent = `✅ Đã tải lên ${data.urls.length} ảnh thành công! ${isWatermarkEnabled ? '(Đã đóng dấu bản quyền)' : ''}`;
             setTimeout(() => { statusMsg.style.display = 'none'; }, 4000);
           }
         } else {
