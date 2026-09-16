@@ -4,7 +4,6 @@ if (Test-Path $dest) {
 }
 
 $files = @(
-    "dist",
     "public",
     "src",
     "scripts",
