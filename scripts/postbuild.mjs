@@ -14,5 +14,15 @@ if (fs.existsSync(distDir)) {
   fs.writeFileSync(path.join(distDir, 'server.js'), distLauncher, 'utf8');
   fs.writeFileSync(path.join(distDir, 'entry.mjs'), distLauncher, 'utf8');
 
-  console.log('[Postbuild] Created dist entrypoint fallbacks (dist/index.js, dist/server.js, dist/entry.mjs).');
+  // Copy .htaccess to dist/ and dist/client/
+  const htaccessSource = path.join(rootDir, 'public', '.htaccess');
+  if (fs.existsSync(htaccessSource)) {
+    fs.copyFileSync(htaccessSource, path.join(distDir, '.htaccess'));
+    const distClientDir = path.join(distDir, 'client');
+    if (fs.existsSync(distClientDir)) {
+      fs.copyFileSync(htaccessSource, path.join(distClientDir, '.htaccess'));
+    }
+  }
+
+  console.log('[Postbuild] Created dist entrypoint fallbacks & copied .htaccess.');
 }

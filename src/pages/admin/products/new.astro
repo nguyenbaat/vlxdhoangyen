@@ -43,14 +43,36 @@ if (Astro.request.method === 'POST') {
         .replace(/^-+|-+$/g, '');
     }
 
-    const images = gallery_str
-      .split('\n')
-      .map(s => s.trim())
-      .filter(s => s.length > 0);
-
-    if (featured_image && !images.includes(featured_image)) {
-      images.unshift(featured_image);
+    const gallery_alts_json = formData.get('gallery_alts_json')?.toString() || '';
+    let imageItems: Array<{ url: string; alt?: string }> = [];
+    
+    if (gallery_alts_json) {
+      try {
+        const parsed = JSON.parse(gallery_alts_json);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          imageItems = parsed
+            .filter(item => Boolean(item?.url))
+            .map(item => ({
+              url: item.url.trim(),
+              alt: item.alt?.trim() || name
+            }));
+        }
+      } catch (e) {}
     }
+
+    if (imageItems.length === 0) {
+      const images = gallery_str
+        .split('\n')
+        .map(s => s.trim())
+        .filter(s => s.length > 0);
+
+      if (featured_image && !images.includes(featured_image)) {
+        images.unshift(featured_image);
+      }
+      imageItems = images.map(url => ({ url, alt: name }));
+    }
+
+    const finalFeaturedImage = featured_image || (imageItems[0]?.url || '');
 
     await ProductRepo.create({
       name,
@@ -64,13 +86,13 @@ if (Astro.request.method === 'POST') {
       short_description,
       content,
       specifications,
-      featured_image,
+      featured_image: finalFeaturedImage,
       seo_title,
       seo_description,
       is_featured,
       is_in_stock,
       status,
-      images
+      images: imageItems
     });
 
     return Astro.redirect('/admin/products');

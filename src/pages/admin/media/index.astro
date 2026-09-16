@@ -1,0 +1,1241 @@
+---
+import AdminLayout from '../../../layouts/AdminLayout.astro';
+import fs from 'node:fs';
+import path from 'node:path';
+import { listMediaFull, deleteMedia, updateMedia, saveMedia } from '../../../server/db/media.js';
+
+let errorMsg = '';
+let successMsg = '';
+
+if (Astro.request.method === 'POST') {
+  try {
+    const formData = await Astro.request.formData();
+    const action = formData.get('action')?.toString();
+    const id = Number(formData.get('id'));
+
+    if (action === 'delete' && id) {
+      await deleteMedia(id);
+      successMsg = `Đã xóa hình ảnh #${id} thành công!`;
+    } else if (action === 'update' && id) {
+      const filename = formData.get('filename')?.toString().trim();
+      const alt_text = formData.get('alt_text')?.toString().trim();
+      const replaceFile = formData.get('replace_file');
+
+      const updates: any = {};
+      if (filename) updates.filename = filename;
+      if (alt_text !== undefined) updates.alt_text = alt_text;
+
+      if (replaceFile instanceof File && replaceFile.size > 0) {
+        updates.data = Buffer.from(await replaceFile.arrayBuffer());
+        updates.mime_type = replaceFile.type;
+        updates.file_size = replaceFile.size;
+      }
+
+      await updateMedia(id, updates);
+      successMsg = `Đã cập nhật thông tin hình ảnh #${id} thành công!`;
+    } else if (action === 'upload') {
+      const files = formData.getAll('upload_files').filter((item): item is File => item instanceof File && item.size > 0);
+      const alt_text = formData.get('upload_alt')?.toString().trim() || '';
+
+      if (!files.length) {
+        throw new Error('Vui lòng chọn ít nhất một file ảnh để tải lên.');
+      }
+
+      for (const file of files) {
+        const data = Buffer.from(await file.arrayBuffer());
+        await saveMedia(file.name.slice(0, 255), file.type, data, alt_text);
+      }
+      successMsg = `Đã tải lên ${files.length} hình ảnh mới vào kho MySQL thành công!`;
+    }
+  } catch (err: any) {
+    errorMsg = err.message || 'Đã có lỗi xảy ra';
+  }
+}
+
+// 1. Fetch DB Media
+const url = new URL(Astro.request.url);
+const search = url.searchParams.get('q') || '';
+const sourceFilter = url.searchParams.get('source') || 'all';
+
+const dbData = await listMediaFull({ search, limit: 200 });
+const dbItems = dbData.items;
+
+// 2. Scan Static Public Images
+const staticItems: Array<{
+  id: string;
+  filename: string;
+  mime_type: string;
+  file_size: number;
+  alt_text: string;
+  created_at: string;
+  url: string;
+  is_static: boolean;
+}> = [];
+
+const publicRoot = path.join(process.cwd(), 'public');
+const dirsToScan = [
+  path.join(process.cwd(), 'uploads'),
+  path.join(publicRoot, 'images', 'uploads'),
+  path.join(publicRoot, 'images', 'danh-muc'),
+  path.join(publicRoot, 'images'),
+  publicRoot
+];
+
+for (const dir of dirsToScan) {
+  if (!fs.existsSync(dir)) continue;
+  try {
+    const entries = fs.readdirSync(dir, { withFileTypes: true });
+    for (const ent of entries) {
+      if (ent.isDirectory()) continue;
+      const ext = path.extname(ent.name).toLowerCase();
+      if (!['.jpg', '.jpeg', '.png', '.webp', '.gif', '.svg'].includes(ext)) continue;
+
+      const fullPath = path.join(dir, ent.name);
+      const stats = fs.statSync(fullPath);
+      const webUrl = dir === dirsToScan[0]
+        ? `/images/uploads/${ent.name}`
+        : fullPath.replace(publicRoot, '').replace(/\\/g, '/');
+
+      if (!staticItems.some(i => i.url === webUrl)) {
+        staticItems.push({
+          id: `static_${ent.name}`,
+          filename: ent.name,
+          mime_type: ext === '.png' ? 'image/png' : (ext === '.webp' ? 'image/webp' : 'image/jpeg'),
+          file_size: stats.size,
+          alt_text: ent.name.replace(ext, '').replace(/[-_]/g, ' '),
+          created_at: stats.mtime.toISOString(),
+          url: webUrl.startsWith('/') ? webUrl : `/${webUrl}`,
+          is_static: true
+        });
+      }
+    }
+  } catch (e) {}
+}
+
+let allMediaItems = [...dbItems, ...staticItems];
+
+if (sourceFilter === 'mysql') {
+  allMediaItems = dbItems;
+} else if (sourceFilter === 'static') {
+  allMediaItems = staticItems as any;
+}
+
+if (search) {
+  const q = search.toLowerCase().trim();
+  allMediaItems = allMediaItems.filter(i => 
+    i.filename.toLowerCase().includes(q) || 
+    (i.alt_text && i.alt_text.toLowerCase().includes(q)) ||
+    i.url.toLowerCase().includes(q)
+  );
+}
+
+function formatBytes(bytes: number) {
+  if (bytes === 0) return '0 Bytes';
+  const k = 1024;
+  const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+  return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+}
+
+const totalStorageBytes = dbData.totalSize + staticItems.reduce((acc, i) => acc + i.file_size, 0);
+---
+
+<AdminLayout title="Quản Lý Media & Thư Viện Ảnh" activeNav="media">
+  <div class="tail-mgmt-wrap">
+    
+    <!-- Top Alert Messages -->
+    {successMsg && (
+      <div class="tail-alert tail-alert-success">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
+        <span>{successMsg}</span>
+      </div>
+    )}
+    {errorMsg && (
+      <div class="tail-alert tail-alert-error">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+        <span>{errorMsg}</span>
+      </div>
+    )}
+
+    <!-- Stats Row Cards -->
+    <div class="media-stats-grid">
+      <div class="media-stat-card">
+        <div class="stat-icon-box bg-blue">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#0284c7" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>
+        </div>
+        <div class="stat-info">
+          <span class="stat-label">Tổng số hình ảnh</span>
+          <strong class="stat-value">{allMediaItems.length} <small>tệp</small></strong>
+        </div>
+      </div>
+
+      <div class="media-stat-card">
+        <div class="stat-icon-box bg-emerald">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
+        </div>
+        <div class="stat-info">
+          <span class="stat-label">Kho lưu trữ MySQL</span>
+          <strong class="stat-value">{dbData.total} <small>ảnh tải lên</small></strong>
+        </div>
+      </div>
+
+      <div class="media-stat-card">
+        <div class="stat-icon-box bg-amber">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg>
+        </div>
+        <div class="stat-info">
+          <span class="stat-label">Ảnh tĩnh thư mục</span>
+          <strong class="stat-value">{staticItems.length} <small>tệp</small></strong>
+        </div>
+      </div>
+
+      <div class="media-stat-card">
+        <div class="stat-icon-box bg-purple">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#8b5cf6" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg>
+        </div>
+        <div class="stat-info">
+          <span class="stat-label">Dung lượng ước tính</span>
+          <strong class="stat-value">{formatBytes(totalStorageBytes)}</strong>
+        </div>
+      </div>
+    </div>
+
+    <!-- TailAdmin Controls Bar -->
+    <div class="tail-controls-bar" style="margin-top: 1.25rem;">
+      <div class="tail-controls-left">
+        <!-- Search form -->
+        <form method="GET" class="tail-search-box">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+          <input type="text" name="q" value={search} placeholder="Tìm theo tên file, thẻ ALT, đường dẫn..." class="tail-search-input" />
+          {sourceFilter !== 'all' && <input type="hidden" name="source" value={sourceFilter} />}
+        </form>
+
+        <!-- Source Filter -->
+        <div class="tail-filter-group">
+          <a href={`/admin/media?source=all${search ? `&q=${encodeURIComponent(search)}` : ''}`} class={`tail-filter-btn ${sourceFilter === 'all' ? 'active' : ''}`}>Tất cả</a>
+          <a href={`/admin/media?source=mysql${search ? `&q=${encodeURIComponent(search)}` : ''}`} class={`tail-filter-btn ${sourceFilter === 'mysql' ? 'active' : ''}`}>Kho MySQL ({dbData.total})</a>
+          <a href={`/admin/media?source=static${search ? `&q=${encodeURIComponent(search)}` : ''}`} class={`tail-filter-btn ${sourceFilter === 'static' ? 'active' : ''}`}>Ảnh tĩnh ({staticItems.length})</a>
+        </div>
+      </div>
+
+      <div class="tail-controls-right">
+        <!-- Upload Trigger Button -->
+        <button type="button" class="btn btn-primary btn-upload-trigger" id="btn_open_upload_modal">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+          <span>TẢI ẢNH MỚI LÊN</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Media Assets Grid Container -->
+    <div class="media-library-panel">
+      {allMediaItems.length === 0 ? (
+        <div class="media-empty-state">
+          <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>
+          <h3>Không tìm thấy hình ảnh nào</h3>
+          <p>Thử tìm kiếm với từ khóa khác hoặc bấm nút "Tải Ảnh Mới Lên" phía trên.</p>
+        </div>
+      ) : (
+        <div class="media-cards-grid">
+          {allMediaItems.map((item) => (
+            <div class="media-item-card" data-id={item.id} data-url={item.url} data-name={item.filename} data-alt={item.alt_text || ''} data-size={formatBytes(item.file_size)} data-static={item.is_static ? "true" : "false"}>
+              <div class="media-item-thumb-wrapper">
+                <img src={item.url} alt={item.alt_text || item.filename} loading="lazy" class="media-item-img" />
+                <span class="media-source-pill">{item.is_static ? 'Tĩnh' : 'MySQL'}</span>
+              </div>
+              
+              <div class="media-item-meta">
+                <div class="media-item-name" title={item.filename}>{item.filename}</div>
+                
+                <div class="media-item-alt" title={item.alt_text || 'Chưa có thẻ ALT'}>
+                  {item.alt_text ? (
+                    <span class="alt-badge good">🏷️ {item.alt_text}</span>
+                  ) : (
+                    <span class="alt-badge empty">⚠️ Chưa đặt ALT</span>
+                  )}
+                </div>
+
+                <div class="media-item-subline">
+                  <span class="media-size-text">{formatBytes(item.file_size)}</span>
+                  <span class="media-ext-tag">{item.filename.split('.').pop()?.toUpperCase()}</span>
+                </div>
+              </div>
+
+              <div class="media-item-actions">
+                <button type="button" class="media-act-btn btn-edit-media" title="Chỉnh sửa link, ALT, tên ảnh, thay file">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
+                  <span>Sửa</span>
+                </button>
+
+                <button type="button" class="media-act-btn btn-copy-url" data-copy={item.url} title="Sao chép đường dẫn URL">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+                  <span>Link</span>
+                </button>
+
+                {!item.is_static && (
+                  <button type="button" class="media-act-btn btn-delete-media" data-del-id={item.id} data-del-name={item.filename} title="Xóa hình ảnh">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+                  </button>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+
+    <!-- =========================================================================
+         1. MODAL CHỈNH SỬA MEDIA (LINK / ALT / TÊN / FILE THAY THẾ)
+         ========================================================================= -->
+    <div class="media-modal-overlay" id="edit_media_modal" style="display: none;">
+      <div class="media-modal-dialog edit-dialog">
+        <div class="media-modal-header">
+          <div class="header-title-flex">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#0284c7" stroke-width="2.2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
+            <h3>Chỉnh Sửa Chi Tiết Hình Ảnh & Thẻ ALT</h3>
+          </div>
+          <button type="button" class="media-modal-close" id="btn_close_edit_modal">&times;</button>
+        </div>
+
+        <form method="POST" enctype="multipart/form-data" class="edit-media-form" id="form_edit_media">
+          <input type="hidden" name="action" value="update" />
+          <input type="hidden" name="id" id="edit_media_id" />
+
+          <div class="edit-modal-grid">
+            <!-- Left Preview Side -->
+            <div class="edit-modal-preview">
+              <div class="preview-img-container">
+                <img id="edit_preview_img" src="" alt="" />
+              </div>
+              <div class="preview-info-box">
+                <div class="info-row">
+                  <span>Dung lượng:</span>
+                  <strong id="edit_info_size">-</strong>
+                </div>
+                <div class="info-row">
+                  <span>Nguồn lưu trữ:</span>
+                  <strong id="edit_info_source">-</strong>
+                </div>
+              </div>
+              <a href="#" target="_blank" id="edit_btn_open_tab" class="btn-open-newtab">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>
+                <span>Mở ảnh kích thước gốc ↗</span>
+              </a>
+            </div>
+
+            <!-- Right Edit Fields -->
+            <div class="edit-modal-fields">
+              <!-- Field 1: Đường dẫn link ảnh -->
+              <div class="form-group-tail">
+                <label for="edit_url">Đường Dẫn URL Hình Ảnh</label>
+                <div class="input-with-action">
+                  <input type="text" id="edit_url" readonly class="tail-input readonly-input" />
+                  <button type="button" class="btn btn-secondary" id="btn_copy_modal_url" title="Sao chép đường dẫn">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+                    <span>Copy URL</span>
+                  </button>
+                </div>
+                <span class="field-hint">Dùng đường dẫn này để chèn vào sản phẩm, bài viết hoặc banner.</span>
+              </div>
+
+              <!-- Field 2: Tên file ảnh -->
+              <div class="form-group-tail">
+                <label for="edit_filename">Tên File Hình Ảnh (Filename)</label>
+                <input type="text" id="edit_filename" name="filename" class="tail-input" required />
+                <span class="field-hint">Tên file nên viết không dấu, gạch ngang nối liền (Ví dụ: <code>thep-d16-hoa-phat.webp</code>).</span>
+              </div>
+
+              <!-- Field 3: Thẻ ALT text SEO -->
+              <div class="form-group-tail">
+                <label for="edit_alt">Thẻ ALT Text (Tối ưu hóa SEO)</label>
+                <input type="text" id="edit_alt" name="alt_text" class="tail-input" placeholder="Nhập mô tả hình ảnh cho Googlebot & AI..." />
+                <span class="field-hint">Mô tả rõ nội dung vật liệu, quy cách và thương hiệu (Ví dụ: <em>Thép cây D16 Hòa Phát tại kho VLXD Hoàng Yến Quảng Trị</em>).</span>
+              </div>
+
+              <!-- Field 4: Thay thế file ảnh mới -->
+              <div class="form-group-tail replace-file-box" id="box_replace_file">
+                <label for="edit_replace_file">Thay Thế File Ảnh Mới (Giữ nguyên ID & URL)</label>
+                <input type="file" id="edit_replace_file" name="replace_file" accept="image/*" class="tail-file-input" />
+                <span class="field-hint">Chọn ảnh mới nếu muốn thay đổi hình ảnh mà không làm gãy liên kết cũ.</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="media-modal-footer">
+            <div class="footer-left">
+              <button type="button" class="btn btn-danger-outline" id="btn_modal_delete" style="display: none;">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+                <span>Xóa Ảnh</span>
+              </button>
+            </div>
+            <div class="footer-right">
+              <button type="button" class="btn btn-secondary" id="btn_cancel_edit">Hủy Bỏ</button>
+              <button type="submit" class="btn btn-primary" id="btn_save_edit">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path><polyline points="17 21 17 13 7 13 7 21"></polyline><polyline points="7 3 7 8 15 8"></polyline></svg>
+                <span>LƯU THAY ĐỔI</span>
+              </button>
+            </div>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- =========================================================================
+         2. MODAL TẢI ẢNH MỚI LÊN (UPLOAD MODAL)
+         ========================================================================= -->
+    <div class="media-modal-overlay" id="upload_media_modal" style="display: none;">
+      <div class="media-modal-dialog upload-dialog">
+        <div class="media-modal-header">
+          <div class="header-title-flex">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#0284c7" stroke-width="2.2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
+            <h3>Tải Ảnh Mới Lên Hệ Thống</h3>
+          </div>
+          <button type="button" class="media-modal-close" id="btn_close_upload_modal">&times;</button>
+        </div>
+
+        <form method="POST" enctype="multipart/form-data" class="upload-media-form" id="form_upload_media">
+          <input type="hidden" name="action" value="upload" />
+
+          <div class="upload-dropzone-large" id="modal_upload_dropzone">
+            <input type="file" id="modal_file_input" name="upload_files" accept="image/*" multiple required style="display: none;" />
+            <div class="dropzone-large-inner">
+              <div class="dropzone-circle-icon">
+                <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#0284c7" stroke-width="1.8"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
+              </div>
+              <strong class="dropzone-title">Kéo & thả file ảnh vào đây hoặc bấm để duyệt file</strong>
+              <span class="dropzone-sub">Hỗ trợ JPG, PNG, WebP, GIF, SVG (Chọn nhiều ảnh cùng lúc, tối đa 10MB/ảnh)</span>
+              <button type="button" class="btn btn-primary" id="btn_browse_files">Chọn file từ máy tính</button>
+              <div id="upload_selected_files_list" class="selected-files-preview"></div>
+            </div>
+          </div>
+
+          <div class="form-group-tail" style="margin-top: 1.25rem;">
+            <label for="upload_alt_default">Thẻ ALT Mặc Định (Tùy chọn)</label>
+            <input type="text" id="upload_alt_default" name="upload_alt" class="tail-input" placeholder="Nhập thẻ ALT chung cho các ảnh tải lên đợt này..." />
+            <span class="field-hint">Bạn có thể chỉnh sửa lại thẻ ALT riêng cho từng ảnh sau khi tải lên.</span>
+          </div>
+
+          <div class="media-modal-footer" style="margin-top: 1.5rem;">
+            <button type="button" class="btn btn-secondary" id="btn_cancel_upload">Hủy</button>
+            <button type="submit" class="btn btn-primary" id="btn_submit_upload">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
+              <span>TIẾN HÀNH TẢI LÊN</span>
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Hidden Delete Form -->
+    <form method="POST" id="form_delete_media" style="display: none;">
+      <input type="hidden" name="action" value="delete" />
+      <input type="hidden" name="id" id="delete_target_id" />
+    </form>
+
+    <!-- Toast Notification for Copy URL -->
+    <div id="media_toast" class="media-toast" style="display: none;">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
+      <span id="media_toast_text">Đã sao chép link URL!</span>
+    </div>
+
+  </div>
+</AdminLayout>
+
+<style is:global>
+  /* ==========================================================================
+     TAILADMIN MEDIA MANAGEMENT STYLES
+     ========================================================================== */
+  .tail-mgmt-wrap {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding-bottom: 3rem;
+  }
+
+  /* Alerts */
+  .tail-alert {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.85rem 1.25rem;
+    border-radius: 8px;
+    margin-bottom: 1.25rem;
+    font-size: 0.9rem;
+    font-weight: 600;
+  }
+  .tail-alert-success {
+    background: #ecfdf5;
+    color: #065f46;
+    border: 1px solid #a7f3d0;
+  }
+  .tail-alert-error {
+    background: #fef2f2;
+    color: #991b1b;
+    border: 1px solid #fecaca;
+  }
+
+  /* Stats Grid */
+  .media-stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 1rem;
+    margin-bottom: 1.25rem;
+  }
+  .media-stat-card {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    padding: 1.1rem 1.25rem;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+  }
+  .stat-icon-box {
+    width: 48px;
+    height: 48px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+  .stat-icon-box.bg-blue { background: #e0f2fe; }
+  .stat-icon-box.bg-emerald { background: #d1fae5; }
+  .stat-icon-box.bg-amber { background: #fef3c7; }
+  .stat-icon-box.bg-purple { background: #f3e8ff; }
+
+  .stat-info {
+    display: flex;
+    flex-direction: column;
+  }
+  .stat-label {
+    font-size: 0.78rem;
+    color: #64748b;
+    font-weight: 600;
+  }
+  .stat-value {
+    font-size: 1.35rem;
+    color: #0f172a;
+    font-weight: 800;
+    line-height: 1.2;
+    margin-top: 2px;
+  }
+  .stat-value small {
+    font-size: 0.75rem;
+    color: #94a3b8;
+    font-weight: 600;
+  }
+
+  /* Controls Bar */
+  .tail-controls-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1rem;
+    flex-wrap: wrap;
+    background: #ffffff;
+    padding: 0.85rem 1.25rem;
+    border-radius: 10px;
+    border: 1px solid #e2e8f0;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+  }
+  .tail-controls-left {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    flex-wrap: wrap;
+    flex-grow: 1;
+  }
+  .tail-search-box {
+    position: relative;
+    min-width: 280px;
+    max-width: 420px;
+    flex-grow: 1;
+  }
+  .tail-search-box svg {
+    position: absolute;
+    left: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #94a3b8;
+  }
+  .tail-search-input {
+    width: 100%;
+    padding: 0.5rem 0.75rem 0.5rem 2.2rem;
+    border: 1px solid #cbd5e1;
+    border-radius: 8px;
+    font-size: 0.86rem;
+    background: #f8fafc;
+    box-sizing: border-box;
+  }
+  .tail-search-input:focus {
+    outline: none;
+    border-color: #0284c7;
+    background: #ffffff;
+  }
+
+  .tail-filter-group {
+    display: flex;
+    gap: 4px;
+    background: #f1f5f9;
+    padding: 3px;
+    border-radius: 8px;
+  }
+  .tail-filter-btn {
+    padding: 4px 10px;
+    border-radius: 6px;
+    font-size: 0.78rem;
+    font-weight: 700;
+    color: #64748b;
+    text-decoration: none;
+    transition: all 0.15s;
+  }
+  .tail-filter-btn:hover {
+    color: #0f172a;
+  }
+  .tail-filter-btn.active {
+    background: #ffffff;
+    color: #0284c7;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+  }
+
+  /* Media Cards Grid */
+  .media-library-panel {
+    margin-top: 1.25rem;
+  }
+  .media-cards-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 1.1rem;
+  }
+  .media-item-card {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    transition: all 0.2s ease;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+  }
+  .media-item-card:hover {
+    border-color: #94a3b8;
+    transform: translateY(-2px);
+    box-shadow: 0 8px 16px rgba(0,0,0,0.08);
+  }
+
+  .media-item-thumb-wrapper {
+    position: relative;
+    width: 100%;
+    height: 140px;
+    background: #f8fafc;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    border-bottom: 1px solid #f1f5f9;
+  }
+  .media-item-img {
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
+    transition: transform 0.2s ease;
+  }
+  .media-item-card:hover .media-item-img {
+    transform: scale(1.04);
+  }
+  .media-source-pill {
+    position: absolute;
+    top: 6px;
+    right: 6px;
+    background: rgba(15, 23, 42, 0.7);
+    color: #ffffff;
+    font-size: 0.65rem;
+    font-weight: 700;
+    padding: 2px 6px;
+    border-radius: 4px;
+    backdrop-filter: blur(2px);
+  }
+
+  .media-item-meta {
+    padding: 0.75rem 0.85rem;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    flex-grow: 1;
+  }
+  .media-item-name {
+    font-size: 0.82rem;
+    font-weight: 700;
+    color: #1e293b;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .media-item-alt {
+    min-height: 22px;
+  }
+  .alt-badge {
+    display: inline-block;
+    font-size: 0.7rem;
+    padding: 2px 6px;
+    border-radius: 4px;
+    max-width: 100%;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .alt-badge.good {
+    background: #f0fdf4;
+    color: #166534;
+    border: 1px solid #bbf7d0;
+  }
+  .alt-badge.empty {
+    background: #fffbeb;
+    color: #b45309;
+    border: 1px solid #fde68a;
+  }
+
+  .media-item-subline {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.72rem;
+    color: #94a3b8;
+    margin-top: 2px;
+  }
+  .media-ext-tag {
+    font-weight: 800;
+    background: #f1f5f9;
+    color: #475569;
+    padding: 1px 5px;
+    border-radius: 3px;
+  }
+
+  .media-item-actions {
+    display: flex;
+    border-top: 1px solid #f1f5f9;
+    background: #f8fafc;
+    padding: 4px;
+    gap: 4px;
+  }
+  .media-act-btn {
+    flex: 1;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
+    padding: 5px 6px;
+    border-radius: 6px;
+    border: none;
+    font-size: 0.74rem;
+    font-weight: 700;
+    cursor: pointer;
+    background: transparent;
+    color: #475569;
+    transition: all 0.15s;
+  }
+  .media-act-btn:hover {
+    background: #ffffff;
+    color: #0284c7;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.06);
+  }
+  .media-act-btn.btn-delete-media {
+    flex: 0 0 32px;
+    color: #ef4444;
+  }
+  .media-act-btn.btn-delete-media:hover {
+    background: #fee2e2;
+    color: #b91c1c;
+  }
+
+  .media-empty-state {
+    text-align: center;
+    padding: 3.5rem 1rem;
+    background: #ffffff;
+    border-radius: 12px;
+    border: 1px dashed #cbd5e1;
+  }
+  .media-empty-state h3 {
+    margin: 12px 0 6px 0;
+    font-size: 1.1rem;
+    color: #1e293b;
+  }
+  .media-empty-state p {
+    margin: 0;
+    font-size: 0.85rem;
+    color: #64748b;
+  }
+
+  /* Modals */
+  .media-modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(15, 23, 42, 0.7);
+    backdrop-filter: blur(4px);
+    z-index: 99999;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1.5rem;
+  }
+  .media-modal-dialog {
+    background: #ffffff;
+    border-radius: 14px;
+    width: 100%;
+    max-height: 90vh;
+    overflow-y: auto;
+    box-shadow: 0 25px 50px -12px rgba(0,0,0,0.35);
+    display: flex;
+    flex-direction: column;
+  }
+  .edit-dialog {
+    max-width: 820px;
+  }
+  .upload-dialog {
+    max-width: 650px;
+  }
+
+  .media-modal-header {
+    padding: 1.1rem 1.5rem;
+    background: #f8fafc;
+    border-bottom: 1px solid #e2e8f0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .header-title-flex {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+  .header-title-flex h3 {
+    margin: 0;
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: #0f172a;
+  }
+  .media-modal-close {
+    background: transparent;
+    border: none;
+    font-size: 1.6rem;
+    line-height: 1;
+    cursor: pointer;
+    color: #64748b;
+  }
+  .media-modal-close:hover {
+    color: #0f172a;
+  }
+
+  .edit-modal-grid {
+    display: grid;
+    grid-template-columns: 280px 1fr;
+    gap: 1.5rem;
+    padding: 1.5rem;
+  }
+  @media (max-width: 768px) {
+    .edit-modal-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  .preview-img-container {
+    width: 100%;
+    height: 220px;
+    background: #f1f5f9;
+    border-radius: 10px;
+    border: 1px solid #e2e8f0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    padding: 8px;
+    box-sizing: border-box;
+  }
+  .preview-img-container img {
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
+  }
+
+  .preview-info-box {
+    margin-top: 10px;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 8px 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    font-size: 0.78rem;
+  }
+  .info-row {
+    display: flex;
+    justify-content: space-between;
+    color: #64748b;
+  }
+  .info-row strong {
+    color: #1e293b;
+  }
+
+  .btn-open-newtab {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    width: 100%;
+    margin-top: 10px;
+    padding: 6px 10px;
+    background: #f1f5f9;
+    border-radius: 6px;
+    font-size: 0.78rem;
+    font-weight: 700;
+    color: #0369a1;
+    text-decoration: none;
+    transition: background 0.15s;
+  }
+  .btn-open-newtab:hover {
+    background: #e0f2fe;
+  }
+
+  .edit-modal-fields {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+  .form-group-tail {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+  .form-group-tail label {
+    font-size: 0.82rem;
+    font-weight: 700;
+    color: #334155;
+  }
+  .tail-input {
+    width: 100%;
+    padding: 0.55rem 0.75rem;
+    border: 1px solid #cbd5e1;
+    border-radius: 6px;
+    font-size: 0.85rem;
+    background: #ffffff;
+    box-sizing: border-box;
+  }
+  .tail-input:focus {
+    outline: none;
+    border-color: #0284c7;
+    box-shadow: 0 0 0 2px rgba(2, 132, 199, 0.15);
+  }
+  .tail-input.readonly-input {
+    background: #f8fafc;
+    color: #475569;
+    cursor: default;
+  }
+  .input-with-action {
+    display: flex;
+    gap: 6px;
+  }
+  .input-with-action input {
+    flex-grow: 1;
+  }
+  .field-hint {
+    font-size: 0.74rem;
+    color: #64748b;
+    line-height: 1.35;
+  }
+
+  .replace-file-box {
+    background: #f8fafc;
+    border: 1px dashed #cbd5e1;
+    padding: 10px 12px;
+    border-radius: 8px;
+  }
+  .tail-file-input {
+    font-size: 0.82rem;
+    margin-top: 4px;
+  }
+
+  .media-modal-footer {
+    padding: 1rem 1.5rem;
+    background: #f8fafc;
+    border-top: 1px solid #e2e8f0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .footer-right {
+    display: flex;
+    gap: 8px;
+  }
+
+  /* Large Dropzone for Upload Modal */
+  .upload-media-form {
+    padding: 1.5rem;
+  }
+  .upload-dropzone-large {
+    border: 2px dashed #93c5fd;
+    background: #f0f9ff;
+    border-radius: 12px;
+    padding: 2.5rem 1.5rem;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+  .upload-dropzone-large:hover, .upload-dropzone-large.drag-over {
+    border-color: #0284c7;
+    background: #e0f2fe;
+  }
+  .dropzone-large-inner {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.75rem;
+  }
+  .dropzone-circle-icon {
+    width: 64px;
+    height: 64px;
+    background: #ffffff;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 4px 10px rgba(2, 132, 199, 0.15);
+  }
+  .dropzone-title {
+    font-size: 1rem;
+    color: #0f172a;
+  }
+  .dropzone-sub {
+    font-size: 0.8rem;
+    color: #64748b;
+  }
+  .selected-files-preview {
+    font-size: 0.82rem;
+    font-weight: 700;
+    color: #0369a1;
+    margin-top: 6px;
+  }
+
+  /* Toast Notification */
+  .media-toast {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    background: #0f172a;
+    color: #ffffff;
+    padding: 10px 18px;
+    border-radius: 8px;
+    font-size: 0.86rem;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.25);
+    z-index: 100000;
+    animation: toastSlideIn 0.25s ease forwards;
+  }
+  @keyframes toastSlideIn {
+    from { opacity: 0; transform: translateY(12px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+</style>
+
+<script is:inline>
+  document.addEventListener('DOMContentLoaded', () => {
+    // 1. Toast function
+    const toast = document.getElementById('media_toast');
+    const toastText = document.getElementById('media_toast_text');
+    let toastTimer = null;
+
+    function showToast(msg) {
+      if (!toast) return;
+      if (toastText) toastText.textContent = msg;
+      toast.style.display = 'flex';
+      if (toastTimer) clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => {
+        toast.style.display = 'none';
+      }, 3000);
+    }
+
+    // 2. Copy URL buttons on cards
+    document.querySelectorAll('.btn-copy-url').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const url = btn.getAttribute('data-copy');
+        if (url) {
+          const fullUrl = url.startsWith('http') ? url : window.location.origin + url;
+          navigator.clipboard.writeText(fullUrl).then(() => {
+            showToast(`Đã sao chép link: ${url}`);
+          }).catch(() => {
+            prompt('Sao chép đường dẫn ảnh:', fullUrl);
+          });
+        }
+      });
+    });
+
+    // 3. Edit Modal Handlers
+    const editModal = document.getElementById('edit_media_modal');
+    const closeEditModalBtn = document.getElementById('btn_close_edit_modal');
+    const cancelEditBtn = document.getElementById('btn_cancel_edit');
+    const editIdInput = document.getElementById('edit_media_id');
+    const editUrlInput = document.getElementById('edit_url');
+    const editFilenameInput = document.getElementById('edit_filename');
+    const editAltInput = document.getElementById('edit_alt');
+    const editPreviewImg = document.getElementById('edit_preview_img');
+    const editInfoSize = document.getElementById('edit_info_size');
+    const editInfoSource = document.getElementById('edit_info_source');
+    const editBtnOpenTab = document.getElementById('edit_btn_open_tab');
+    const boxReplaceFile = document.getElementById('box_replace_file');
+    const btnModalDelete = document.getElementById('btn_modal_delete');
+    const copyModalUrlBtn = document.getElementById('btn_copy_modal_url');
+
+    function openEditModal(card) {
+      const id = card.getAttribute('data-id');
+      const url = card.getAttribute('data-url');
+      const name = card.getAttribute('data-name');
+      const alt = card.getAttribute('data-alt');
+      const size = card.getAttribute('data-size');
+      const isStatic = card.getAttribute('data-static') === 'true';
+
+      if (editIdInput) editIdInput.value = id;
+      if (editUrlInput) editUrlInput.value = url;
+      if (editFilenameInput) {
+        editFilenameInput.value = name;
+        editFilenameInput.readOnly = isStatic;
+      }
+      if (editAltInput) {
+        editAltInput.value = alt;
+        editAltInput.readOnly = isStatic;
+      }
+      if (editPreviewImg) editPreviewImg.src = url;
+      if (editInfoSize) editInfoSize.textContent = size;
+      if (editInfoSource) editInfoSource.textContent = isStatic ? 'Thư mục tĩnh (Static)' : 'Kho lưu trữ MySQL';
+      if (editBtnOpenTab) editBtnOpenTab.href = url;
+
+      if (boxReplaceFile) boxReplaceFile.style.display = isStatic ? 'none' : 'block';
+      if (btnModalDelete) {
+        btnModalDelete.style.display = isStatic ? 'none' : 'inline-flex';
+        btnModalDelete.setAttribute('data-target-id', id);
+        btnModalDelete.setAttribute('data-target-name', name);
+      }
+
+      if (editModal) editModal.style.display = 'flex';
+    }
+
+    document.querySelectorAll('.media-item-card').forEach(card => {
+      card.addEventListener('click', (e) => {
+        if (e.target.closest('.btn-copy-url') || e.target.closest('.btn-delete-media')) return;
+        openEditModal(card);
+      });
+    });
+
+    closeEditModalBtn?.addEventListener('click', () => { editModal.style.display = 'none'; });
+    cancelEditBtn?.addEventListener('click', () => { editModal.style.display = 'none'; });
+    if (editModal) {
+      editModal.addEventListener('click', (e) => {
+        if (e.target === editModal) editModal.style.display = 'none';
+      });
+    }
+
+    copyModalUrlBtn?.addEventListener('click', () => {
+      if (editUrlInput?.value) {
+        const fullUrl = editUrlInput.value.startsWith('http') ? editUrlInput.value : window.location.origin + editUrlInput.value;
+        navigator.clipboard.writeText(fullUrl).then(() => {
+          showToast(`Đã sao chép link: ${editUrlInput.value}`);
+        });
+      }
+    });
+
+    // 4. Delete handler
+    const deleteForm = document.getElementById('form_delete_media');
+    const deleteTargetId = document.getElementById('delete_target_id');
+
+    function confirmDelete(id, name) {
+      if (confirm(`Bạn có chắc chắn muốn xóa vĩnh viễn hình ảnh "${name}" (ID #${id}) khỏi kho MySQL?`)) {
+        if (deleteTargetId && deleteForm) {
+          deleteTargetId.value = id;
+          deleteForm.submit();
+        }
+      }
+    }
+
+    document.querySelectorAll('.btn-delete-media').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const id = btn.getAttribute('data-del-id');
+        const name = btn.getAttribute('data-del-name');
+        confirmDelete(id, name);
+      });
+    });
+
+    btnModalDelete?.addEventListener('click', () => {
+      const id = btnModalDelete.getAttribute('data-target-id');
+      const name = btnModalDelete.getAttribute('data-target-name');
+      confirmDelete(id, name);
+    });
+
+    // 5. Upload Modal Handlers
+    const uploadModal = document.getElementById('upload_media_modal');
+    const openUploadModalBtn = document.getElementById('btn_open_upload_modal');
+    const closeUploadModalBtn = document.getElementById('btn_close_upload_modal');
+    const cancelUploadBtn = document.getElementById('btn_cancel_upload');
+    const modalDropzone = document.getElementById('modal_upload_dropzone');
+    const modalFileInput = document.getElementById('modal_file_input');
+    const btnBrowseFiles = document.getElementById('btn_browse_files');
+    const selectedFilesPreview = document.getElementById('upload_selected_files_list');
+
+    openUploadModalBtn?.addEventListener('click', () => {
+      if (uploadModal) uploadModal.style.display = 'flex';
+    });
+    closeUploadModalBtn?.addEventListener('click', () => { uploadModal.style.display = 'none'; });
+    cancelUploadBtn?.addEventListener('click', () => { uploadModal.style.display = 'none'; });
+    if (uploadModal) {
+      uploadModal.addEventListener('click', (e) => {
+        if (e.target === uploadModal) uploadModal.style.display = 'none';
+      });
+    }
+
+    btnBrowseFiles?.addEventListener('click', (e) => {
+      e.stopPropagation();
+      modalFileInput?.click();
+    });
+    modalDropzone?.addEventListener('click', () => {
+      modalFileInput?.click();
+    });
+
+    modalFileInput?.addEventListener('change', () => {
+      if (modalFileInput.files && modalFileInput.files.length > 0) {
+        const count = modalFileInput.files.length;
+        if (selectedFilesPreview) {
+          selectedFilesPreview.textContent = `Đã chọn ${count} tệp: ${Array.from(modalFileInput.files).map(f => f.name).slice(0, 3).join(', ')}${count > 3 ? '...' : ''}`;
+        }
+      }
+    });
+
+    if (modalDropzone) {
+      ['dragenter', 'dragover'].forEach(name => {
+        modalDropzone.addEventListener(name, (e) => {
+          e.preventDefault();
+          modalDropzone.classList.add('drag-over');
+        });
+      });
+      ['dragleave', 'drop'].forEach(name => {
+        modalDropzone.addEventListener(name, (e) => {
+          e.preventDefault();
+          modalDropzone.classList.remove('drag-over');
+        });
+      });
+      modalDropzone.addEventListener('drop', (e) => {
+        const dt = e.dataTransfer;
+        if (dt && dt.files && dt.files.length > 0 && modalFileInput) {
+          modalFileInput.files = dt.files;
+          modalFileInput.dispatchEvent(new Event('change'));
+        }
+      });
+    }
+  });
+</script>

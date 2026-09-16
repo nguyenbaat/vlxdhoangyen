@@ -546,7 +546,7 @@ export const ProductRepo = {
     );
   },
 
-  async create(data: Partial<Product> & { category_id?: number; images?: string[] }) {
+  async create(data: Partial<Product> & { category_id?: number; images?: Array<string | { url: string; alt?: string }> }) {
     const res = await db.execute(
       `INSERT INTO products (brand_id, name, slug, sku, price, original_price, unit, short_description, content, custom_badge, specifications, featured_image, seo_title, seo_description, is_featured, is_in_stock, status)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING id`,
@@ -558,14 +558,18 @@ export const ProductRepo = {
     }
     if (data.images?.length) {
       let idx = 0;
-      for (const img of data.images) {
-        await db.execute('INSERT INTO product_images (product_id, image_url, alt_text, sort_order) VALUES (?, ?, ?, ?)', [newId, img, data.name || '', idx++]);
+      for (const item of data.images) {
+        const url = typeof item === 'string' ? item : item.url;
+        const alt = (typeof item === 'object' && item.alt) ? item.alt : (data.name || '');
+        if (url) {
+          await db.execute('INSERT INTO product_images (product_id, image_url, alt_text, sort_order) VALUES (?, ?, ?, ?)', [newId, url, alt, idx++]);
+        }
       }
     }
     return newId;
   },
 
-  async update(id: number, data: Partial<Product> & { category_id?: number; images?: string[] }) {
+  async update(id: number, data: Partial<Product> & { category_id?: number; images?: Array<string | { url: string; alt?: string }> }) {
     const fields: string[] = [];
     const params: any[] = [];
 
@@ -601,8 +605,12 @@ export const ProductRepo = {
     if (data.images !== undefined) {
       await db.execute('DELETE FROM product_images WHERE product_id = ?', [id]);
       let idx = 0;
-      for (const img of data.images) {
-        await db.execute('INSERT INTO product_images (product_id, image_url, alt_text, sort_order) VALUES (?, ?, ?, ?)', [id, img, data.name || '', idx++]);
+      for (const item of data.images) {
+        const url = typeof item === 'string' ? item : item.url;
+        const alt = (typeof item === 'object' && item.alt) ? item.alt : (data.name || '');
+        if (url) {
+          await db.execute('INSERT INTO product_images (product_id, image_url, alt_text, sort_order) VALUES (?, ?, ?, ?)', [id, url, alt, idx++]);
+        }
       }
     }
   },
