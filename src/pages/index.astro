@@ -7,6 +7,7 @@ const settings = await SettingsRepo.getAll();
 const vlxdCategories = await CategoryRepo.getMainCategories('vlxd');
 const noiThatCategories = await CategoryRepo.getMainCategories('noi-that');
 const featuredProducts = await ProductRepo.getFeatured(8);
+const { total: totalProductsCount } = await ProductRepo.getAll({ limit: 1, status: 'published' });
 const brands = (await BrandRepo.getAll()).filter(b => b.is_featured === 1);
 const latestPosts = await PostRepo.getLatest(3);
 
@@ -256,7 +257,7 @@ const websiteSchema = {
           <p>Đáp ứng số lượng lớn theo nhu cầu công trình với đầy đủ chủng loại chuẩn kỹ thuật.</p>
         </div>
         <a href="/san-pham/" class="btn btn-outline">
-          <span>Xem Toàn Bộ Sản Phẩm ({featuredProducts.length}+)</span>
+          <span>Xem Toàn Bộ Sản Phẩm ({totalProductsCount || featuredProducts.length}+)</span>
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
         </a>
       </div>

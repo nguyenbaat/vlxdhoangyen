@@ -23,7 +23,7 @@ const { product } = Astro.props;
 const fallbackImage = '/anh-sanpham.png';
 
 // Status badge based strictly on verified product data
-let statusBadge: { label: string; styleClass: string } | null = null;
+let statusBadge: { label: string; styleClass: string } = { label: 'CHÍNH HÃNG', styleClass: 'badge-brand' };
 
 if (product.brand_name) {
   statusBadge = { label: product.brand_name.toUpperCase(), styleClass: 'badge-brand' };

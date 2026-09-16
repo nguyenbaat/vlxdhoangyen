@@ -466,7 +466,19 @@ export const ProductRepo = {
   },
 
   async getFeatured(limit = 8): Promise<Product[]> {
-    return (await ProductRepo.getAll({ isFeatured: true, limit })).products;
+    const featured = (await ProductRepo.getAll({ isFeatured: true, limit })).products;
+    if (featured.length >= limit) return featured;
+
+    // Fill with latest published products so the homepage always shows products
+    const allRecent = (await ProductRepo.getAll({ limit, status: 'published' })).products;
+    const combined = [...featured];
+    for (const p of allRecent) {
+      if (!combined.some(item => item.id === p.id)) {
+        combined.push(p);
+      }
+      if (combined.length >= limit) break;
+    }
+    return combined;
   },
 
   async getByCategory(categoryId: number): Promise<Product[]> {
