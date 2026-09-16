@@ -12,9 +12,9 @@
     "db:seed": "node src/server/db/seed.js"
   },
   "dependencies": {
-    "@astrojs/node": "^9.0.0",
+    "@astrojs/node": "^11.1.5",
     "@types/pg": "^8.23.1",
-    "astro": "^5.0.0",
+    "astro": "^7.3.2",
     "bcryptjs": "^2.4.3",
     "mysql2": "^3.11.5",
     "pg": "^8.23.0"
