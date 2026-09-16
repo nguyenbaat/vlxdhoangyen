@@ -2,6 +2,10 @@
   "name": "vlxd-hoang-yen",
   "type": "module",
   "version": "1.0.0",
+  "main": "server.js",
+  "engines": {
+    "node": ">=18.0.0"
+  },
   "scripts": {
     "dev": "astro dev --host",
     "start": "node ./dist/server/entry.mjs",

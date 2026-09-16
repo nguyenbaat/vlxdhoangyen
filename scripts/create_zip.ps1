@@ -10,6 +10,8 @@ $files = @(
     "package.json",
     "package-lock.json",
     "server.js",
+    "app.js",
+    "index.js",
     "astro.config.mjs",
     "Dockerfile",
     ".dockerignore",
