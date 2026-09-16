@@ -687,65 +687,17 @@ if (isCategory && category) {
             </div>
           </div>
 
-          <!-- Tab 2 Content: Thông số kỹ thuật & Barem quy cách -->
+          <!-- Tab 2 Content: Thông số kỹ thuật & Barem quy cách (Do người dùng nhập hoặc AI tạo) -->
           <div class="tab-pane" id="tab-specs" role="tabpanel">
             <div class="tab-body-card">
-              <h3 class="tab-content-title">Bảng Thông Số Kỹ Thuật & Quy Cách</h3>
+              <h3 class="tab-content-title">Thông Số Kỹ Thuật & Barem Quy Cách</h3>
               
-              <div class="specs-table-wrapper">
-                <table class="specs-table-industrial">
-                  <tbody>
-                    <tr>
-                      <th class="spec-label">Tên sản phẩm</th>
-                      <td class="spec-value"><strong>{product.name}</strong></td>
-                    </tr>
-                    <tr>
-                      <th class="spec-label">Mã sản phẩm / SKU</th>
-                      <td class="spec-value">{product.sku || 'Chuẩn quy cách nhà máy'}</td>
-                    </tr>
-                    <tr>
-                      <th class="spec-label">Thương hiệu / Hãng sản xuất</th>
-                      <td class="spec-value">{product.brand_name || 'Theo nhà sản xuất'}</td>
-                    </tr>
-                    <tr>
-                      <th class="spec-label">Danh mục ngành hàng</th>
-                      <td class="spec-value">{product.category_name || 'Vật liệu xây dựng'}</td>
-                    </tr>
-                    <tr>
-                      <th class="spec-label">Đơn vị tính</th>
-                      <td class="spec-value">{product.unit || 'Quy cách chuẩn'}</td>
-                    </tr>
-                    <tr>
-                      <th class="spec-label">Tiêu chuẩn kỹ thuật</th>
-                      <td class="spec-value">TCVN / ISO / Tiêu chuẩn cơ sở nhà sản xuất</td>
-                    </tr>
-                    <tr>
-                      <th class="spec-label">Đơn vị phân phối</th>
-                      <td class="spec-value">{settings.company_name}</td>
-                    </tr>
-                    <tr>
-                      <th class="spec-label">Kho hàng xuất phát</th>
-                      <td class="spec-value">{settings.address}</td>
-                    </tr>
-                    <tr>
-                      <th class="spec-label">Tình trạng hàng hóa</th>
-                      <td class="spec-value">
-                        <span class="spec-in-stock">
-                          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" style="color: #16a34a;"><polyline points="20 6 9 17 4 12"></polyline></svg>
-                          <span>Sẵn hàng số lượng lớn tại kho</span>
-                        </span>
-                      </td>
-                    </tr>
-                    <tr>
-                      <th class="spec-label">Hóa đơn & Chứng từ</th>
-                      <td class="spec-value">Cung cấp hóa đơn GTGT, chứng chỉ xuất xưởng theo đơn hàng</td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
-
-              {product.specifications && (
-                <div class="specs-extra-content prose-industrial" style="margin-top: 1.5rem;" set:html={product.specifications} />
+              {product.specifications ? (
+                <div class="specs-extra-content prose-industrial" set:html={product.specifications} />
+              ) : (
+                <div class="specs-fallback-box" style="padding: 1.5rem; background: #f8fafc; border-radius: 8px; border: 1px solid #e2e8f0; color: #475569;">
+                  <p style="margin: 0;">Thông số kỹ thuật và barem quy cách chi tiết của sản phẩm <strong>{product.name}</strong> đang được cập nhật từ nhà máy sản xuất. Quý khách vui lòng liên hệ Hotline <strong>{settings.hotline_main}</strong> để nhận catalogue và tư vấn kỹ thuật chính xác nhất.</p>
+                </div>
               )}
             </div>
           </div>
