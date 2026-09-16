@@ -1,6 +1,8 @@
 import pg from 'pg';
 import mysql from 'mysql2/promise';
 import bcrypt from 'bcryptjs';
+import fs from 'node:fs';
+import path from 'node:path';
 import {
   SEED_CATEGORIES,
   SEED_BRANDS,
@@ -8,6 +10,31 @@ import {
   SEED_POSTS,
   SEED_SETTINGS
 } from './seed-data.js';
+
+// Auto-load .env in standalone Node environment if not loaded
+if (!process.env.DATABASE_URL && !process.env.DB_HOST) {
+  try {
+    const envPath = path.join(process.cwd(), '.env');
+    if (fs.existsSync(envPath)) {
+      const content = fs.readFileSync(envPath, 'utf8');
+      for (const line of content.split('\n')) {
+        const trimmed = line.trim();
+        if (!trimmed || trimmed.startsWith('#')) continue;
+        const eqIdx = trimmed.indexOf('=');
+        if (eqIdx > 0) {
+          const key = trimmed.slice(0, eqIdx).trim();
+          let val = trimmed.slice(eqIdx + 1).trim();
+          if ((val.startsWith('"') && val.endsWith('"')) || (val.startsWith("'") && val.endsWith("'"))) {
+            val = val.slice(1, -1);
+          }
+          if (key && process.env[key] === undefined) {
+            process.env[key] = val;
+          }
+        }
+      }
+    }
+  } catch (e) {}
+}
 
 export interface QueryResult<T = any> {
   rows: T[];
@@ -17,10 +44,9 @@ export interface QueryResult<T = any> {
 
 // ── Detect Database Engine ───────────────────────────────────────────────────
 export const isMySQL = process.env.DB_TYPE === 'mysql' || 
-                (process.env.DATABASE_URL && process.env.DATABASE_URL.startsWith('mysql://')) || 
+                (Boolean(process.env.DATABASE_URL) && process.env.DATABASE_URL!.startsWith('mysql://')) || 
                 (Number(process.env.DB_PORT) === 3306) ||
-                (Boolean(process.env.DB_NAME) && !process.env.DATABASE_URL?.startsWith('postgres')) ||
-                (!process.env.DATABASE_URL && !process.env.DB_TYPE);
+                (Boolean(process.env.DB_NAME) && !process.env.DATABASE_URL?.startsWith('postgres'));
 
 const globalPool = globalThis as unknown as { _pgPool?: pg.Pool; _mysqlPool?: mysql.Pool };
 

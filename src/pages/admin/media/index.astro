@@ -454,6 +454,22 @@ const totalStorageBytes = dbData.totalSize + staticItems.reduce((acc, i) => acc 
             </div>
           </div>
 
+          <!-- Live Watermark Preview Container -->
+          <div class="modal-wm-preview-section" id="modal_wm_preview_box" style="display: none; margin-top: 1.25rem;">
+            <div class="wm-preview-header">
+              <div class="wm-preview-title">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2.5"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                <strong>Xem Trước Trực Tiếp (Live Preview sau khi đóng dấu)</strong>
+              </div>
+              <span class="wm-preview-filename" id="modal_wm_preview_filename"></span>
+            </div>
+            
+            <div class="wm-preview-canvas-wrap">
+              <canvas id="modal_wm_preview_canvas" class="wm-preview-canvas"></canvas>
+            </div>
+            <span class="wm-preview-note">💡 Ảnh thực tế khi tải lên sẽ được đóng dấu sắc nét đúng theo khung xem trước phía trên.</span>
+          </div>
+
           <div class="form-group-tail" style="margin-top: 1.25rem;">
             <label for="upload_alt_default">Thẻ ALT Mặc Định (Tùy chọn)</label>
             <input type="text" id="upload_alt_default" name="upload_alt" class="tail-input" placeholder="Nhập thẻ ALT chung cho các ảnh tải lên đợt này..." />
@@ -1170,6 +1186,64 @@ const totalStorageBytes = dbData.totalSize + staticItems.reduce((acc, i) => acc 
     box-shadow: 0 0 0 2px rgba(2, 132, 199, 0.15);
   }
 
+  /* Live Watermark Preview Box */
+  .modal-wm-preview-section {
+    background: #f8fafc;
+    border: 1px solid #cbd5e1;
+    border-radius: 10px;
+    padding: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .wm-preview-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.82rem;
+  }
+  .wm-preview-title {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    color: #0f172a;
+  }
+  .wm-preview-filename {
+    font-size: 0.74rem;
+    font-weight: 700;
+    color: #0369a1;
+    background: #e0f2fe;
+    padding: 2px 8px;
+    border-radius: 4px;
+    max-width: 250px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .wm-preview-canvas-wrap {
+    width: 100%;
+    height: 220px;
+    background: #0f172a;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    padding: 6px;
+    box-sizing: border-box;
+    box-shadow: inset 0 2px 4px rgba(0,0,0,0.2);
+  }
+  .wm-preview-canvas {
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
+    border-radius: 4px;
+  }
+  .wm-preview-note {
+    font-size: 0.72rem;
+    color: #64748b;
+  }
+
   /* Toast Notification */
   .media-toast {
     position: fixed;
@@ -1603,6 +1677,183 @@ const totalStorageBytes = dbData.totalSize + staticItems.reduce((acc, i) => acc 
         }
       });
     }
+
+    // Live Watermark Preview Renderer
+    const previewBox = document.getElementById('modal_wm_preview_box');
+    const previewCanvas = document.getElementById('modal_wm_preview_canvas');
+    const previewFilename = document.getElementById('modal_wm_preview_filename');
+
+    async function updateLivePreview() {
+      if (!modalFileInput || !modalFileInput.files || modalFileInput.files.length === 0) {
+        if (previewBox) previewBox.style.display = 'none';
+        return;
+      }
+
+      const file = modalFileInput.files[0];
+      if (!file || !file.type.startsWith('image/')) {
+        if (previewBox) previewBox.style.display = 'none';
+        return;
+      }
+
+      if (previewBox) previewBox.style.display = 'flex';
+      if (previewFilename) {
+        const count = modalFileInput.files.length;
+        previewFilename.textContent = `${file.name} ${count > 1 ? `(+${count - 1} ảnh khác)` : ''}`;
+      }
+
+      if (!previewCanvas) return;
+
+      const isWatermarkEnabled = modalWmEnable?.checked ?? true;
+      const wmTypeEl = document.querySelector('input[name="modal_wm_type"]:checked');
+      const wmType = wmTypeEl ? wmTypeEl.value : 'text';
+      const wmPositionEl = document.getElementById('modal_wm_position');
+      const wmPosition = wmPositionEl ? wmPositionEl.value : 'bottom-right';
+
+      const reader = new FileReader();
+      reader.onload = () => {
+        const img = new Image();
+        img.onload = async () => {
+          previewCanvas.width = img.naturalWidth;
+          previewCanvas.height = img.naturalHeight;
+          const ctx = previewCanvas.getContext('2d');
+          if (!ctx) return;
+
+          ctx.drawImage(img, 0, 0);
+
+          if (!isWatermarkEnabled) return;
+
+          const w = previewCanvas.width;
+          const h = previewCanvas.height;
+          const minDim = Math.min(w, h);
+          const baseFontSize = Math.max(16, Math.round(minDim * 0.038));
+          const logoSize = Math.max(26, Math.round(minDim * 0.075));
+          const padding = Math.max(16, Math.round(minDim * 0.03));
+          const text = 'vlxdhoangyen.com';
+
+          let logoImg = null;
+          if (wmType === 'logo' || wmType === 'both') {
+            try {
+              logoImg = await new Promise((res) => {
+                const lImg = new Image();
+                lImg.crossOrigin = 'anonymous';
+                lImg.onload = () => res(lImg);
+                lImg.onerror = () => res(null);
+                lImg.src = '/favicon.png';
+              });
+            } catch (e) { logoImg = null; }
+          }
+
+          ctx.save();
+
+          if (wmPosition === 'diagonal') {
+            ctx.translate(w / 2, h / 2);
+            ctx.rotate(-Math.PI / 6);
+            const diagFontSize = Math.max(22, Math.round(minDim * 0.055));
+            ctx.font = `900 ${diagFontSize}px 'Inter', 'Segoe UI', Arial, sans-serif`;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.4)';
+            ctx.fillText(text, 2, 2);
+            ctx.strokeStyle = 'rgba(0, 0, 0, 0.6)';
+            ctx.lineWidth = Math.max(2, diagFontSize * 0.06);
+            ctx.strokeText(text, 0, 0);
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.88)';
+            ctx.fillText(text, 0, 0);
+            if (logoImg && (wmType === 'logo' || wmType === 'both')) {
+              const dLogoSize = logoSize * 1.4;
+              ctx.drawImage(logoImg, -text.length * diagFontSize * 0.28 - dLogoSize - 12, -dLogoSize / 2, dLogoSize, dLogoSize);
+            }
+          } else {
+            const font = `bold ${baseFontSize}px 'Inter', 'Segoe UI', Arial, sans-serif`;
+            ctx.font = font;
+            let textWidth = (wmType === 'text' || wmType === 'both') ? ctx.measureText(text).width : 0;
+            let badgeW = 0;
+            let badgeH = 0;
+            const itemGap = 8;
+            const padX = 14;
+            const padY = 8;
+
+            if (wmType === 'both' && logoImg) {
+              badgeW = logoSize + itemGap + textWidth + padX * 2;
+              badgeH = Math.max(logoSize, baseFontSize) + padY * 2;
+            } else if (wmType === 'logo' && logoImg) {
+              badgeW = logoSize + padX * 1.5;
+              badgeH = logoSize + padY * 1.5;
+            } else {
+              badgeW = textWidth + padX * 2;
+              badgeH = baseFontSize * 1.4 + padY * 2;
+            }
+
+            let posX = w - badgeW - padding;
+            let posY = h - badgeH - padding;
+
+            if (wmPosition === 'bottom-left') {
+              posX = padding;
+              posY = h - badgeH - padding;
+            } else if (wmPosition === 'top-right') {
+              posX = w - badgeW - padding;
+              posY = padding;
+            } else if (wmPosition === 'top-left') {
+              posX = padding;
+              posY = padding;
+            } else if (wmPosition === 'center') {
+              posX = (w - badgeW) / 2;
+              posY = (h - badgeH) / 2;
+            }
+
+            const radius = Math.min(8, badgeH / 2);
+            ctx.save();
+            ctx.beginPath();
+            if (ctx.roundRect) ctx.roundRect(posX, posY, badgeW, badgeH, radius);
+            else ctx.rect(posX, posY, badgeW, badgeH);
+            ctx.fillStyle = 'rgba(15, 23, 42, 0.55)';
+            ctx.fill();
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.25)';
+            ctx.lineWidth = 1;
+            ctx.stroke();
+            ctx.restore();
+
+            let curX = posX + padX;
+            const midY = posY + badgeH / 2;
+
+            if (logoImg && (wmType === 'logo' || wmType === 'both')) {
+              const lY = midY - logoSize / 2;
+              ctx.shadowColor = 'rgba(0, 0, 0, 0.5)';
+              ctx.shadowBlur = 4;
+              ctx.drawImage(logoImg, curX, lY, logoSize, logoSize);
+              ctx.shadowBlur = 0;
+              curX += logoSize + itemGap;
+            }
+
+            if (wmType === 'text' || wmType === 'both') {
+              ctx.font = font;
+              ctx.textBaseline = 'middle';
+              ctx.textAlign = 'left';
+              ctx.shadowColor = 'rgba(0, 0, 0, 0.9)';
+              ctx.shadowBlur = 3;
+              ctx.shadowOffsetX = 1;
+              ctx.shadowOffsetY = 1;
+              ctx.strokeStyle = 'rgba(0, 0, 0, 0.7)';
+              ctx.lineWidth = Math.max(1.5, baseFontSize * 0.06);
+              ctx.strokeText(text, curX, midY);
+              ctx.fillStyle = '#ffffff';
+              ctx.fillText(text, curX, midY);
+            }
+          }
+          ctx.restore();
+        };
+        img.src = reader.result;
+      };
+      reader.readAsDataURL(file);
+    }
+
+    // Attach listeners for live preview updates
+    modalFileInput?.addEventListener('change', updateLivePreview);
+    modalWmEnable?.addEventListener('change', updateLivePreview);
+    document.querySelectorAll('input[name="modal_wm_type"]').forEach(el => {
+      el.addEventListener('change', updateLivePreview);
+    });
+    document.getElementById('modal_wm_position')?.addEventListener('change', updateLivePreview);
 
     let isUploading = false;
     if (formUploadMedia) {

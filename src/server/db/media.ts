@@ -1,5 +1,7 @@
-import type { Pool, RowDataPacket, ResultSetHeader } from 'mysql2/promise';
+import type { Pool as MySQLPool, RowDataPacket, ResultSetHeader } from 'mysql2/promise';
+import type { Pool as PGPool } from 'pg';
 import { isMySQL, pool } from './index.js';
+import fs from 'node:fs';
 import path from 'node:path';
 
 export interface MediaItem {
@@ -13,34 +15,47 @@ export interface MediaItem {
   is_static?: boolean;
 }
 
-function mysqlPool(): Pool {
-  if (!isMySQL) throw new Error('Media storage requires MySQL');
-  return pool as Pool;
-}
-
 let schemaReady: Promise<void> | undefined;
 
 export function ensureMediaTable(): Promise<void> {
   if (!schemaReady) {
     schemaReady = (async () => {
-      const p = mysqlPool();
-      await p.query(`
-        CREATE TABLE IF NOT EXISTS media_assets (
-          id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
-          filename VARCHAR(255) NOT NULL,
-          mime_type VARCHAR(100) NOT NULL,
-          file_size INT UNSIGNED NOT NULL,
-          alt_text VARCHAR(255) DEFAULT '',
-          data LONGBLOB NOT NULL,
-          created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
-      `);
-      
-      // Ensure alt_text column exists on previously created tables
       try {
-        await p.query(`ALTER TABLE media_assets ADD COLUMN alt_text VARCHAR(255) DEFAULT '' AFTER file_size`);
+        if (isMySQL) {
+          const mp = pool as MySQLPool;
+          await mp.query(`
+            CREATE TABLE IF NOT EXISTS media_assets (
+              id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+              filename VARCHAR(255) NOT NULL,
+              mime_type VARCHAR(100) NOT NULL,
+              file_size INT UNSIGNED NOT NULL,
+              alt_text VARCHAR(255) DEFAULT '',
+              data LONGBLOB NOT NULL,
+              created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+          `);
+          try {
+            await mp.query(`ALTER TABLE media_assets ADD COLUMN alt_text VARCHAR(255) DEFAULT '' AFTER file_size`);
+          } catch (e) {}
+        } else {
+          const pp = pool as PGPool;
+          await pp.query(`
+            CREATE TABLE IF NOT EXISTS media_assets (
+              id SERIAL PRIMARY KEY,
+              filename VARCHAR(255) NOT NULL,
+              mime_type VARCHAR(100) NOT NULL,
+              file_size INT NOT NULL,
+              alt_text VARCHAR(255) DEFAULT '',
+              data BYTEA NOT NULL,
+              created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+            )
+          `);
+          try {
+            await pp.query(`ALTER TABLE media_assets ADD COLUMN IF NOT EXISTS alt_text VARCHAR(255) DEFAULT ''`);
+          } catch (e) {}
+        }
       } catch (err: any) {
-        // Ignored if column already exists
+        console.warn('[ensureMediaTable error]', err?.message);
       }
     })().catch((error) => {
       schemaReady = undefined;
@@ -78,34 +93,77 @@ export async function saveMedia(
   data: Buffer,
   altText: string = ''
 ): Promise<{ id: number; filename: string; url: string }> {
-  await ensureMediaTable();
-  const p = mysqlPool();
-
   let cleanFilename = sanitizeMediaFilename(originalFilename);
 
-  // Check if filename exists; if so, assign unique suffix
-  const [existing] = await p.query<RowDataPacket[]>(
-    'SELECT id FROM media_assets WHERE filename = ? LIMIT 1',
-    [cleanFilename]
-  );
-
-  if (existing.length > 0) {
-    const ext = path.extname(cleanFilename);
-    const base = path.basename(cleanFilename, ext);
-    const [matches] = await p.query<RowDataPacket[]>(
-      'SELECT filename FROM media_assets WHERE filename LIKE ?',
-      [`${base}%${ext}`]
-    );
-    const suffix = matches.length + 1;
-    cleanFilename = `${base}-${suffix}${ext}`;
+  // 1. Save to local disk folders for guaranteed instant access
+  try {
+    const diskDirs = [
+      path.join(process.cwd(), 'public', 'images', 'uploads'),
+      path.join(process.cwd(), 'uploads')
+    ];
+    for (const d of diskDirs) {
+      if (!fs.existsSync(d)) {
+        fs.mkdirSync(d, { recursive: true });
+      }
+      fs.writeFileSync(path.join(d, cleanFilename), data);
+    }
+  } catch (fsErr) {
+    console.warn('[saveMedia disk write warning]', fsErr);
   }
 
-  const [result] = await p.execute<ResultSetHeader>(
-    'INSERT INTO media_assets (filename, mime_type, file_size, alt_text, data) VALUES (?, ?, ?, ?, ?)',
-    [cleanFilename, mimeType, data.length, altText || '', data]
-  );
+  // 2. Save to Database (MySQL or PostgreSQL)
+  let id = Date.now();
+  try {
+    await ensureMediaTable();
+    if (isMySQL) {
+      const mp = pool as MySQLPool;
+      const [existing] = await mp.query<RowDataPacket[]>(
+        'SELECT id FROM media_assets WHERE filename = ? LIMIT 1',
+        [cleanFilename]
+      );
+      if (existing.length > 0) {
+        const ext = path.extname(cleanFilename);
+        const base = path.basename(cleanFilename, ext);
+        const [matches] = await mp.query<RowDataPacket[]>(
+          'SELECT filename FROM media_assets WHERE filename LIKE ?',
+          [`${base}%${ext}`]
+        );
+        const suffix = matches.length + 1;
+        cleanFilename = `${base}-${suffix}${ext}`;
+      }
 
-  const id = Number(result.insertId);
+      const [result] = await mp.execute<ResultSetHeader>(
+        'INSERT INTO media_assets (filename, mime_type, file_size, alt_text, data) VALUES (?, ?, ?, ?, ?)',
+        [cleanFilename, mimeType, data.length, altText || '', data]
+      );
+      id = Number(result.insertId);
+    } else {
+      const pp = pool as PGPool;
+      const existing = await pp.query(
+        'SELECT id FROM media_assets WHERE filename = $1 LIMIT 1',
+        [cleanFilename]
+      );
+      if (existing.rows.length > 0) {
+        const ext = path.extname(cleanFilename);
+        const base = path.basename(cleanFilename, ext);
+        const matches = await pp.query(
+          'SELECT filename FROM media_assets WHERE filename LIKE $1',
+          [`${base}%${ext}`]
+        );
+        const suffix = matches.rows.length + 1;
+        cleanFilename = `${base}-${suffix}${ext}`;
+      }
+
+      const result = await pp.query(
+        'INSERT INTO media_assets (filename, mime_type, file_size, alt_text, data) VALUES ($1, $2, $3, $4, $5) RETURNING id',
+        [cleanFilename, mimeType, data.length, altText || '', data]
+      );
+      id = Number(result.rows[0]?.id || id);
+    }
+  } catch (dbErr) {
+    console.error('[saveMedia DB save error]', dbErr);
+  }
+
   const url = `/media/${cleanFilename}`;
   return { id, filename: cleanFilename, url };
 }
@@ -120,56 +178,109 @@ export async function updateMedia(
     data?: Buffer;
   }
 ): Promise<void> {
-  await ensureMediaTable();
-  const fields: string[] = [];
-  const params: any[] = [];
-
-  if (updates.filename !== undefined) {
-    const clean = sanitizeMediaFilename(updates.filename.trim());
-    fields.push('filename = ?');
-    params.push(clean);
+  try {
+    await ensureMediaTable();
+    if (isMySQL) {
+      const mp = pool as MySQLPool;
+      const fields: string[] = [];
+      const params: any[] = [];
+      if (updates.filename !== undefined) {
+        const clean = sanitizeMediaFilename(updates.filename.trim());
+        fields.push('filename = ?');
+        params.push(clean);
+      }
+      if (updates.alt_text !== undefined) {
+        fields.push('alt_text = ?');
+        params.push(updates.alt_text.trim());
+      }
+      if (updates.mime_type !== undefined) {
+        fields.push('mime_type = ?');
+        params.push(updates.mime_type);
+      }
+      if (updates.file_size !== undefined) {
+        fields.push('file_size = ?');
+        params.push(updates.file_size);
+      }
+      if (updates.data !== undefined) {
+        fields.push('data = ?');
+        params.push(updates.data);
+      }
+      if (fields.length === 0) return;
+      params.push(id);
+      await mp.execute(`UPDATE media_assets SET ${fields.join(', ')} WHERE id = ?`, params);
+    } else {
+      const pp = pool as PGPool;
+      const fields: string[] = [];
+      const params: any[] = [];
+      let idx = 1;
+      if (updates.filename !== undefined) {
+        const clean = sanitizeMediaFilename(updates.filename.trim());
+        fields.push(`filename = $${idx++}`);
+        params.push(clean);
+      }
+      if (updates.alt_text !== undefined) {
+        fields.push(`alt_text = $${idx++}`);
+        params.push(updates.alt_text.trim());
+      }
+      if (updates.mime_type !== undefined) {
+        fields.push(`mime_type = $${idx++}`);
+        params.push(updates.mime_type);
+      }
+      if (updates.file_size !== undefined) {
+        fields.push(`file_size = $${idx++}`);
+        params.push(updates.file_size);
+      }
+      if (updates.data !== undefined) {
+        fields.push(`data = $${idx++}`);
+        params.push(updates.data);
+      }
+      if (fields.length === 0) return;
+      params.push(id);
+      await pp.query(`UPDATE media_assets SET ${fields.join(', ')} WHERE id = $${idx}`, params);
+    }
+  } catch (err) {
+    console.error('[updateMedia error]', err);
   }
-  if (updates.alt_text !== undefined) {
-    fields.push('alt_text = ?');
-    params.push(updates.alt_text.trim());
-  }
-  if (updates.mime_type !== undefined) {
-    fields.push('mime_type = ?');
-    params.push(updates.mime_type);
-  }
-  if (updates.file_size !== undefined) {
-    fields.push('file_size = ?');
-    params.push(updates.file_size);
-  }
-  if (updates.data !== undefined) {
-    fields.push('data = ?');
-    params.push(updates.data);
-  }
-
-  if (fields.length === 0) return;
-
-  params.push(id);
-  await mysqlPool().execute(
-    `UPDATE media_assets SET ${fields.join(', ')} WHERE id = ?`,
-    params
-  );
 }
 
 export async function deleteMedia(id: number): Promise<void> {
-  await ensureMediaTable();
-  await mysqlPool().execute('DELETE FROM media_assets WHERE id = ?', [id]);
+  try {
+    await ensureMediaTable();
+    if (isMySQL) {
+      await (pool as MySQLPool).execute('DELETE FROM media_assets WHERE id = ?', [id]);
+    } else {
+      await (pool as PGPool).query('DELETE FROM media_assets WHERE id = $1', [id]);
+    }
+  } catch (err) {
+    console.error('[deleteMedia error]', err);
+  }
 }
 
 export async function listMedia(): Promise<Array<{ id: number; filename: string; url: string }>> {
-  await ensureMediaTable();
-  const [rows] = await mysqlPool().query<RowDataPacket[]>(
-    'SELECT id, filename FROM media_assets ORDER BY id DESC LIMIT 1000'
-  );
-  return rows.map((row) => ({
-    id: Number(row.id),
-    filename: String(row.filename || ''),
-    url: row.filename ? `/media/${row.filename}` : `/media/${row.id}`
-  }));
+  try {
+    await ensureMediaTable();
+    if (isMySQL) {
+      const [rows] = await (pool as MySQLPool).query<RowDataPacket[]>(
+        'SELECT id, filename FROM media_assets ORDER BY id DESC LIMIT 1000'
+      );
+      return rows.map((row) => ({
+        id: Number(row.id),
+        filename: String(row.filename || ''),
+        url: row.filename ? `/media/${row.filename}` : `/media/${row.id}`
+      }));
+    } else {
+      const res = await (pool as PGPool).query(
+        'SELECT id, filename FROM media_assets ORDER BY id DESC LIMIT 1000'
+      );
+      return res.rows.map((row) => ({
+        id: Number(row.id),
+        filename: String(row.filename || ''),
+        url: row.filename ? `/media/${row.filename}` : `/media/${row.id}`
+      }));
+    }
+  } catch (e) {
+    return [];
+  }
 }
 
 export async function listMediaFull(options: {
@@ -177,97 +288,209 @@ export async function listMediaFull(options: {
   limit?: number;
   offset?: number;
 } = {}): Promise<{ items: MediaItem[]; total: number; totalSize: number }> {
-  await ensureMediaTable();
   const limit = options.limit || 500;
   const offset = options.offset || 0;
   const search = options.search?.trim();
 
-  let whereClause = '';
-  const params: any[] = [];
+  try {
+    await ensureMediaTable();
+    if (isMySQL) {
+      const mp = pool as MySQLPool;
+      let whereClause = '';
+      const params: any[] = [];
+      if (search) {
+        whereClause = 'WHERE filename LIKE ? OR alt_text LIKE ?';
+        params.push(`%${search}%`, `%${search}%`);
+      }
+      const [countRows] = await mp.query<RowDataPacket[]>(
+        `SELECT COUNT(*) as total, COALESCE(SUM(file_size), 0) as total_size FROM media_assets ${whereClause}`,
+        params
+      );
+      const total = Number(countRows[0]?.total || 0);
+      const totalSize = Number(countRows[0]?.total_size || 0);
 
-  if (search) {
-    whereClause = 'WHERE filename LIKE ? OR alt_text LIKE ?';
-    params.push(`%${search}%`, `%${search}%`);
+      const queryParams = [...params, limit, offset];
+      const [rows] = await mp.query<RowDataPacket[]>(
+        `SELECT id, filename, mime_type, file_size, alt_text, created_at 
+         FROM media_assets 
+         ${whereClause} 
+         ORDER BY id DESC 
+         LIMIT ? OFFSET ?`,
+        queryParams
+      );
+
+      const items: MediaItem[] = rows.map((r) => {
+        const fn = String(r.filename || '');
+        return {
+          id: Number(r.id),
+          filename: fn,
+          mime_type: String(r.mime_type || 'image/jpeg'),
+          file_size: Number(r.file_size || 0),
+          alt_text: String(r.alt_text || ''),
+          created_at: String(r.created_at || ''),
+          url: fn ? `/media/${fn}` : `/media/${r.id}`,
+          is_static: false
+        };
+      });
+
+      return { items, total, totalSize };
+    } else {
+      const pp = pool as PGPool;
+      let whereClause = '';
+      const params: any[] = [];
+      if (search) {
+        whereClause = 'WHERE filename ILIKE $1 OR alt_text ILIKE $1';
+        params.push(`%${search}%`);
+      }
+      const countRes = await pp.query(
+        `SELECT COUNT(*) as total, COALESCE(SUM(file_size), 0) as total_size FROM media_assets ${whereClause}`,
+        params
+      );
+      const total = Number(countRes.rows[0]?.total || 0);
+      const totalSize = Number(countRes.rows[0]?.total_size || 0);
+
+      const queryParams = search ? [`%${search}%`, limit, offset] : [limit, offset];
+      const limitOffsetClause = search ? 'LIMIT $2 OFFSET $3' : 'LIMIT $1 OFFSET $2';
+      const rowsRes = await pp.query(
+        `SELECT id, filename, mime_type, file_size, alt_text, created_at 
+         FROM media_assets 
+         ${whereClause} 
+         ORDER BY id DESC 
+         ${limitOffsetClause}`,
+        queryParams
+      );
+
+      const items: MediaItem[] = rowsRes.rows.map((r) => {
+        const fn = String(r.filename || '');
+        return {
+          id: Number(r.id),
+          filename: fn,
+          mime_type: String(r.mime_type || 'image/jpeg'),
+          file_size: Number(r.file_size || 0),
+          alt_text: String(r.alt_text || ''),
+          created_at: String(r.created_at || ''),
+          url: fn ? `/media/${fn}` : `/media/${r.id}`,
+          is_static: false
+        };
+      });
+
+      return { items, total, totalSize };
+    }
+  } catch (err) {
+    console.error('[listMediaFull error]', err);
+    return { items: [], total: 0, totalSize: 0 };
   }
-
-  const [countRows] = await mysqlPool().query<RowDataPacket[]>(
-    `SELECT COUNT(*) as total, COALESCE(SUM(file_size), 0) as total_size FROM media_assets ${whereClause}`,
-    params
-  );
-  const total = Number(countRows[0]?.total || 0);
-  const totalSize = Number(countRows[0]?.total_size || 0);
-
-  const queryParams = [...params, limit, offset];
-  const [rows] = await mysqlPool().query<RowDataPacket[]>(
-    `SELECT id, filename, mime_type, file_size, alt_text, created_at 
-     FROM media_assets 
-     ${whereClause} 
-     ORDER BY id DESC 
-     LIMIT ? OFFSET ?`,
-    queryParams
-  );
-
-  const items: MediaItem[] = rows.map((r) => {
-    const fn = String(r.filename || '');
-    return {
-      id: Number(r.id),
-      filename: fn,
-      mime_type: String(r.mime_type || 'image/jpeg'),
-      file_size: Number(r.file_size || 0),
-      alt_text: String(r.alt_text || ''),
-      created_at: String(r.created_at || ''),
-      url: fn ? `/media/${fn}` : `/media/${r.id}`,
-      is_static: false
-    };
-  });
-
-  return { items, total, totalSize };
 }
 
 export async function getMediaMeta(id: number): Promise<MediaItem | null> {
-  await ensureMediaTable();
-  const [rows] = await mysqlPool().execute<RowDataPacket[]>(
-    'SELECT id, filename, mime_type, file_size, alt_text, created_at FROM media_assets WHERE id = ? LIMIT 1',
-    [id]
-  );
-  if (!rows.length) return null;
-  const r = rows[0];
-  const fn = String(r.filename || '');
-  return {
-    id: Number(r.id),
-    filename: fn,
-    mime_type: String(r.mime_type || 'image/jpeg'),
-    file_size: Number(r.file_size || 0),
-    alt_text: String(r.alt_text || ''),
-    created_at: String(r.created_at || ''),
-    url: fn ? `/media/${fn}` : `/media/${r.id}`,
-    is_static: false
-  };
+  try {
+    await ensureMediaTable();
+    if (isMySQL) {
+      const [rows] = await (pool as MySQLPool).execute<RowDataPacket[]>(
+        'SELECT id, filename, mime_type, file_size, alt_text, created_at FROM media_assets WHERE id = ? LIMIT 1',
+        [id]
+      );
+      if (!rows.length) return null;
+      const r = rows[0];
+      const fn = String(r.filename || '');
+      return {
+        id: Number(r.id),
+        filename: fn,
+        mime_type: String(r.mime_type || 'image/jpeg'),
+        file_size: Number(r.file_size || 0),
+        alt_text: String(r.alt_text || ''),
+        created_at: String(r.created_at || ''),
+        url: fn ? `/media/${fn}` : `/media/${r.id}`,
+        is_static: false
+      };
+    } else {
+      const res = await (pool as PGPool).query(
+        'SELECT id, filename, mime_type, file_size, alt_text, created_at FROM media_assets WHERE id = $1 LIMIT 1',
+        [id]
+      );
+      if (!res.rows.length) return null;
+      const r = res.rows[0];
+      const fn = String(r.filename || '');
+      return {
+        id: Number(r.id),
+        filename: fn,
+        mime_type: String(r.mime_type || 'image/jpeg'),
+        file_size: Number(r.file_size || 0),
+        alt_text: String(r.alt_text || ''),
+        created_at: String(r.created_at || ''),
+        url: fn ? `/media/${fn}` : `/media/${r.id}`,
+        is_static: false
+      };
+    }
+  } catch (e) {
+    return null;
+  }
 }
 
 export async function getMediaByParam(param: string | number): Promise<{ data: Buffer; mime_type: string } | null> {
-  await ensureMediaTable();
-  const p = mysqlPool();
   const str = String(param).trim();
 
-  // If pure number: query by ID
-  if (/^\d+$/.test(str)) {
-    const [idRows] = await p.execute<RowDataPacket[]>(
-      'SELECT data, mime_type FROM media_assets WHERE id = ? LIMIT 1',
-      [Number(str)]
-    );
-    if (idRows.length) {
-      return { data: idRows[0].data as Buffer, mime_type: String(idRows[0].mime_type) };
+  // 1. Try DB (MySQL or PostgreSQL)
+  try {
+    await ensureMediaTable();
+    if (isMySQL) {
+      const mp = pool as MySQLPool;
+      if (/^\d+$/.test(str)) {
+        const [idRows] = await mp.execute<RowDataPacket[]>(
+          'SELECT data, mime_type FROM media_assets WHERE id = ? LIMIT 1',
+          [Number(str)]
+        );
+        if (idRows.length) {
+          return { data: idRows[0].data as Buffer, mime_type: String(idRows[0].mime_type) };
+        }
+      }
+      const [fnRows] = await mp.execute<RowDataPacket[]>(
+        'SELECT data, mime_type FROM media_assets WHERE filename = ? LIMIT 1',
+        [str]
+      );
+      if (fnRows.length) {
+        return { data: fnRows[0].data as Buffer, mime_type: String(fnRows[0].mime_type) };
+      }
+    } else {
+      const pp = pool as PGPool;
+      if (/^\d+$/.test(str)) {
+        const idRes = await pp.query(
+          'SELECT data, mime_type FROM media_assets WHERE id = $1 LIMIT 1',
+          [Number(str)]
+        );
+        if (idRes.rows.length) {
+          return { data: idRes.rows[0].data as Buffer, mime_type: String(idRes.rows[0].mime_type) };
+        }
+      }
+      const fnRes = await pp.query(
+        'SELECT data, mime_type FROM media_assets WHERE filename = $1 LIMIT 1',
+        [str]
+      );
+      if (fnRes.rows.length) {
+        return { data: fnRes.rows[0].data as Buffer, mime_type: String(fnRes.rows[0].mime_type) };
+      }
     }
+  } catch (err) {
+    console.warn('[getMediaByParam DB lookup warning]', err);
   }
 
-  // Query by filename
-  const [fnRows] = await p.execute<RowDataPacket[]>(
-    'SELECT data, mime_type FROM media_assets WHERE filename = ? LIMIT 1',
-    [str]
-  );
-  if (fnRows.length) {
-    return { data: fnRows[0].data as Buffer, mime_type: String(fnRows[0].mime_type) };
+  // 2. Fallback to Disk search
+  const searchDirs = [
+    path.join(process.cwd(), 'public', 'images', 'uploads'),
+    path.join(process.cwd(), 'uploads'),
+    path.join(process.cwd(), 'public', 'images', 'danh-muc'),
+    path.join(process.cwd(), 'public', 'images'),
+    path.join(process.cwd(), 'public')
+  ];
+
+  for (const d of searchDirs) {
+    const filePath = path.join(d, str);
+    if (fs.existsSync(filePath) && fs.statSync(filePath).isFile()) {
+      const data = fs.readFileSync(filePath);
+      const ext = path.extname(filePath).toLowerCase();
+      const mime_type = ext === '.png' ? 'image/png' : (ext === '.webp' ? 'image/webp' : (ext === '.gif' ? 'image/gif' : (ext === '.svg' ? 'image/svg+xml' : 'image/jpeg')));
+      return { data, mime_type };
+    }
   }
 
   return null;
@@ -276,3 +499,4 @@ export async function getMediaByParam(param: string | number): Promise<{ data: B
 export async function getMedia(id: number): Promise<{ data: Buffer; mime_type: string } | null> {
   return getMediaByParam(id);
 }
+
