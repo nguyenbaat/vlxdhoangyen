@@ -104,7 +104,7 @@ const {
     id={`canvas_${id}`} 
     contenteditable="true"
     placeholder="Nhập nội dung bài viết chi tiết tại đây..."
-  ></div>
+  ><Fragment set:html={initialContent} /></div>
 
   <!-- Hidden Raw HTML Field (For Form Submission) -->
   <textarea name={name} id={id} class="raw-html-textarea" rows="12" style="display: none;">{initialContent}</textarea>
@@ -295,16 +295,18 @@ const {
 
     let isHtmlMode = false;
 
-    // Load initial content into Canvas
-    if (textarea.value && textarea.value.trim()) {
-      canvas.innerHTML = textarea.value;
-    } else {
-      canvas.innerHTML = '<p><br></p>';
+    // Load initial content into Canvas if canvas is currently empty
+    if (!canvas.innerHTML || canvas.innerHTML.trim() === '') {
+      if (textarea.value && textarea.value.trim()) {
+        canvas.innerHTML = textarea.value;
+      } else {
+        canvas.innerHTML = '<p><br></p>';
+      }
     }
 
     // Sync Canvas -> Textarea
     function syncContent() {
-      if (!isHtmlMode) {
+      if (!isHtmlMode && canvas && textarea) {
         textarea.value = canvas.innerHTML;
       }
     }
