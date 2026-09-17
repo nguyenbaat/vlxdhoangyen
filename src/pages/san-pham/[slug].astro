@@ -21,8 +21,8 @@ const brandSEO = BRAND_SEO_DATA[brand.slug];
 const isTier1 = false;
 const tierBadgeText = 'THƯƠNG HIỆU PHÂN PHỐI';
 
-const title = brandSEO?.metaTitle || `${brand.name} Tại Quảng Trị | VLXD Hoàng Yến`;
-const description = brandSEO?.metaDescription || `Cung cấp sản phẩm ${brand.name} tại Quảng Trị. Liên hệ Siêu Thị VLXD Hoàng Yến để nhận tư vấn và báo giá công trình.`;
+const title = brand.seo_title || brandSEO?.metaTitle || `${brand.name} Tại Quảng Trị | VLXD Hoàng Yến`;
+const description = brand.seo_description || brandSEO?.metaDescription || brand.description || `Cung cấp sản phẩm ${brand.name} tại Quảng Trị. Liên hệ Siêu Thị VLXD Hoàng Yến để nhận tư vấn và báo giá công trình.`;
 const canonicalUrl = `https://vlxdhoangyen.com/san-pham/${brand.slug}/`;
 
 const breadcrumbs = [
@@ -30,6 +30,20 @@ const breadcrumbs = [
   { name: 'Sản Phẩm', url: '/san-pham/' },
   { name: `${brand.name}`, url: `/san-pham/${brand.slug}/` }
 ];
+
+// Brand FAQs (from DB or fallback)
+let activeFaqs: Array<{ question: string; answer: string }> = [];
+if (brand.faqs) {
+  try {
+    const parsed = typeof brand.faqs === 'string' ? JSON.parse(brand.faqs) : brand.faqs;
+    if (Array.isArray(parsed) && parsed.length > 0) {
+      activeFaqs = parsed.filter(f => f.question && f.question.trim());
+    }
+  } catch (e) {}
+}
+if (activeFaqs.length === 0 && brandSEO?.faqs) {
+  activeFaqs = brandSEO.faqs;
+}
 
 // JSON-LD Schemas
 const schemas: any[] = [
@@ -48,15 +62,15 @@ const schemas: any[] = [
     '@type': 'Brand',
     name: brand.name,
     logo: `https://vlxdhoangyen.com${brand.logo_url}`,
-    description: brandSEO?.overview || brand.description
+    description: brand.seo_description || brand.description || brandSEO?.overview || `Sản phẩm ${brand.name} tại VLXD Hoàng Yến`
   }
 ];
 
-if (brandSEO && brandSEO.faqs && brandSEO.faqs.length > 0) {
+if (activeFaqs && activeFaqs.length > 0) {
   schemas.push({
     '@context': 'https://schema.org',
     '@type': 'FAQPage',
-    mainEntity: brandSEO.faqs.map(faq => ({
+    mainEntity: activeFaqs.map(faq => ({
       '@type': 'Question',
       name: faq.question,
       acceptedAnswer: {
@@ -103,7 +117,7 @@ if (brandSEO && brandSEO.faqs && brandSEO.faqs.length > 0) {
             )}
 
             <p class="brand-short-desc">
-              {brandSEO?.overview || brand.description || `Siêu Thị VLXD Hoàng Yến phân phối các dòng sản phẩm của ${brand.name} tại thị trường Quảng Trị, cung cấp hóa đơn chứng từ hợp lệ và hỗ trợ báo giá theo công trình.`}
+              {brand.description || brandSEO?.overview || `Siêu Thị VLXD Hoàng Yến phân phối các dòng sản phẩm của ${brand.name} tại thị trường Quảng Trị, cung cấp hóa đơn chứng từ hợp lệ và hỗ trợ báo giá theo công trình.`}
             </p>
 
             <!-- 3 Compact Value Props -->
@@ -176,10 +190,7 @@ if (brandSEO && brandSEO.faqs && brandSEO.faqs.length > 0) {
          ========================================== -->
     <section class="section section-brand-profile">
       <div class="container">
-        {brand.content ? (
-          <div class="brand-custom-content block-editor-rendered-content" set:html={brand.content} />
-        ) : (
-          <div class="profile-layout-grid">
+        <div class="profile-layout-grid">
           
           <div class="profile-content-col">
             <div class="section-header-compact">
@@ -187,68 +198,72 @@ if (brandSEO && brandSEO.faqs && brandSEO.faqs.length > 0) {
               <h2>Giới Thiệu Sơ Lược Về {brand.name}</h2>
             </div>
 
-            <div class="profile-rich-body">
-              <div class="profile-block">
-                <h3>1. Tổng quan & Lịch sử hình thành</h3>
-                <p>
-                  {brandSEO?.historyAndOrigin || brand.description || `${brand.name} là một trong những thương hiệu vật tư xây dựng hàng đầu với lịch sử phát triển uy tín, ứng dụng dây chuyền công nghệ hiện đại và kiểm soát chất lượng nghiêm ngặt.`}
-                </p>
-              </div>
-
-              {brandSEO?.keyStrengths && brandSEO.keyStrengths.length > 0 && (
+            {brand.content ? (
+              <div class="brand-custom-content block-editor-rendered-content profile-rich-body" set:html={brand.content} />
+            ) : (
+              <div class="profile-rich-body">
                 <div class="profile-block">
-                  <h3>2. Ưu điểm nổi bật & Giá trị cốt lõi</h3>
-                  <ul class="strength-list">
-                    {brandSEO.keyStrengths.map(st => (
-                      <li>
-                        <span class="check-bullet">
-                          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" style="color: #16a34a;"><polyline points="20 6 9 17 4 12"></polyline></svg>
-                        </span>
-                        <span>{st}</span>
-                      </li>
-                    ))}
-                  </ul>
+                  <h3>1. Tổng quan & Lịch sử hình thành</h3>
+                  <p>
+                    {brandSEO?.historyAndOrigin || brand.description || `${brand.name} là một trong những thương hiệu vật tư xây dựng hàng đầu với lịch sử phát triển uy tín, ứng dụng dây chuyền công nghệ hiện đại và kiểm soát chất lượng nghiêm ngặt.`}
+                  </p>
                 </div>
-              )}
 
-              {brandSEO?.standards && brandSEO.standards.length > 0 && (
-                <div class="profile-block">
-                  <h3>3. Tiêu chuẩn kỹ thuật & Chứng chỉ chất lượng</h3>
-                  <div class="standards-tags-grid">
-                    {brandSEO.standards.map(std => (
-                      <div class="std-badge">
-                        <span class="std-icon">
-                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line></svg>
-                        </span>
-                        <span>{std}</span>
-                      </div>
-                    ))}
+                {brandSEO?.keyStrengths && brandSEO.keyStrengths.length > 0 && (
+                  <div class="profile-block">
+                    <h3>2. Ưu điểm nổi bật & Giá trị cốt lõi</h3>
+                    <ul class="strength-list">
+                      {brandSEO.keyStrengths.map(st => (
+                        <li>
+                          <span class="check-bullet">
+                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" style="color: #16a34a;"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                          </span>
+                          <span>{st}</span>
+                        </li>
+                      ))}
+                    </ul>
                   </div>
-                </div>
-              )}
+                )}
 
-              <div class="profile-block highlight-agency-block">
-                <h3>4. Phân phối sản phẩm tại Siêu Thị VLXD Hoàng Yến</h3>
-                <p>
-                  {brandSEO?.agencyRole || `Tại Quảng Trị, Siêu Thị VLXD Hoàng Yến cung cấp các sản phẩm thương hiệu ${brand.name}, đảm bảo thông tin xuất xứ rõ ràng, đầy đủ hóa đơn GTGT theo quy định.`}
-                </p>
-                <div class="agency-commitments">
-                  <div class="commit-item">
-                    <strong>Hàng Chuẩn Nhà Máy</strong>
-                    <span>Sản phẩm có nguồn gốc xuất xứ rõ ràng từ nhà máy sản xuất.</span>
+                {brandSEO?.standards && brandSEO.standards.length > 0 && (
+                  <div class="profile-block">
+                    <h3>3. Tiêu chuẩn kỹ thuật & Chứng chỉ chất lượng</h3>
+                    <div class="standards-tags-grid">
+                      {brandSEO.standards.map(std => (
+                        <div class="std-badge">
+                          <span class="std-icon">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line></svg>
+                          </span>
+                          <span>{std}</span>
+                        </div>
+                      ))}
+                    </div>
                   </div>
-                  <div class="commit-item">
-                    <strong>Báo Giá Minh Bạch</strong>
-                    <span>Bảng giá niêm yết rõ ràng, hỗ trợ dự toán chính xác theo bản vẽ.</span>
-                  </div>
-                  <div class="commit-item">
-                    <strong>Đội Xe Vận Chuyển</strong>
-                    <span>Giao hàng linh hoạt theo tiến độ đổ sàn, lợp mái và hoàn thiện.</span>
+                )}
+
+                <div class="profile-block highlight-agency-block">
+                  <h3>4. Phân phối sản phẩm tại Siêu Thị VLXD Hoàng Yến</h3>
+                  <p>
+                    {brandSEO?.agencyRole || `Tại Quảng Trị, Siêu Thị VLXD Hoàng Yến cung cấp các sản phẩm thương hiệu ${brand.name}, đảm bảo thông tin xuất xứ rõ ràng, đầy đủ hóa đơn GTGT theo quy định.`}
+                  </p>
+                  <div class="agency-commitments">
+                    <div class="commit-item">
+                      <strong>Hàng Chuẩn Nhà Máy</strong>
+                      <span>Sản phẩm có nguồn gốc xuất xứ rõ ràng từ nhà máy sản xuất.</span>
+                    </div>
+                    <div class="commit-item">
+                      <strong>Báo Giá Minh Bạch</strong>
+                      <span>Bảng giá niêm yết rõ ràng, hỗ trợ dự toán chính xác theo bản vẽ.</span>
+                    </div>
+                    <div class="commit-item">
+                      <strong>Đội Xe Vận Chuyển</strong>
+                      <span>Giao hàng linh hoạt theo tiến độ đổ sàn, lợp mái và hoàn thiện.</span>
+                    </div>
                   </div>
                 </div>
+
               </div>
-
-            </div>
+            )}
           </div>
 
           <!-- Sidebar quick info -->
@@ -304,7 +319,6 @@ if (brandSEO && brandSEO.faqs && brandSEO.faqs.length > 0) {
 
           </div>
         </div>
-        )}
       </div>
     </section>
 
@@ -347,17 +361,17 @@ if (brandSEO && brandSEO.faqs && brandSEO.faqs.length > 0) {
     <!-- ==========================================
          SECTION 4: FAQS SECTION
          ========================================== -->
-    {brandSEO?.faqs && brandSEO.faqs.length > 0 && (
+    {activeFaqs && activeFaqs.length > 0 && (
       <section class="section section-brand-faqs">
         <div class="container">
           <div class="section-header-centered">
-            <div class="eyebrow">Giải Đáp Thắc Mắc</div>
+            <div class="eyebrow">• GIẢI ĐÁP THẮC MẮC</div>
             <h2>Câu Hỏi Thường Gặp Về {brand.name}</h2>
             <p>Những thông tin khách hàng và nhà thầu thường quan tâm khi chọn mua sản phẩm {brand.name}.</p>
           </div>
 
           <div class="brand-faqs-grid">
-            {brandSEO.faqs.map(faq => (
+            {activeFaqs.map(faq => (
               <div class="brand-faq-card">
                 <h3 class="faq-q">
                   <span class="faq-q-icon">?</span>
@@ -778,6 +792,65 @@ if (brandSEO && brandSEO.faqs && brandSEO.faqs.length > 0) {
     display: block;
   }
 
+  /* Block Editor Custom Content inside Brand Page */
+  .brand-custom-content h2,
+  .brand-custom-content h3,
+  .brand-custom-content h4 {
+    font-family: var(--font-heading);
+    color: #0f172a;
+    font-weight: 800;
+    margin-top: 1.5rem;
+    margin-bottom: 0.75rem;
+  }
+  .brand-custom-content h2:first-child,
+  .brand-custom-content h3:first-child,
+  .brand-custom-content h4:first-child {
+    margin-top: 0;
+  }
+  .brand-custom-content p {
+    font-size: 0.9375rem;
+    line-height: 1.7;
+    color: #334155;
+    margin-bottom: 1rem;
+  }
+  .brand-custom-content p:last-child {
+    margin-bottom: 0;
+  }
+  .brand-custom-content ul,
+  .brand-custom-content ol {
+    margin-bottom: 1.25rem;
+    padding-left: 1.25rem;
+    color: #334155;
+    font-size: 0.9375rem;
+    line-height: 1.65;
+  }
+  .brand-custom-content li {
+    margin-bottom: 0.4rem;
+  }
+  .brand-custom-content img {
+    max-width: 100%;
+    height: auto;
+    border-radius: 8px;
+    margin: 1.25rem 0;
+  }
+  .brand-custom-content table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 1.25rem 0;
+    font-size: 0.875rem;
+  }
+  .brand-custom-content th,
+  .brand-custom-content td {
+    padding: 10px 14px;
+    border: 1px solid #e2e8f0;
+    text-align: left;
+  }
+  .brand-custom-content th {
+    background-color: #f8fafc;
+    font-weight: 700;
+    color: #0f172a;
+  }
+
   /* Sidebar */
   .brand-summary-card, .other-brands-card {
     background-color: #ffffff;
@@ -969,10 +1042,29 @@ if (brandSEO && brandSEO.faqs && brandSEO.faqs.length > 0) {
     margin: 0 auto var(--space-10) auto;
   }
 
+  .section-header-centered .eyebrow {
+    font-family: var(--font-heading);
+    font-size: 0.8125rem;
+    font-weight: 800;
+    color: var(--color-red, #dc2626);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 0.5rem;
+    display: block;
+  }
+
   .section-header-centered h2 {
     font-size: 1.75rem;
     font-weight: 800;
     color: #0f172a;
+    margin-bottom: 0.5rem;
+  }
+
+  .section-header-centered p {
+    font-size: 0.95rem;
+    color: #64748b;
+    line-height: 1.6;
+    margin: 0;
   }
 
   .brand-faqs-grid {
@@ -1128,7 +1220,11 @@ if (brandSEO && brandSEO.faqs && brandSEO.faqs.length > 0) {
     .brand-quick-stats {
       grid-template-columns: 1fr;
     }
-    .products-grid, .brand-faqs-grid {
+    .products-grid {
+      grid-template-columns: repeat(2, 1fr);
+      gap: 10px;
+    }
+    .brand-faqs-grid {
       grid-template-columns: 1fr;
     }
     .section-header-flex {

@@ -329,4 +329,53 @@ if (badges.length === 0) {
     white-space: nowrap;
     border: 0;
   }
+
+  @media (max-width: 640px) {
+    .product-industrial-card {
+      border-radius: 12px;
+    }
+    .card-body {
+      padding: 10px 10px 12px 10px;
+    }
+    .card-title {
+      font-size: 0.85rem;
+      margin-bottom: 4px;
+      line-height: 1.35;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+      min-height: 2.7em;
+    }
+    .card-cat-label {
+      font-size: 0.65rem;
+      margin-bottom: 2px;
+    }
+    .card-excerpt {
+      display: none;
+    }
+    .card-meta {
+      padding-top: 4px;
+      padding-bottom: 4px;
+      margin-bottom: 8px;
+      font-size: 0.7rem;
+    }
+    .stock-text {
+      font-size: 0.68rem;
+    }
+    .card-action .btn {
+      padding: 6px 6px;
+      font-size: 0.75rem;
+      gap: 4px;
+    }
+    .card-badges {
+      top: 6px;
+      left: 6px;
+      gap: 4px;
+    }
+    .card-badges .badge {
+      font-size: 0.625rem;
+      padding: 2px 5px;
+    }
+  }
 </style>

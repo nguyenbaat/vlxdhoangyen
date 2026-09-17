@@ -201,9 +201,12 @@ const navLinks = [
       </div>
 
       <div class="mobile-contact-card">
-        <div class="mobile-hotline-title">Tổng Đài Báo Giá Trực Tiếp:</div>
-        <a href={`tel:${settings.hotline_main}`} class="mobile-hotline-number">{settings.hotline_main}</a>
-        <div class="mobile-hotline-sub">Hỗ trợ kỹ sư, nhà thầu & công trình 24/7</div>
+        <div class="mobile-hotline-title">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>
+          <span>Tổng Đài Báo Giá Trực Tiếp:</span>
+        </div>
+        <a href={`tel:${settings.hotline_main || '0946575579'}`} class="mobile-hotline-number">{settings.hotline_main || '0946.575.579'}</a>
+        <div class="mobile-hotline-sub">Hỗ trợ kỹ sư, nhà thầu &amp; công trình 24/7</div>
       </div>
     </div>
   </div>
@@ -700,32 +703,50 @@ const navLinks = [
   }
 
   .mobile-contact-card {
-    background-color: var(--color-charcoal);
+    background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
     color: #ffffff;
-    padding: var(--space-4);
-    border-radius: var(--radius-xs);
-    border-left: 3px solid var(--color-red);
+    padding: 16px 18px;
+    border-radius: 8px;
+    box-shadow: 0 4px 14px rgba(220, 38, 38, 0.25);
+    margin-top: var(--space-4);
+    border: 1px solid rgba(255, 255, 255, 0.15);
   }
 
   .mobile-hotline-title {
+    font-family: var(--font-heading);
     font-size: 0.75rem;
+    font-weight: 800;
     text-transform: uppercase;
-    color: var(--color-text-on-dark-muted);
+    letter-spacing: 0.05em;
+    color: #fee2e2;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: 4px;
+  }
+
+  .mobile-hotline-title svg {
+    color: #fef08a;
+    flex-shrink: 0;
   }
 
   .mobile-hotline-number {
     display: block;
     font-family: var(--font-heading);
-    font-size: 1.35rem;
-    font-weight: 800;
-    color: #ff5252;
-    margin-top: 4px;
-    margin-bottom: 4px;
+    font-size: 1.45rem;
+    font-weight: 900;
+    color: #ffffff !important;
+    text-decoration: none;
+    letter-spacing: 0.5px;
+    line-height: 1.25;
+    margin: 4px 0;
+    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
   }
 
   .mobile-hotline-sub {
     font-size: 0.75rem;
-    color: var(--color-text-on-dark-muted);
+    color: #fecaca;
+    font-weight: 500;
   }
 
   /* Responsive Queries */
@@ -744,6 +765,22 @@ const navLinks = [
 
     .mobile-drawer {
       display: block;
+    }
+  }
+
+  @media (max-width: 768px) {
+    .top-bar {
+      display: none !important;
+    }
+
+    .header-logo-img {
+      max-width: 135px;
+      height: auto;
+    }
+
+    .btn-quote-header {
+      padding: 7px 12px;
+      font-size: 0.8rem;
     }
   }
 </style>

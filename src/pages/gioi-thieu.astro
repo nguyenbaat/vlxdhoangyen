@@ -1707,22 +1707,116 @@ const categoriesList = [
   }
 
   @media (max-width: 640px) {
-    .cat-visual-groups,
+    .about-content-primary {
+      padding: 1.15rem 1rem;
+      border-radius: 12px;
+    }
+
+    /* 1. Team Cards on Mobile */
+    .team-profile-card {
+      padding: 1.25rem 1rem;
+      border-radius: 14px;
+    }
+    .team-card-inner {
+      display: flex;
+      flex-direction: column;
+      gap: 0.85rem;
+      align-items: stretch;
+      text-align: left;
+    }
+    .team-photo-wrap {
+      display: flex;
+      justify-content: center;
+    }
+    .team-avatar-img {
+      width: 90px;
+      height: 90px;
+      border-radius: 14px;
+    }
+    .team-header-meta {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      gap: 6px;
+      margin-bottom: 0.5rem;
+    }
+    .team-member-name {
+      font-size: 1.15rem;
+    }
+    .team-position {
+      font-size: 0.82rem;
+    }
+    .team-role-tag {
+      font-size: 0.65rem;
+      padding: 3px 8px;
+    }
+    .team-bio-content {
+      border-top: 1px solid #f1f5f9;
+      padding-top: 0.75rem;
+      text-align: left;
+    }
+    .team-bio-content p {
+      font-size: 0.85rem;
+      line-height: 1.6;
+    }
+
+    /* 2. Compact 2-Column Category Groups on Mobile */
+    .cat-visual-groups {
+      grid-template-columns: 1fr;
+      gap: 1rem;
+    }
+    .cat-group-visual-box {
+      padding: 1rem;
+      border-radius: 14px;
+    }
+    .group-visual-header {
+      margin-bottom: 0.75rem;
+      padding-bottom: 0.5rem;
+    }
+    .cat-cards-mini-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 8px;
+    }
+    .cat-item-card {
+      padding: 8px 10px;
+      gap: 8px;
+      border-radius: 8px;
+      align-items: center;
+    }
+    .cic-thumb {
+      width: 34px;
+      height: 34px;
+      padding: 2px;
+      border-radius: 6px;
+    }
+    .cic-info {
+      min-width: 0;
+    }
+    .cic-name {
+      font-size: 0.8rem;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .cic-desc {
+      display: none;
+    }
+    .cic-arrow {
+      display: none;
+    }
+
+    /* 3. Other Grids */
     .reasons-grid,
     .mission-vision-grid,
     .core-values-grid {
       grid-template-columns: 1fr;
+      gap: 0.85rem;
     }
-    .team-card-inner {
-      flex-direction: column;
-      align-items: center;
-      text-align: center;
-    }
-    .team-header-meta {
-      justify-content: center;
-    }
-    .about-content-primary {
-      padding: 1.25rem;
+    .mv-card, .core-val-card {
+      padding: 1.15rem;
+      border-radius: 12px;
     }
   }
 </style>

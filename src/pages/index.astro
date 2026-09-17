@@ -158,6 +158,27 @@ const websiteSchema = {
             </div>
           </a>
         ))}
+
+        <!-- Card 6: Special Combo Banner -->
+        <a href="#request-quote" class="category-showcase-card category-combo-banner-card">
+          <div class="combo-card-badge">
+            <span class="combo-pulse-dot"></span>
+            <span>COMBO TRỌN GÓI</span>
+          </div>
+          <div class="combo-card-content">
+            <div class="combo-icon-box">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"></path><line x1="7" y1="7" x2="7.01" y2="7"></line></svg>
+            </div>
+            <strong class="combo-card-title">BÁO GIÁ COMBO THIẾT BỊ HOÀN THIỆN</strong>
+            <p class="combo-card-desc">Ưu đãi chiết khấu trực tiếp khi đặt trọn gói thiết bị vệ sinh &amp; gạch men công trình</p>
+          </div>
+          <div class="combo-card-footer">
+            <span class="combo-btn-action">
+              <span>Nhận Báo Giá Combo</span>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
+            </span>
+          </div>
+        </a>
       </div>
 
     </div>
@@ -703,63 +724,60 @@ const websiteSchema = {
   }
 
   /* Categories Showcase Grid (Nhóm Ngành Hàng Cốt Lõi) */
-  .categories-showcase-grid.vlxd-showcase-grid {
+  .categories-showcase-grid.vlxd-showcase-grid,
+  .categories-showcase-grid.noi-that-showcase-grid {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
     gap: var(--space-6);
   }
 
-  .categories-showcase-grid.noi-that-showcase-grid {
-    display: grid;
-    grid-template-columns: repeat(5, 1fr);
-    gap: var(--space-6);
-  }
-
   .category-showcase-card {
     background-color: #ffffff;
-    border: 1px solid var(--color-border);
-    border-radius: 18px;
+    border: 1px solid #e2e8f0;
+    border-radius: 14px;
     overflow: hidden;
     display: flex;
     flex-direction: column;
     text-decoration: none;
-    transition: all var(--transition-normal);
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.03);
+    transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    box-shadow: 0 2px 8px rgba(15, 23, 42, 0.04);
+    position: relative;
   }
 
   .category-showcase-card:hover {
-    border-color: var(--color-red);
-    box-shadow: 0 10px 28px rgba(0, 0, 0, 0.08);
-    transform: translateY(-4px);
+    border-color: #dc2626;
+    box-shadow: 0 10px 24px rgba(220, 38, 38, 0.08);
+    transform: translateY(-3px);
   }
 
   .category-showcase-img-box {
     width: 100%;
-    height: 180px;
-    background-color: #ffffff;
+    height: 170px;
+    background: linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%);
     display: flex;
     align-items: center;
     justify-content: center;
-    padding: 18px;
+    padding: 16px;
   }
 
   .category-showcase-img-box img {
     max-width: 100%;
-    max-height: 148px;
+    max-height: 138px;
     width: auto;
     height: auto;
     object-fit: contain;
-    transition: transform var(--transition-normal);
+    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.05));
+    transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
   }
 
   .category-showcase-card:hover .category-showcase-img-box img {
-    transform: scale(1.08);
+    transform: scale(1.06);
   }
 
   .category-showcase-info {
     padding: 12px 14px;
     background-color: #ffffff;
-    border-top: 1px solid var(--color-border);
+    border-top: 1px solid #f1f5f9;
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -768,7 +786,7 @@ const websiteSchema = {
 
   .category-showcase-name {
     font-family: var(--font-heading);
-    font-size: clamp(0.85rem, 1.1vw, 0.98rem);
+    font-size: clamp(0.85rem, 1.1vw, 0.95rem);
     font-weight: 800;
     color: var(--color-charcoal);
     text-transform: uppercase;
@@ -788,7 +806,7 @@ const websiteSchema = {
     display: inline-flex;
     align-items: center;
     gap: 3px;
-    font-size: 0.78rem;
+    font-size: 0.76rem;
     font-weight: 700;
     color: var(--color-red);
     opacity: 0.85;
@@ -804,6 +822,125 @@ const websiteSchema = {
   .category-showcase-card:hover .category-showcase-action {
     opacity: 1;
     transform: translateX(3px);
+  }
+
+  /* Special Combo Banner Card (6th slot) */
+  .category-combo-banner-card {
+    background: linear-gradient(145deg, #0f172a 0%, #1a2744 60%, #0f172a 100%) !important;
+    border: 1px solid rgba(220, 38, 38, 0.4) !important;
+    color: #ffffff !important;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    padding: 20px 22px;
+    position: relative;
+    overflow: hidden;
+    box-shadow: 0 4px 18px rgba(15, 23, 42, 0.15) !important;
+  }
+
+  .category-combo-banner-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, #dc2626 0%, #f59e0b 50%, #dc2626 100%);
+  }
+
+  .category-combo-banner-card:hover {
+    border-color: #ef4444 !important;
+    box-shadow: 0 12px 30px rgba(220, 38, 38, 0.25) !important;
+    transform: translateY(-3px);
+  }
+
+  .combo-card-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.6875rem;
+    font-weight: 800;
+    color: #fef08a;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    background: rgba(220, 38, 38, 0.2);
+    border: 1px solid rgba(220, 38, 38, 0.4);
+    padding: 4px 10px;
+    border-radius: 20px;
+    width: fit-content;
+    margin-bottom: 10px;
+  }
+
+  .combo-pulse-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background-color: #ef4444;
+    box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.4);
+    animation: shPulse 1.8s infinite;
+  }
+
+  .combo-card-content {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    flex: 1;
+    justify-content: center;
+  }
+
+  .combo-icon-box {
+    width: 42px;
+    height: 42px;
+    border-radius: 10px;
+    background: rgba(220, 38, 38, 0.18);
+    border: 1px solid rgba(220, 38, 38, 0.35);
+    color: #ef4444;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 4px;
+  }
+
+  .combo-card-title {
+    font-family: var(--font-heading);
+    font-size: 1.05rem;
+    font-weight: 800;
+    color: #ffffff;
+    line-height: 1.3;
+    letter-spacing: 0.01em;
+  }
+
+  .combo-card-desc {
+    font-size: 0.8125rem;
+    color: #cbd5e1;
+    line-height: 1.45;
+    margin: 0;
+  }
+
+  .combo-card-footer {
+    margin-top: 14px;
+    padding-top: 12px;
+    border-top: 1px dashed rgba(255, 255, 255, 0.15);
+  }
+
+  .combo-btn-action {
+    display: inline-flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
+    color: #ffffff;
+    font-size: 0.8125rem;
+    font-weight: 700;
+    padding: 9px 14px;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(220, 38, 38, 0.35);
+    transition: all 0.2s ease;
+  }
+
+  .category-combo-banner-card:hover .combo-btn-action {
+    background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+    box-shadow: 0 6px 16px rgba(220, 38, 38, 0.5);
   }
 
   /* About Grid */
@@ -963,11 +1100,11 @@ const websiteSchema = {
   }
 
   .brand-showcase-img {
-    height: 80px !important;
-    max-height: 80px !important;
-    max-width: 260px !important;
-    width: auto !important;
-    object-fit: contain !important;
+    height: 80px;
+    max-height: 80px;
+    max-width: 260px;
+    width: auto;
+    object-fit: contain;
     display: block;
   }
 
@@ -1776,33 +1913,176 @@ const websiteSchema = {
   }
 
   @media (max-width: 640px) {
-    .categories-showcase-grid.vlxd-showcase-grid {
-      grid-template-columns: repeat(2, 1fr);
-      gap: var(--space-3);
-    }
-
+    .categories-showcase-grid.vlxd-showcase-grid,
     .categories-showcase-grid.noi-that-showcase-grid {
       grid-template-columns: repeat(2, 1fr);
-      gap: var(--space-3);
+      gap: 10px;
+    }
+
+    .category-showcase-card {
+      border-radius: 12px;
+      box-shadow: 0 1px 4px rgba(15, 23, 42, 0.04);
     }
 
     .category-showcase-img-box {
-      height: 130px;
-      padding: 10px;
+      height: 105px;
+      padding: 8px;
+      background: #f8fafc;
     }
 
-    .category-showcase-name {
-      font-size: 0.875rem;
-    }
-
-    .category-showcase-action {
-      display: none;
+    .category-showcase-img-box img {
+      max-height: 85px;
+      max-width: 85px;
     }
 
     .category-showcase-info {
-      padding: 10px 12px;
+      padding: 8px 6px 9px;
+      flex-direction: column;
+      align-items: center;
       justify-content: center;
+      gap: 3px;
+      background: #ffffff;
+      border-top: 1px solid #f1f5f9;
       text-align: center;
+    }
+
+    .category-showcase-name {
+      font-size: 0.8125rem;
+      font-weight: 800;
+      color: #0f172a;
+      width: 100%;
+      text-align: center;
+      line-height: 1.25;
+    }
+
+    .category-showcase-action {
+      display: inline-flex;
+      align-items: center;
+      gap: 2px;
+      font-size: 0.68rem;
+      font-weight: 700;
+      color: #dc2626;
+      opacity: 0.9;
+    }
+
+    .category-showcase-action svg {
+      width: 11px;
+      height: 11px;
+    }
+
+    /* Odd item fills the bottom row as a sleek highlight card */
+    .categories-showcase-grid .category-showcase-card:last-child:nth-child(odd) {
+      grid-column: 1 / -1;
+      flex-direction: row;
+      align-items: center;
+      padding: 8px 12px;
+      gap: 12px;
+      background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+    }
+
+    .categories-showcase-grid .category-showcase-card:last-child:nth-child(odd) .category-showcase-img-box {
+      width: 64px;
+      height: 64px;
+      flex-shrink: 0;
+      border-radius: 8px;
+      padding: 4px;
+      background: #f1f5f9;
+    }
+
+    .categories-showcase-grid .category-showcase-card:last-child:nth-child(odd) .category-showcase-img-box img {
+      max-height: 54px;
+      max-width: 54px;
+    }
+
+    .categories-showcase-grid .category-showcase-card:last-child:nth-child(odd) .category-showcase-info {
+      flex-direction: row;
+      justify-content: space-between;
+      align-items: center;
+      flex: 1;
+      padding: 0;
+      background: transparent;
+      border-top: none;
+      text-align: left;
+    }
+
+    .categories-showcase-grid .category-showcase-card:last-child:nth-child(odd) .category-showcase-name {
+      text-align: left;
+      font-size: 0.85rem;
+      width: auto;
+    }
+
+    .categories-showcase-grid .category-showcase-card:last-child:nth-child(odd) .category-showcase-action {
+      padding: 4px 10px;
+      background: #fee2e2;
+      border-radius: 9999px;
+      font-size: 0.72rem;
+    }
+
+    /* Combo Banner Card on Mobile */
+    .category-combo-banner-card {
+      padding: 12px 10px 14px !important;
+      border-radius: 12px !important;
+    }
+    .combo-card-badge {
+      font-size: 0.6rem;
+      padding: 2px 7px;
+      margin-bottom: 6px;
+    }
+    .combo-icon-box {
+      width: 32px;
+      height: 32px;
+      margin-bottom: 2px;
+    }
+    .combo-icon-box svg {
+      width: 18px;
+      height: 18px;
+    }
+    .combo-card-title {
+      font-size: 0.78rem;
+      line-height: 1.25;
+    }
+    .combo-card-desc {
+      display: none;
+    }
+    .combo-card-footer {
+      margin-top: 8px;
+      padding-top: 6px;
+    }
+    .combo-btn-action {
+      padding: 6px 8px;
+      font-size: 0.68rem;
+    }
+
+    /* Mobile Marquee for Brands: 3-4 brands on screen */
+    .brands-showcase-section {
+      padding: 16px 0;
+    }
+    .brands-divider-header {
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+    .brands-title-heading {
+      font-size: 0.8125rem;
+      letter-spacing: 0.04em;
+    }
+    .marquee-wrapper {
+      padding: 4px 0;
+    }
+    .marquee-track {
+      gap: 20px;
+      animation: marqueeScroll 20s linear infinite;
+    }
+    .marquee-logo-item {
+      height: 44px;
+      min-width: 72px;
+      max-width: 90px;
+      padding: 0 4px;
+    }
+    .brand-showcase-img {
+      height: 32px !important;
+      max-height: 32px !important;
+      max-width: 80px !important;
+      width: auto !important;
     }
   }
 

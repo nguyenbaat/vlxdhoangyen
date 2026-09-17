@@ -28,6 +28,7 @@ export interface Brand {
   slug: string;
   description: string;
   content?: string;
+  faqs?: string;
   logo_url: string;
   website_url: string;
   seo_title?: string;
@@ -324,12 +325,13 @@ export const BrandRepo = {
 
   async create(data: Partial<Brand>) {
     return db.execute(
-      'INSERT INTO brands (name, slug, description, content, logo_url, website_url, seo_title, seo_description, is_featured) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
+      'INSERT INTO brands (name, slug, description, content, faqs, logo_url, website_url, seo_title, seo_description, is_featured) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
       [
         data.name,
         data.slug,
         data.description || '',
         data.content || '',
+        data.faqs || '',
         data.logo_url || '',
         data.website_url || '',
         data.seo_title || data.name,
@@ -347,6 +349,7 @@ export const BrandRepo = {
     if (data.slug !== undefined) { fields.push('slug = ?'); params.push(data.slug); }
     if (data.description !== undefined) { fields.push('description = ?'); params.push(data.description || ''); }
     if (data.content !== undefined) { fields.push('content = ?'); params.push(data.content || ''); }
+    if (data.faqs !== undefined) { fields.push('faqs = ?'); params.push(data.faqs || ''); }
     if (data.logo_url !== undefined) { fields.push('logo_url = ?'); params.push(data.logo_url || ''); }
     if (data.website_url !== undefined) { fields.push('website_url = ?'); params.push(data.website_url || ''); }
     if (data.seo_title !== undefined) { fields.push('seo_title = ?'); params.push(data.seo_title || data.name || ''); }

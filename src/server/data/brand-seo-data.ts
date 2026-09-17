@@ -365,3 +365,67 @@ export const BRAND_SEO_DATA: Record<string, BrandSEOData> = {
     metaDescription: 'Tham khảo bồn tắm Acrylic thương hiệu Mowoen tại Quảng Trị. Liên hệ VLXD Hoàng Yến 0946.575.579 để nhận thông tin sản phẩm và báo giá.'
   }
 };
+
+export function buildBrandSeoHtml(seoData?: BrandSEOData, brand?: { name?: string; description?: string }): string {
+  if (!seoData && !brand) return '';
+
+  const brandName = brand?.name || '';
+  const historyText = seoData?.historyAndOrigin || seoData?.overview || brand?.description || `${brandName} là một trong những thương hiệu vật tư xây dựng hàng đầu với lịch sử phát triển uy tín, ứng dụng dây chuyền công nghệ hiện đại và kiểm soát chất lượng nghiêm ngặt.`;
+
+  let strengthsHtml = '';
+  if (seoData?.keyStrengths && seoData.keyStrengths.length > 0) {
+    const listItems = seoData.keyStrengths.map(st => `    <li>
+      <span class="check-bullet"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" style="color: #16a34a;"><polyline points="20 6 9 17 4 12"></polyline></svg></span>
+      <span>${st}</span>
+    </li>`).join('\n');
+    strengthsHtml = `
+<div class="profile-block">
+  <h3>2. Ưu điểm nổi bật &amp; Giá trị cốt lõi</h3>
+  <ul class="strength-list">
+${listItems}
+  </ul>
+</div>`;
+  }
+
+  let standardsHtml = '';
+  if (seoData?.standards && seoData.standards.length > 0) {
+    const stdBadges = seoData.standards.map(std => `    <div class="std-badge">
+      <span class="std-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line></svg></span>
+      <span>${std}</span>
+    </div>`).join('\n');
+    standardsHtml = `
+<div class="profile-block">
+  <h3>3. Tiêu chuẩn kỹ thuật &amp; Chứng chỉ chất lượng</h3>
+  <div class="standards-tags-grid">
+${stdBadges}
+  </div>
+</div>`;
+  }
+
+  const agencyRoleText = seoData?.agencyRole || `Tại Quảng Trị, Siêu Thị VLXD Hoàng Yến cung cấp các sản phẩm thương hiệu ${brandName}, đảm bảo thông tin xuất xứ rõ ràng, đầy đủ hóa đơn GTGT theo quy định.`;
+
+  return `<div class="profile-block">
+  <h3>1. Tổng quan &amp; Lịch sử hình thành</h3>
+  <p>${historyText}</p>
+</div>
+${strengthsHtml}
+${standardsHtml}
+<div class="profile-block highlight-agency-block">
+  <h3>4. Phân phối sản phẩm tại Siêu Thị VLXD Hoàng Yến</h3>
+  <p>${agencyRoleText}</p>
+  <div class="agency-commitments">
+    <div class="commit-item">
+      <strong>Hàng Chuẩn Nhà Máy</strong>
+      <span>Sản phẩm có nguồn gốc xuất xứ rõ ràng từ nhà máy sản xuất.</span>
+    </div>
+    <div class="commit-item">
+      <strong>Báo Giá Minh Bạch</strong>
+      <span>Bảng giá niêm yết rõ ràng, hỗ trợ dự toán chính xác theo bản vẽ.</span>
+    </div>
+    <div class="commit-item">
+      <strong>Đội Xe Vận Chuyển</strong>
+      <span>Giao hàng linh hoạt theo tiến độ đổ sàn, lợp mái và hoàn thiện.</span>
+    </div>
+  </div>
+</div>`;
+}

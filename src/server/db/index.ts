@@ -194,8 +194,12 @@ async function createSchema() {
         name VARCHAR(255) NOT NULL,
         slug VARCHAR(255) NOT NULL UNIQUE,
         description TEXT,
+        content TEXT,
+        faqs TEXT,
         logo_url TEXT,
         website_url TEXT,
+        seo_title TEXT,
+        seo_description TEXT,
         is_featured INTEGER DEFAULT 0,
         created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
       );
@@ -461,6 +465,7 @@ async function createMySQLSchema() {
         slug VARCHAR(255) NOT NULL UNIQUE,
         description TEXT,
         content LONGTEXT DEFAULT NULL,
+        faqs LONGTEXT DEFAULT NULL,
         logo_url TEXT,
         website_url TEXT,
         seo_title TEXT,
@@ -469,6 +474,20 @@ async function createMySQLSchema() {
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
     `);
+
+    // Ensure columns exist on already created tables
+    try {
+      await mysqlPool.query(`ALTER TABLE brands ADD COLUMN content LONGTEXT DEFAULT NULL`);
+    } catch {}
+    try {
+      await mysqlPool.query(`ALTER TABLE brands ADD COLUMN faqs LONGTEXT DEFAULT NULL`);
+    } catch {}
+    try {
+      await mysqlPool.query(`ALTER TABLE brands ADD COLUMN seo_title TEXT`);
+    } catch {}
+    try {
+      await mysqlPool.query(`ALTER TABLE brands ADD COLUMN seo_description TEXT`);
+    } catch {}
 
     await mysqlPool.query(`
       CREATE TABLE IF NOT EXISTS products (

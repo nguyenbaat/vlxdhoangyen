@@ -3,6 +3,7 @@ import AdminLayout from '../../../../layouts/AdminLayout.astro';
 import BlockEditor from '../../../../components/admin/BlockEditor.astro';
 import MediaManager from '../../../../components/admin/MediaManager.astro';
 import { BrandRepo } from '../../../../server/db/repo.js';
+import { BRAND_SEO_DATA, buildBrandSeoHtml } from '../../../../server/data/brand-seo-data.js';
 
 const { id } = Astro.params;
 const brandId = Number(id);
@@ -16,6 +17,25 @@ if (!brand) {
   return Astro.redirect('/admin/brands');
 }
 
+const brandSEO = BRAND_SEO_DATA[brand.slug];
+const brandInitialContent = brand.content || buildBrandSeoHtml(brandSEO, brand) || '';
+const brandInitialDescription = brand.description || brandSEO?.overview || '';
+const brandInitialSeoTitle = brand.seo_title || brandSEO?.metaTitle || `${brand.name} Tại Quảng Trị | Báo Giá Thép Xây Dựng Hoàng Yến`;
+const brandInitialSeoDesc = brand.seo_description || brandSEO?.metaDescription || brandInitialDescription;
+
+let initialFaqs: Array<{ question: string; answer: string }> = [];
+if (brand.faqs) {
+  try {
+    const parsed = typeof brand.faqs === 'string' ? JSON.parse(brand.faqs) : brand.faqs;
+    if (Array.isArray(parsed)) initialFaqs = parsed;
+  } catch (e) {
+    initialFaqs = [];
+  }
+}
+if (initialFaqs.length === 0 && brandSEO?.faqs) {
+  initialFaqs = brandSEO.faqs;
+}
+
 let errorMsg = '';
 
 if (Astro.request.method === 'POST') {
@@ -25,6 +45,7 @@ if (Astro.request.method === 'POST') {
     let slug = formData.get('slug')?.toString().trim() || '';
     const description = formData.get('description')?.toString().trim() || '';
     const content = formData.get('content')?.toString() || '';
+    const faqs = formData.get('faqs')?.toString() || '[]';
     const logo_url = formData.get('logo_url')?.toString().trim() || '';
     const website_url = formData.get('website_url')?.toString().trim() || '';
     const seo_title = formData.get('seo_title')?.toString().trim() || name;
@@ -39,6 +60,7 @@ if (Astro.request.method === 'POST') {
       slug,
       description,
       content,
+      faqs,
       logo_url,
       website_url,
       seo_title,
@@ -62,7 +84,7 @@ if (Astro.request.method === 'POST') {
 
     {errorMsg && <div class="error-box">{errorMsg}</div>}
 
-    <form method="POST" class="admin-form-card">
+    <form method="POST" id="brand-edit-form" class="admin-form-card">
       <div class="form-grid-2">
         <div class="col-main">
           <div class="form-group">
@@ -77,26 +99,42 @@ if (Astro.request.method === 'POST') {
 
           <div class="form-group">
             <label for="description">Mô tả tóm tắt thương hiệu</label>
-            <textarea id="description" name="description" rows="3">{brand.description}</textarea>
+            <textarea id="description" name="description" rows="3">{brandInitialDescription}</textarea>
           </div>
 
           <!-- Gutenberg Block Editor for Brand Page -->
           <BlockEditor
-            initialContent={brand.content || ''}
+            initialContent={brandInitialContent}
             name="content"
             id="brand_content"
             label="Nội Dung Chi Tiết Thương Hiệu & Hướng Dẫn Chọn Mua (Gutenberg Block Editor)"
           />
 
+          <!-- FAQ Manager Box -->
+          <div class="faq-fieldset">
+            <div class="faq-header-row">
+              <div>
+                <h4>Câu Hỏi Thường Gặp (FAQ)</h4>
+                <p class="faq-desc">Các câu hỏi này sẽ hiển thị ở khối "Giải Đáp Thắc Mắc" cuối trang thương hiệu và tự động tạo cấu trúc Schema FAQPage cho Google.</p>
+              </div>
+              <button type="button" id="btn-add-faq" class="btn btn-outline btn-sm">+ Thêm Câu Hỏi</button>
+            </div>
+
+            <div id="faq-container" class="faq-list-wrapper">
+              <!-- Dynamically populated -->
+            </div>
+            <input type="hidden" name="faqs" id="faqs_json_input" value={JSON.stringify(initialFaqs)} />
+          </div>
+
           <div class="seo-fieldset">
             <h4>Tối Ưu SEO Thương Hiệu</h4>
             <div class="form-group">
               <label for="seo_title">SEO Title (Tiêu đề Google)</label>
-              <input type="text" id="seo_title" name="seo_title" value={brand.seo_title || brand.name} />
+              <input type="text" id="seo_title" name="seo_title" value={brandInitialSeoTitle} />
             </div>
             <div class="form-group">
               <label for="seo_description">SEO Meta Description</label>
-              <textarea id="seo_description" name="seo_description" rows="2">{brand.seo_description || brand.description}</textarea>
+              <textarea id="seo_description" name="seo_description" rows="2">{brandInitialSeoDesc}</textarea>
             </div>
           </div>
         </div>
@@ -132,6 +170,120 @@ if (Astro.request.method === 'POST') {
   </div>
 </AdminLayout>
 
+<script is:inline define:vars={{ initialFaqs }}>
+  document.addEventListener('DOMContentLoaded', () => {
+    let faqs = Array.isArray(initialFaqs) ? [...initialFaqs] : [];
+    const container = document.getElementById('faq-container');
+    const hiddenInput = document.getElementById('faqs_json_input');
+    const addBtn = document.getElementById('btn-add-faq');
+    const form = document.getElementById('brand-edit-form');
+
+    function syncJson() {
+      if (hiddenInput) {
+        hiddenInput.value = JSON.stringify(faqs);
+      }
+    }
+
+    function renderFaqs() {
+      if (!container) return;
+      container.innerHTML = '';
+
+      if (faqs.length === 0) {
+        container.innerHTML = '<div class="empty-faq-text">Chưa có câu hỏi thường gặp nào. Nhấn "+ Thêm Câu Hỏi" để tạo.</div>';
+        syncJson();
+        return;
+      }
+
+      faqs.forEach((faq, index) => {
+        const item = document.createElement('div');
+        item.className = 'faq-item-row';
+        item.innerHTML = `
+          <div class="faq-item-num">Câu ${index + 1}</div>
+          <div class="faq-item-fields">
+            <div class="form-group" style="margin-bottom: 0.5rem;">
+              <input type="text" class="faq-q-input" placeholder="Nhập câu hỏi..." value="${escapeHtml(faq.question || '')}" />
+            </div>
+            <div class="form-group" style="margin-bottom: 0;">
+              <textarea class="faq-a-input" rows="2" placeholder="Nhập câu trả lời chi tiết...">${escapeHtml(faq.answer || '')}</textarea>
+            </div>
+          </div>
+          <button type="button" class="btn-delete-faq" title="Xóa câu hỏi">✕</button>
+        `;
+
+        const qInput = item.querySelector('.faq-q-input');
+        const aInput = item.querySelector('.faq-a-input');
+        const delBtn = item.querySelector('.btn-delete-faq');
+
+        if (qInput) {
+          qInput.addEventListener('input', (e) => {
+            faqs[index].question = e.target.value;
+            syncJson();
+          });
+        }
+
+        if (aInput) {
+          aInput.addEventListener('input', (e) => {
+            faqs[index].answer = e.target.value;
+            syncJson();
+          });
+        }
+
+        if (delBtn) {
+          delBtn.addEventListener('click', () => {
+            faqs.splice(index, 1);
+            renderFaqs();
+          });
+        }
+
+        container.appendChild(item);
+      });
+
+      syncJson();
+    }
+
+    function escapeHtml(str) {
+      return (str || '')
+        .replace(/&/g, '&amp;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;');
+    }
+
+    if (addBtn) {
+      addBtn.addEventListener('click', () => {
+        faqs.push({ question: '', answer: '' });
+        renderFaqs();
+        // Focus the newly added question input
+        const allInputs = container.querySelectorAll('.faq-q-input');
+        if (allInputs.length > 0) {
+          allInputs[allInputs.length - 1].focus();
+        }
+      });
+    }
+
+    if (form) {
+      form.addEventListener('submit', () => {
+        // Collect current DOM values before submit
+        const rows = container.querySelectorAll('.faq-item-row');
+        const updatedFaqs = [];
+        rows.forEach(row => {
+          const q = row.querySelector('.faq-q-input')?.value.trim();
+          const a = row.querySelector('.faq-a-input')?.value.trim();
+          if (q || a) {
+            updatedFaqs.push({ question: q || '', answer: a || '' });
+          }
+        });
+        if (hiddenInput) {
+          hiddenInput.value = JSON.stringify(updatedFaqs);
+        }
+      });
+    }
+
+    renderFaqs();
+  });
+</script>
+
 <style>
   .form-container { max-width: 1200px; margin: 0 auto; }
   .form-header-bar { display: flex; justify-content: space-between; margin-bottom: 1.5rem; }
@@ -150,6 +302,92 @@ if (Astro.request.method === 'POST') {
   }
   .form-group input:focus, .form-group select:focus, .form-group textarea:focus { border-color: #0284c7; }
   
+  /* FAQ Fieldset */
+  .faq-fieldset {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 1.25rem;
+    margin-top: 1.5rem;
+  }
+  .faq-header-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 1rem;
+    gap: 1rem;
+  }
+  .faq-header-row h4 {
+    margin: 0 0 0.25rem 0;
+    font-size: 1rem;
+    font-weight: 800;
+    color: #0f172a;
+  }
+  .faq-desc {
+    margin: 0;
+    font-size: 0.8rem;
+    color: #64748b;
+    line-height: 1.4;
+  }
+  .faq-list-wrapper {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+  .faq-item-row {
+    background: #ffffff;
+    border: 1px solid #cbd5e1;
+    border-radius: 6px;
+    padding: 0.875rem;
+    display: flex;
+    gap: 0.75rem;
+    align-items: flex-start;
+  }
+  .faq-item-num {
+    font-size: 0.75rem;
+    font-weight: 800;
+    color: var(--color-red, #dc2626);
+    background: #fee2e2;
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    white-space: nowrap;
+    margin-top: 0.25rem;
+  }
+  .faq-item-fields {
+    flex: 1;
+    min-width: 0;
+  }
+  .btn-delete-faq {
+    background: transparent;
+    border: 1px solid #cbd5e1;
+    color: #94a3b8;
+    width: 28px;
+    height: 28px;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-size: 0.85rem;
+    transition: all 0.2s;
+    margin-top: 0.25rem;
+    flex-shrink: 0;
+  }
+  .btn-delete-faq:hover {
+    background: #fee2e2;
+    color: #b91c1c;
+    border-color: #fca5a5;
+  }
+  .empty-faq-text {
+    padding: 1.5rem;
+    text-align: center;
+    color: #94a3b8;
+    font-size: 0.85rem;
+    background: #ffffff;
+    border: 1px dashed #cbd5e1;
+    border-radius: 6px;
+  }
+
   .seo-fieldset { background: #f8fafc; padding: 1.25rem; border-radius: 8px; border: 1px dashed #cbd5e1; margin-top: 1.5rem; }
   .seo-fieldset h4 { margin-top: 0; margin-bottom: 1rem; color: #0369a1; }
   

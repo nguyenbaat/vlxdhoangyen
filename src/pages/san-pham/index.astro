@@ -176,11 +176,11 @@ const faqSchema = {
         <!-- Direct Assistance Box -->
         <div class="sidebar-assistance">
           <div class="assistance-icon">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" style="color: #ffffff;"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>
           </div>
           <h4>Báo Giá Khối Lượng Lớn?</h4>
           <p>Nhận chiết khấu trực tiếp theo hợp đồng dự án và hỗ trợ giao hàng tận nơi tại Quảng Trị.</p>
-          <a href="tel:0946575579" class="btn btn-primary btn-sm btn-block">Hotline: 0946.575.579</a>
+          <a href={`tel:${settings.hotline_main || '0946575579'}`} class="btn btn-primary btn-sm btn-block">Hotline: {settings.hotline_main || '0946.575.579'}</a>
         </div>
       </aside>
 
@@ -468,30 +468,61 @@ const faqSchema = {
   }
 
   .sidebar-assistance {
-    background: linear-gradient(135deg, #09111e, #111e33);
-    border: 1px solid #1e293b;
-    border-radius: var(--radius-xs);
-    padding: var(--space-5);
-    color: #fff;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-top: 3px solid var(--color-red);
+    border-radius: 8px;
+    padding: 20px 16px;
+    color: #0f172a;
     text-align: center;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
   }
 
   .assistance-icon {
-    font-size: 1.75rem;
-    margin-bottom: var(--space-2);
+    width: 44px;
+    height: 44px;
+    background-color: #fee2e2;
+    color: var(--color-red);
+    border-radius: 50%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 12px auto;
+  }
+
+  .assistance-icon svg {
+    color: var(--color-red) !important;
   }
 
   .sidebar-assistance h4 {
-    color: #fff;
+    color: #0f172a;
     font-size: 1rem;
-    margin-bottom: var(--space-2);
+    font-weight: 800;
+    margin-bottom: 6px;
   }
 
   .sidebar-assistance p {
-    font-size: 0.78125rem;
-    color: #94a3b8;
-    line-height: 1.45;
-    margin-bottom: var(--space-4);
+    font-size: 0.8125rem;
+    color: #475569;
+    line-height: 1.5;
+    margin-bottom: 14px;
+  }
+
+  .sidebar-assistance .btn {
+    background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
+    color: #ffffff;
+    font-weight: 800;
+    border: none;
+    box-shadow: 0 3px 10px rgba(220, 38, 38, 0.3);
+    padding: 9px 12px;
+    font-size: 0.875rem;
+    border-radius: 6px;
+    transition: all var(--transition-fast);
+  }
+
+  .sidebar-assistance .btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 5px 14px rgba(220, 38, 38, 0.4);
   }
 
   .catalog-main {
@@ -680,7 +711,8 @@ const faqSchema = {
 
   @media (max-width: 640px) {
     .products-grid {
-      grid-template-columns: 1fr;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 10px;
     }
     .catalog-toolbar {
       flex-direction: column;

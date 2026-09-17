@@ -220,7 +220,7 @@ if (post.title.toLowerCase().includes('thép') || post.slug.includes('thep')) {
 >
   <div class="article-page-wrapper">
     <div class="container article-main-container">
-      <div class="article-layout" style="display:grid;grid-template-columns:1fr 360px;gap:2rem;align-items:start;">
+      <div class="article-layout">
         
         <!-- MAIN ARTICLE COLUMN -->
         <article class="article-primary-column" itemscope itemtype="https://schema.org/NewsArticle">
@@ -250,21 +250,6 @@ if (post.title.toLowerCase().includes('thép') || post.slug.includes('thep')) {
               <span>Cập nhật: <time datetime={post.published_at}>{formattedDate}</time></span>
             </div>
           </div>
-
-          <!-- 4. Hero Featured Image -->
-          {post.featured_image && (
-            <figure class="article-hero-figure">
-              <img 
-                src={post.featured_image} 
-                alt={`${post.title} – Siêu Thị VLXD Hoàng Yến Quảng Trị`} 
-                title={`${post.title} – Phân phối tại Siêu thị VLXD Hoàng Yến`}
-                itemprop="image" 
-                loading="eager"
-                decoding="async"
-              />
-              <figcaption>Ảnh: {post.title} – Phân phối tại Siêu thị VLXD Hoàng Yến (299 Lê Duẩn, Quảng Trị)</figcaption>
-            </figure>
-          )}
 
           <!-- 5. Table of Contents (Mục Lục Tự Động) -->
           {tocItems.length > 0 && (
@@ -440,7 +425,7 @@ if (post.title.toLowerCase().includes('thép') || post.slug.includes('thep')) {
         </article>
 
         <!-- SIDEBAR COLUMN -->
-        <aside class="article-sidebar-column" style="display:flex;flex-direction:column;gap:1.25rem;position:sticky;top:90px;">
+        <aside class="article-sidebar-column">
           
           <!-- Sticky Hotline Card (Luxury Redesign) -->
           <div class="sidebar-card sidebar-hotline-card">
@@ -612,14 +597,14 @@ if (post.title.toLowerCase().includes('thép') || post.slug.includes('thep')) {
     max-width: 1240px;
   }
 
-  :global(.article-layout) {
+  .article-layout {
     display: grid;
     grid-template-columns: 1fr 360px;
     gap: var(--space-8);
     align-items: flex-start;
   }
 
-  :global(.article-sidebar-column) {
+  .article-sidebar-column {
     display: flex;
     flex-direction: column;
     gap: var(--space-5);
@@ -2092,36 +2077,108 @@ if (post.title.toLowerCase().includes('thép') || post.slug.includes('thep')) {
   }
 
   @media (max-width: 1024px) {
-    :global(.article-layout) {
+    .article-layout {
       grid-template-columns: 1fr 300px;
+      gap: var(--space-6);
     }
     .related-products-grid {
       grid-template-columns: repeat(2, 1fr);
     }
   }
 
-  @media (max-width: 768px) {
-    :global(.article-layout) {
+  @media (max-width: 900px) {
+    .article-layout {
       grid-template-columns: 1fr;
+      gap: var(--space-8);
     }
-    :global(.article-sidebar-column) {
+    .article-sidebar-column {
       position: static;
     }
   }
 
   @media (max-width: 640px) {
+    .article-page-wrapper {
+      padding-top: var(--space-4);
+      padding-bottom: var(--space-12);
+    }
     .article-primary-column {
-      padding: var(--space-5) var(--space-4);
+      padding: 18px 14px;
+      border-radius: 12px;
+    }
+    .article-title {
+      font-size: 1.4rem;
+      line-height: 1.35;
+      margin-bottom: 12px;
+    }
+    .article-meta-bar {
+      font-size: 0.8rem;
+      gap: 8px;
+      margin-bottom: 16px;
+      padding-bottom: 14px;
+    }
+    .article-hero-figure {
+      margin-bottom: 20px;
+      border-radius: 8px;
+    }
+    .article-toc-box {
+      padding: 14px;
+      margin-bottom: 24px;
+      border-radius: 10px;
+    }
+    .toc-main-title {
+      font-size: 0.95rem;
+    }
+    .toc-link {
+      font-size: 0.875rem;
+    }
+    .prose-industrial {
+      font-size: 0.975rem;
+      line-height: 1.75;
+    }
+    :global(.prose-industrial h2) {
+      font-size: 1.25rem;
+      margin-top: 26px;
+      margin-bottom: 12px;
+      line-height: 1.35;
+    }
+    :global(.prose-industrial h3) {
+      font-size: 1.1rem;
+      margin-top: 18px;
+      margin-bottom: 10px;
+      line-height: 1.4;
+    }
+    :global(.prose-industrial .callout-box) {
+      padding: 14px 16px !important;
+      font-size: 0.88rem !important;
+      margin: 16px 0 !important;
+    }
+    .related-products-grid {
+      grid-template-columns: repeat(2, 1fr);
+      gap: 10px;
     }
     .related-posts-grid {
       grid-template-columns: 1fr;
+      gap: 12px;
     }
     .cta-buttons-group {
       flex-direction: column;
+      gap: 10px;
     }
     .btn-cta-primary, .btn-cta-secondary {
       width: 100%;
       justify-content: center;
+    }
+    .article-cta-box {
+      padding: 20px 16px;
+      border-radius: 12px;
+    }
+    .sidebar-card {
+      padding: 16px 14px;
+      border-radius: 12px;
+    }
+    .btn-glowing-red {
+      font-size: 1.15rem;
+      padding: 12px;
     }
   }
 </style>
