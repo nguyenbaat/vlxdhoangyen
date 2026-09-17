@@ -345,17 +345,17 @@ if (post.title.toLowerCase().includes('thép') || post.slug.includes('thep')) {
               <div class="related-products-grid">
                 {relatedProducts.map(p => (
                   <div class="rel-product-card">
-                    <a href={`/san-pham/${p.slug}/`} class="rel-product-img">
+                    <a href={`/${p.slug}/`} class="rel-product-img">
                       <img src={p.featured_image || '/images/danh-muc/thep.png'} alt={p.name} loading="lazy" />
                     </a>
                     <div class="rel-product-details">
                       <span class="rel-product-sku">Mã: {p.sku || 'HY-VLXD'}</span>
                       <h4 class="rel-product-name">
-                        <a href={`/san-pham/${p.slug}/`}>{p.name}</a>
+                        <a href={`/${p.slug}/`}>{p.name}</a>
                       </h4>
                       <div class="rel-product-bottom">
                         <span class="rel-product-price">Giá: Liên hệ</span>
-                        <a href={`/san-pham/${p.slug}/`} class="btn-rel-view">Chi Tiết</a>
+                        <a href={`/${p.slug}/`} class="btn-rel-view">Chi Tiết</a>
                       </div>
                     </div>
                   </div>

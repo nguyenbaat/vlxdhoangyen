@@ -2,7 +2,7 @@
 import Layout from '../layouts/Layout.astro';
 import ProductCard from '../components/ProductCard.astro';
 import TrustSignals from '../components/TrustSignals.astro';
-import { CategoryRepo, ProductRepo, SettingsRepo } from '../server/db/repo.js';
+import { CategoryRepo, ProductRepo, BrandRepo, SettingsRepo } from '../server/db/repo.js';
 import { CATEGORY_SEO_DATA } from '../server/data/category-seo-data.js';
 
 const { slug } = Astro.params;
@@ -12,9 +12,14 @@ if (slug === 'trang-chu' || slug === 'home' || slug === 'index' || slug === 'ind
   return Astro.redirect('/', 301);
 }
 
-// Check if slug is a category or product
+// Check if slug is a category, product, or brand
 const category = slug ? await CategoryRepo.getBySlug(slug) : null;
 const product = !category && slug ? await ProductRepo.getBySlug(slug) : null;
+const brand = !category && !product && slug ? await BrandRepo.getBySlug(slug) : null;
+
+if (brand) {
+  return Astro.redirect(`/san-pham/${brand.slug}/`, 301);
+}
 
 if (!category && !product) {
   return Astro.redirect('/404');

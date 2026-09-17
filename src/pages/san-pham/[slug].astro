@@ -1,11 +1,24 @@
 ---
 import Layout from '../../layouts/Layout.astro';
 import ProductCard from '../../components/ProductCard.astro';
-import { BrandRepo, ProductRepo, SettingsRepo } from '../../server/db/repo.js';
+import { BrandRepo, CategoryRepo, ProductRepo, SettingsRepo } from '../../server/db/repo.js';
 import { BRAND_SEO_DATA } from '../../server/data/brand-seo-data.js';
 
 const { slug } = Astro.params;
 const brand = slug ? await BrandRepo.getBySlug(slug) : null;
+
+// If slug is not a brand, check if it's a product or category and redirect cleanly to prevent false 404s
+if (!brand && slug) {
+  const product = await ProductRepo.getBySlug(slug);
+  if (product) {
+    return Astro.redirect(`/${product.slug}/`, 301);
+  }
+  const category = await CategoryRepo.getBySlug(slug);
+  if (category) {
+    return Astro.redirect(`/${category.slug}/`, 301);
+  }
+  return Astro.redirect('/404');
+}
 
 if (!brand) {
   return Astro.redirect('/404');
