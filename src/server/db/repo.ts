@@ -893,13 +893,74 @@ export const InquiryRepo = {
 
 // ── Redirect Repo ─────────────────────────────────────────────────────────────
 
+export interface RedirectRule {
+  id: number;
+  old_path: string;
+  new_path: string;
+  status_code: number;
+}
+
 export const RedirectRepo = {
+  async getAll(): Promise<RedirectRule[]> {
+    return db.query<RedirectRule>('SELECT * FROM redirects ORDER BY id DESC');
+  },
+
+  async getById(id: number): Promise<RedirectRule | null> {
+    return db.queryOne<RedirectRule>('SELECT * FROM redirects WHERE id = ?', [id]);
+  },
+
   async find(path: string): Promise<{ new_path: string; status_code: number } | null> {
     const normalized = path.endsWith('/') ? path : path + '/';
+    const noTrailing = path.endsWith('/') ? path.slice(0, -1) : path;
     return db.queryOne<{ new_path: string; status_code: number }>(
-      'SELECT new_path, status_code FROM redirects WHERE old_path = ? OR old_path = ?',
-      [path, normalized]
+      'SELECT new_path, status_code FROM redirects WHERE old_path = ? OR old_path = ? OR old_path = ?',
+      [path, normalized, noTrailing]
     );
+  },
+
+  async create(data: { old_path: string; new_path: string; status_code?: number }) {
+    let oldPath = data.old_path.trim();
+    if (!oldPath.startsWith('/') && !oldPath.startsWith('http')) {
+      oldPath = '/' + oldPath;
+    }
+    let newPath = data.new_path.trim();
+    if (!newPath.startsWith('/') && !newPath.startsWith('http')) {
+      newPath = '/' + newPath;
+    }
+    const statusCode = Number(data.status_code) || 301;
+
+    return db.execute(
+      'INSERT INTO redirects (old_path, new_path, status_code) VALUES (?, ?, ?)',
+      [oldPath, newPath, statusCode]
+    );
+  },
+
+  async update(id: number, data: { old_path: string; new_path: string; status_code?: number }) {
+    let oldPath = data.old_path.trim();
+    if (!oldPath.startsWith('/') && !oldPath.startsWith('http')) {
+      oldPath = '/' + oldPath;
+    }
+    let newPath = data.new_path.trim();
+    if (!newPath.startsWith('/') && !newPath.startsWith('http')) {
+      newPath = '/' + newPath;
+    }
+    const statusCode = Number(data.status_code) || 301;
+
+    return db.execute(
+      'UPDATE redirects SET old_path = ?, new_path = ?, status_code = ? WHERE id = ?',
+      [oldPath, newPath, statusCode, id]
+    );
+  },
+
+  async delete(id: number) {
+    return db.execute('DELETE FROM redirects WHERE id = ?', [id]);
+  },
+
+  async bulkDelete(ids: number[]) {
+    if (!ids || ids.length === 0) return;
+    for (const id of ids) {
+      await RedirectRepo.delete(id);
+    }
   }
 };
 

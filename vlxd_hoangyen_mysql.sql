@@ -1,7 +1,7 @@
 -- ============================================================
 -- Database Dump for Siêu Thị Vật Liệu Xây Dựng Hoàng Yến
 -- Target Engine: MySQL / MariaDB (Hostinger / phpMyAdmin / cPanel)
--- Generated: 2026-09-17T08:43:33.648Z
+-- Generated: 2026-09-17T09:04:56.133Z
 -- ============================================================
 
 SET NAMES utf8mb4;

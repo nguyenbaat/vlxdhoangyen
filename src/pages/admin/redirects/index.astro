@@ -1,0 +1,959 @@
+---
+import AdminLayout from '../../../layouts/AdminLayout.astro';
+import { RedirectRepo, CategoryRepo, BrandRepo, ProductRepo, PostRepo } from '../../../server/db/repo.js';
+
+let successMsg = '';
+let errorMsg = '';
+
+// Handle POST actions
+if (Astro.request.method === 'POST') {
+  try {
+    const formData = await Astro.request.formData();
+    const action = formData.get('action')?.toString();
+
+    if (action === 'create') {
+      const old_path = formData.get('old_path')?.toString().trim() || '';
+      const new_path = formData.get('new_path')?.toString().trim() || '';
+      const status_code = Number(formData.get('status_code')) || 301;
+
+      if (!old_path || !new_path) {
+        throw new Error('Vui lòng nhập cả đường dẫn nguồn (Old URL) và đường dẫn đích (New URL).');
+      }
+
+      await RedirectRepo.create({ old_path, new_path, status_code });
+      return Astro.redirect('/admin/redirects?created=1');
+    } 
+    else if (action === 'update') {
+      const id = Number(formData.get('id'));
+      const old_path = formData.get('old_path')?.toString().trim() || '';
+      const new_path = formData.get('new_path')?.toString().trim() || '';
+      const status_code = Number(formData.get('status_code')) || 301;
+
+      if (!id || !old_path || !new_path) {
+        throw new Error('Dữ liệu cập nhật chuyển hướng không hợp lệ.');
+      }
+
+      await RedirectRepo.update(id, { old_path, new_path, status_code });
+      return Astro.redirect('/admin/redirects?updated=1');
+    } 
+    else if (action === 'delete') {
+      const id = Number(formData.get('id'));
+      if (id) {
+        await RedirectRepo.delete(id);
+      }
+      return Astro.redirect('/admin/redirects?deleted=1');
+    }
+  } catch (err: any) {
+    errorMsg = err.message;
+  }
+}
+
+if (Astro.url.searchParams.get('created') === '1') successMsg = '✅ Đã thêm quy tắc chuyển hướng thành công!';
+if (Astro.url.searchParams.get('updated') === '1') successMsg = '✅ Đã cập nhật quy tắc chuyển hướng thành công!';
+if (Astro.url.searchParams.get('deleted') === '1') successMsg = '🗑️ Đã xóa quy tắc chuyển hướng!';
+
+// Fetch all redirects
+const redirects = await RedirectRepo.getAll();
+
+// Fetch internal links for selection
+const categories = await CategoryRepo.getAll(false);
+const brands = await BrandRepo.getAll();
+const prodsData = await ProductRepo.getAll({ limit: 100 });
+const products = prodsData.products;
+const posts = await PostRepo.getAll({ limit: 50 });
+
+// Calculate summary stats
+const count301 = redirects.filter(r => r.status_code === 301).length;
+const count302 = redirects.filter(r => r.status_code === 302).length;
+const count307_308 = redirects.filter(r => r.status_code === 307 || r.status_code === 308).length;
+---
+
+<AdminLayout title="Quản Lý Chuyển Hướng (301 / 302 / 307 / 308 Redirects)" activeNav="redirects">
+  <div class="redirects-page-wrap">
+    
+    <!-- Top Stat Widgets -->
+    <div class="stats-overview-grid">
+      <div class="stat-card">
+        <div class="stat-icon-wrap" style="background: #e0f2fe; color: #0284c7;">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 10 4 15 9 20"></polyline><path d="M20 4v7a4 4 0 0 1-4 4H4"></path></svg>
+        </div>
+        <div class="stat-details">
+          <span class="stat-label">Tổng Quy Tắc Redirect</span>
+          <strong class="stat-number">{redirects.length}</strong>
+        </div>
+      </div>
+
+      <div class="stat-card">
+        <div class="stat-icon-wrap" style="background: #ecfdf5; color: #059669;">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
+        </div>
+        <div class="stat-details">
+          <span class="stat-label">301 Vĩnh Viễn (SEO Khuyên Dùng)</span>
+          <strong class="stat-number" style="color: #059669;">{count301}</strong>
+        </div>
+      </div>
+
+      <div class="stat-card">
+        <div class="stat-icon-wrap" style="background: #fef3c7; color: #d97706;">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+        </div>
+        <div class="stat-details">
+          <span class="stat-label">302 Tạm Thời (Found)</span>
+          <strong class="stat-number" style="color: #d97706;">{count302}</strong>
+        </div>
+      </div>
+
+      <div class="stat-card">
+        <div class="stat-icon-wrap" style="background: #f3e8ff; color: #7c3aed;">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="9" y1="12" x2="15" y2="12"></line></svg>
+        </div>
+        <div class="stat-details">
+          <span class="stat-label">307 / 308 (Giữ HTTP Method)</span>
+          <strong class="stat-number" style="color: #7c3aed;">{count307_308}</strong>
+        </div>
+      </div>
+    </div>
+
+    <!-- Feedback Alerts -->
+    {successMsg && <div class="alert-box alert-success">{successMsg}</div>}
+    {errorMsg && <div class="alert-box alert-danger">{errorMsg}</div>}
+
+    <!-- Create New Redirect Card -->
+    <div class="content-card create-card">
+      <div class="card-header">
+        <div class="header-title-flex">
+          <div class="title-icon">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+          </div>
+          <div>
+            <h3>Tạo Quy Tắc Chuyển Hướng Mới (New Redirect)</h3>
+            <p>Tự động chuyển khách truy cập và Google Bot từ URL cũ sang URL mới nhằm tránh lỗi 404 và giữ trọn vẹn điểm SEO.</p>
+          </div>
+        </div>
+      </div>
+
+      <form method="POST" class="create-redirect-form">
+        <input type="hidden" name="action" value="create" />
+        
+        <div class="form-grid-3">
+          <!-- 1. Old Path -->
+          <div class="form-group">
+            <label for="create_old_path">Đường dẫn nguồn (Old URL / Cần chuyển đi) *</label>
+            <input 
+              type="text" 
+              id="create_old_path" 
+              name="old_path" 
+              placeholder="VD: /tin-tuc/bai-viet-cu/ hoặc /thep-cu" 
+              required 
+              class="form-input" 
+            />
+            <span class="input-hint">Đường dẫn cũ trên website (bắt đầu bằng dấu <code>/</code>)</span>
+          </div>
+
+          <!-- 2. Target Link (Dropdown Selector + Custom Input) -->
+          <div class="form-group">
+            <div class="label-flex-row">
+              <label for="create_new_path">Đường dẫn đích (Redirect To / Đích đến) *</label>
+              <select id="quick_link_picker" class="quick-link-select">
+                <option value="">⚡ Chọn nhanh link nội bộ...</option>
+                
+                <optgroup label="── 1. Trang Cố Định ──">
+                  <option value="/">Trang Chủ (/)</option>
+                  <option value="/san-pham/">Tất Cả Sản Phẩm (/san-pham/)</option>
+                  <option value="/tin-tuc/">Tin Tức & Báo Giá (/tin-tuc/)</option>
+                  <option value="/gioi-thieu/">Giới Thiệu VLXD Hoàng Yến (/gioi-thieu/)</option>
+                  <option value="/lien-he/">Liên Hệ & Bản Đồ (/lien-he/)</option>
+                </optgroup>
+
+                <optgroup label="── 2. Danh Mục Vật Tư ──">
+                  {categories.map(c => (
+                    <option value={`/${c.slug}/`}>[Danh Mục] {c.name} (/{c.slug}/)</option>
+                  ))}
+                </optgroup>
+
+                <optgroup label="── 3. Thương Hiệu Phân Phối ──">
+                  {brands.map(b => (
+                    <option value={`/san-pham/${b.slug}/`}>[Thương Hiệu] {b.name} (/san-pham/{b.slug}/)</option>
+                  ))}
+                </optgroup>
+
+                <optgroup label="── 4. Sản Phẩm Tiêu Biểu ──">
+                  {products.slice(0, 30).map(p => (
+                    <option value={`/${p.slug}/`}>[Sản Phẩm] {p.name} (/{p.slug}/)</option>
+                  ))}
+                </optgroup>
+
+                <optgroup label="── 5. Bài Viết & Cẩm Nang ──">
+                  {posts.slice(0, 20).map(po => (
+                    <option value={`/tin-tuc/${po.slug}/`}>[Bài Viết] {po.title} (/tin-tuc/{po.slug}/)</option>
+                  ))}
+                </optgroup>
+              </select>
+            </div>
+            <input 
+              type="text" 
+              id="create_new_path" 
+              name="new_path" 
+              placeholder="VD: /thep-xay-dung/ hoặc chọn từ danh sách trên" 
+              required 
+              class="form-input" 
+            />
+            <span class="input-hint">Nhập đường dẫn nội bộ (bắt đầu bằng <code>/</code>) hoặc URL ngoài (<code>https://...</code>)</span>
+          </div>
+
+          <!-- 3. Status Code Selection -->
+          <div class="form-group">
+            <label for="create_status_code">Mã Chuyển Hướng (Status Code) *</label>
+            <select id="create_status_code" name="status_code" class="form-select">
+              <option value="301" selected>301 — Moved Permanently (Vĩnh viễn - Chuẩn SEO)</option>
+              <option value="302">302 — Found / Temporary (Tạm thời - Giữ nguyên URL cũ)</option>
+              <option value="307">307 — Temporary Redirect (Tạm thời - Bảo toàn Method)</option>
+              <option value="308">308 — Permanent Redirect (Vĩnh viễn - Bảo toàn Method)</option>
+            </select>
+            <span class="input-hint">Khuyên dùng <strong>301</strong> để chuyển hoàn toàn thứ hạng tìm kiếm sang URL mới</span>
+          </div>
+        </div>
+
+        <div class="form-actions-right">
+          <button type="submit" class="btn btn-primary btn-submit">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
+            <span>Thêm Quy Tắc Chuyển Hướng</span>
+          </button>
+        </div>
+      </form>
+    </div>
+
+    <!-- Redirects List Table Card -->
+    <div class="content-card table-card">
+      <div class="card-header table-header-flex">
+        <div>
+          <h3>Danh Sách Quy Tắc Điều Hướng ({redirects.length})</h3>
+          <p>Tất cả các truy vấn trùng khớp với đường dẫn nguồn sẽ được tự động chuyển hướng theo mã tương ứng.</p>
+        </div>
+
+        <div class="table-search-box">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+          <input type="text" id="filter_redirect_input" placeholder="Tìm kiếm đường dẫn..." class="search-input" />
+        </div>
+      </div>
+
+      <div class="table-responsive">
+        <table class="redirect-table" id="redirects_table">
+          <thead>
+            <tr>
+              <th style="width: 60px;">ID</th>
+              <th>Đường Dẫn Nguồn (Old Path)</th>
+              <th style="width: 40px; text-align: center;">→</th>
+              <th>Đường Dẫn Đích (Target New Path)</th>
+              <th style="width: 140px; text-align: center;">Mã HTTP</th>
+              <th style="width: 180px; text-align: right;">Thao Tác</th>
+            </tr>
+          </thead>
+          <tbody>
+            {redirects.length > 0 ? (
+              redirects.map((r) => (
+                <tr class="redirect-row" data-old={r.old_path.toLowerCase()} data-new={r.new_path.toLowerCase()} data-code={r.status_code}>
+                  <td class="id-col">#{r.id}</td>
+                  
+                  <!-- Old Path Column -->
+                  <td class="old-path-col">
+                    <div class="path-display">
+                      <code class="path-code old-code">{r.old_path}</code>
+                    </div>
+                  </td>
+
+                  <!-- Arrow -->
+                  <td class="arrow-col">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="color: #94a3b8;"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
+                  </td>
+
+                  <!-- New Path Column -->
+                  <td class="new-path-col">
+                    <div class="path-display">
+                      <code class="path-code new-code">{r.new_path}</code>
+                    </div>
+                  </td>
+
+                  <!-- Status Code Badge -->
+                  <td class="status-col" style="text-align: center;">
+                    {r.status_code === 301 && <span class="badge-code code-301">301 Permanent</span>}
+                    {r.status_code === 302 && <span class="badge-code code-302">302 Found</span>}
+                    {r.status_code === 307 && <span class="badge-code code-307">307 Temp</span>}
+                    {r.status_code === 308 && <span class="badge-code code-308">308 Perm</span>}
+                  </td>
+
+                  <!-- Action Buttons -->
+                  <td class="actions-col" style="text-align: right;">
+                    <div class="action-buttons-flex">
+                      
+                      <!-- Test in new tab -->
+                      <a href={r.old_path} target="_blank" rel="noopener noreferrer" class="btn-action btn-test" title="Kiểm tra chuyển hướng trên tab mới">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>
+                        <span>Thử</span>
+                      </a>
+
+                      <!-- Edit Button -->
+                      <button 
+                        type="button" 
+                        class="btn-action btn-edit btn-trigger-edit" 
+                        data-id={r.id} 
+                        data-old={r.old_path} 
+                        data-new={r.new_path} 
+                        data-code={r.status_code}
+                        title="Chỉnh sửa quy tắc"
+                      >
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
+                        <span>Sửa</span>
+                      </button>
+
+                      <!-- Delete Button -->
+                      <form method="POST" onsubmit="return confirm('Bạn có chắc chắn muốn xóa quy tắc chuyển hướng này?');" style="display:inline;">
+                        <input type="hidden" name="action" value="delete" />
+                        <input type="hidden" name="id" value={r.id} />
+                        <button type="submit" class="btn-action btn-delete" title="Xóa">
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+                        </button>
+                      </form>
+
+                    </div>
+                  </td>
+                </tr>
+              ))
+            ) : (
+              <tr>
+                <td colspan="6" class="empty-table-cell">
+                  <div class="empty-box">
+                    <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="color: #94a3b8;"><polyline points="9 10 4 15 9 20"></polyline><path d="M20 4v7a4 4 0 0 1-4 4H4"></path></svg>
+                    <p>Chưa có quy tắc chuyển hướng nào. Hãy tạo quy tắc đầu tiên ở khung phía trên!</p>
+                  </div>
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Edit Modal Dialog -->
+    <div class="edit-modal-overlay" id="edit_modal" style="display: none;">
+      <div class="edit-modal-box">
+        <div class="modal-header">
+          <h4>Chỉnh Sửa Quy Tắc Chuyển Hướng</h4>
+          <button type="button" id="btn_close_modal" class="btn-modal-close">&times;</button>
+        </div>
+
+        <form method="POST" class="modal-form" id="edit_form">
+          <input type="hidden" name="action" value="update" />
+          <input type="hidden" name="id" id="edit_id" />
+
+          <div class="form-group" style="margin-bottom: 1.25rem;">
+            <label for="edit_old_path">Đường dẫn nguồn (Old URL) *</label>
+            <input type="text" id="edit_old_path" name="old_path" required class="form-input" />
+          </div>
+
+          <div class="form-group" style="margin-bottom: 1.25rem;">
+            <div class="label-flex-row">
+              <label for="edit_new_path">Đường dẫn đích (Redirect To) *</label>
+              <select id="modal_link_picker" class="quick-link-select">
+                <option value="">⚡ Chọn nhanh link nội bộ...</option>
+                <optgroup label="── 1. Trang Cố Định ──">
+                  <option value="/">Trang Chủ (/)</option>
+                  <option value="/san-pham/">Tất Cả Sản Phẩm (/san-pham/)</option>
+                  <option value="/tin-tuc/">Tin Tức & Báo Giá (/tin-tuc/)</option>
+                  <option value="/gioi-thieu/">Giới Thiệu VLXD Hoàng Yến (/gioi-thieu/)</option>
+                  <option value="/lien-he/">Liên Hệ & Bản Đồ (/lien-he/)</option>
+                </optgroup>
+                <optgroup label="── 2. Danh Mục Vật Tư ──">
+                  {categories.map(c => (
+                    <option value={`/${c.slug}/`}>[Danh Mục] {c.name}</option>
+                  ))}
+                </optgroup>
+                <optgroup label="── 3. Thương Hiệu ──">
+                  {brands.map(b => (
+                    <option value={`/san-pham/${b.slug}/`}>[Thương Hiệu] {b.name}</option>
+                  ))}
+                </optgroup>
+                <optgroup label="── 4. Sản Phẩm ──">
+                  {products.slice(0, 30).map(p => (
+                    <option value={`/${p.slug}/`}>[Sản Phẩm] {p.name}</option>
+                  ))}
+                </optgroup>
+                <optgroup label="── 5. Bài Viết ──">
+                  {posts.slice(0, 20).map(po => (
+                    <option value={`/tin-tuc/${po.slug}/`}>[Bài Viết] {po.title}</option>
+                  ))}
+                </optgroup>
+              </select>
+            </div>
+            <input type="text" id="edit_new_path" name="new_path" required class="form-input" />
+          </div>
+
+          <div class="form-group" style="margin-bottom: 1.5rem;">
+            <label for="edit_status_code">Mã Chuyển Hướng *</label>
+            <select id="edit_status_code" name="status_code" class="form-select">
+              <option value="301">301 — Moved Permanently (Vĩnh viễn - Chuẩn SEO)</option>
+              <option value="302">302 — Found / Temporary (Tạm thời)</option>
+              <option value="307">307 — Temporary Redirect (Tạm thời - Bảo toàn Method)</option>
+              <option value="308">308 — Permanent Redirect (Vĩnh viễn - Bảo toàn Method)</option>
+            </select>
+          </div>
+
+          <div class="modal-footer">
+            <button type="button" id="btn_cancel_modal" class="btn btn-outline">Hủy Bỏ</button>
+            <button type="submit" class="btn btn-primary">Lưu Thay Đổi</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+  </div>
+</AdminLayout>
+
+<script is:inline>
+  document.addEventListener('DOMContentLoaded', () => {
+    // Quick link picker for Create form
+    const quickPicker = document.getElementById('quick_link_picker');
+    const newPathInput = document.getElementById('create_new_path');
+    if (quickPicker && newPathInput) {
+      quickPicker.addEventListener('change', () => {
+        if (quickPicker.value) {
+          newPathInput.value = quickPicker.value;
+        }
+      });
+    }
+
+    // Quick link picker for Edit Modal
+    const modalPicker = document.getElementById('modal_link_picker');
+    const editNewPathInput = document.getElementById('edit_new_path');
+    if (modalPicker && editNewPathInput) {
+      modalPicker.addEventListener('change', () => {
+        if (modalPicker.value) {
+          editNewPathInput.value = modalPicker.value;
+        }
+      });
+    }
+
+    // Edit Modal logic
+    const modal = document.getElementById('edit_modal');
+    const btnCloseModal = document.getElementById('btn_close_modal');
+    const btnCancelModal = document.getElementById('btn_cancel_modal');
+    const editId = document.getElementById('edit_id');
+    const editOldPath = document.getElementById('edit_old_path');
+    const editStatusCode = document.getElementById('edit_status_code');
+
+    document.querySelectorAll('.btn-trigger-edit').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const id = btn.getAttribute('data-id');
+        const oldPath = btn.getAttribute('data-old');
+        const newPath = btn.getAttribute('data-new');
+        const code = btn.getAttribute('data-code');
+
+        if (editId) editId.value = id;
+        if (editOldPath) editOldPath.value = oldPath;
+        if (editNewPathInput) editNewPathInput.value = newPath;
+        if (editStatusCode) editStatusCode.value = code;
+
+        if (modal) modal.style.display = 'flex';
+      });
+    });
+
+    const closeModal = () => {
+      if (modal) modal.style.display = 'none';
+    };
+
+    if (btnCloseModal) btnCloseModal.addEventListener('click', closeModal);
+    if (btnCancelModal) btnCancelModal.addEventListener('click', closeModal);
+
+    if (modal) {
+      modal.addEventListener('click', (e) => {
+        if (e.target === modal) closeModal();
+      });
+    }
+
+    // Search filter for table
+    const searchInput = document.getElementById('filter_redirect_input');
+    const rows = document.querySelectorAll('.redirect-row');
+    if (searchInput) {
+      searchInput.addEventListener('input', () => {
+        const query = searchInput.value.toLowerCase().trim();
+        rows.forEach((row) => {
+          const oldPath = row.getAttribute('data-old') || '';
+          const newPath = row.getAttribute('data-new') || '';
+          const code = row.getAttribute('data-code') || '';
+
+          if (oldPath.includes(query) || newPath.includes(query) || code.includes(query)) {
+            row.style.display = '';
+          } else {
+            row.style.display = 'none';
+          }
+        });
+      });
+    }
+  });
+</script>
+
+<style>
+  .redirects-page-wrap {
+    display: flex;
+    flex-direction: column;
+    gap: 1.75rem;
+    max-width: 1400px;
+    margin: 0 auto;
+    padding-bottom: 3rem;
+  }
+
+  /* Overview Stats */
+  .stats-overview-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 1.25rem;
+  }
+
+  .stat-card {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    padding: 1.25rem;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+  }
+
+  .stat-icon-wrap {
+    width: 48px;
+    height: 48px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+
+  .stat-details {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .stat-label {
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: #64748b;
+  }
+
+  .stat-number {
+    font-size: 1.5rem;
+    font-weight: 800;
+    color: #0f172a;
+    line-height: 1.2;
+    margin-top: 2px;
+  }
+
+  /* Alerts */
+  .alert-box {
+    padding: 0.85rem 1.25rem;
+    border-radius: 8px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .alert-success {
+    background: #ecfdf5;
+    color: #065f46;
+    border: 1px solid #a7f3d0;
+  }
+
+  .alert-danger {
+    background: #fef2f2;
+    color: #991b1b;
+    border: 1px solid #fecaca;
+  }
+
+  /* Content Cards */
+  .content-card {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+  }
+
+  .card-header {
+    padding: 1.25rem 1.5rem;
+    background: #f8fafc;
+    border-bottom: 1px solid #e2e8f0;
+  }
+
+  .header-title-flex {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+  }
+
+  .title-icon {
+    width: 36px;
+    height: 36px;
+    background: #e0f2fe;
+    color: #0284c7;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+
+  .card-header h3 {
+    margin: 0 0 3px;
+    font-size: 1.1rem;
+    font-weight: 800;
+    color: #0f172a;
+  }
+
+  .card-header p {
+    margin: 0;
+    font-size: 0.85rem;
+    color: #64748b;
+  }
+
+  /* Create Form */
+  .create-redirect-form {
+    padding: 1.5rem;
+  }
+
+  .form-grid-3 {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 1.25rem;
+  }
+
+  .form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .form-group label {
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: #334155;
+  }
+
+  .label-flex-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  .quick-link-select {
+    font-size: 0.76rem;
+    font-weight: 600;
+    color: #0284c7;
+    background: #f0f9ff;
+    border: 1px solid #bae6fd;
+    border-radius: 4px;
+    padding: 2px 6px;
+    cursor: pointer;
+    max-width: 200px;
+    outline: none;
+  }
+
+  .form-input, .form-select {
+    width: 100%;
+    height: 42px;
+    padding: 0 0.85rem;
+    border: 1px solid #cbd5e1;
+    border-radius: 8px;
+    font-size: 0.9rem;
+    color: #0f172a;
+    background: #ffffff;
+    outline: none;
+    transition: all 0.2s;
+  }
+
+  .form-input:focus, .form-select:focus {
+    border-color: #0284c7;
+    box-shadow: 0 0 0 3px rgba(2, 132, 199, 0.12);
+  }
+
+  .input-hint {
+    font-size: 0.76rem;
+    color: #64748b;
+    line-height: 1.4;
+  }
+
+  .input-hint code {
+    background: #f1f5f9;
+    padding: 1px 4px;
+    border-radius: 3px;
+    color: #0369a1;
+    font-weight: 600;
+  }
+
+  .form-actions-right {
+    margin-top: 1.5rem;
+    display: flex;
+    justify-content: flex-end;
+  }
+
+  .btn-submit {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 0.75rem 1.5rem;
+    font-weight: 700;
+    font-size: 0.9rem;
+    border-radius: 8px;
+  }
+
+  /* Table Header & Search */
+  .table-header-flex {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 1rem;
+  }
+
+  .table-search-box {
+    position: relative;
+    display: flex;
+    align-items: center;
+  }
+
+  .table-search-box svg {
+    position: absolute;
+    left: 12px;
+    color: #94a3b8;
+  }
+
+  .search-input {
+    width: 280px;
+    height: 38px;
+    padding: 0 1rem 0 2.4rem;
+    border: 1px solid #cbd5e1;
+    border-radius: 8px;
+    font-size: 0.86rem;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+
+  .search-input:focus {
+    border-color: #0284c7;
+  }
+
+  /* Redirects Table */
+  .table-responsive {
+    overflow-x: auto;
+  }
+
+  .redirect-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.9rem;
+    text-align: left;
+  }
+
+  .redirect-table th {
+    background: #f8fafc;
+    padding: 0.85rem 1rem;
+    font-weight: 700;
+    color: #475569;
+    border-bottom: 1px solid #e2e8f0;
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+
+  .redirect-table td {
+    padding: 1rem;
+    border-bottom: 1px solid #f1f5f9;
+    vertical-align: middle;
+  }
+
+  .redirect-row:hover td {
+    background: #f8fafc;
+  }
+
+  .id-col {
+    color: #94a3b8;
+    font-weight: 700;
+    font-size: 0.82rem;
+  }
+
+  .path-code {
+    display: inline-block;
+    padding: 4px 8px;
+    border-radius: 6px;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    font-size: 0.85rem;
+    font-weight: 600;
+    word-break: break-all;
+  }
+
+  .old-code {
+    background: #fef2f2;
+    color: #b91c1c;
+    border: 1px solid #fecaca;
+  }
+
+  .new-code {
+    background: #eff6ff;
+    color: #1d4ed8;
+    border: 1px solid #dbeafe;
+  }
+
+  .badge-code {
+    display: inline-block;
+    padding: 3px 10px;
+    border-radius: 9999px;
+    font-size: 0.76rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+
+  .code-301 { background: #ecfdf5; color: #059669; border: 1px solid #a7f3d0; }
+  .code-302 { background: #fef3c7; color: #b45309; border: 1px solid #fde68a; }
+  .code-307 { background: #f3e8ff; color: #7e22ce; border: 1px solid #e9d5ff; }
+  .code-308 { background: #fdf2f8; color: #be185d; border: 1px solid #fbcfe8; }
+
+  .action-buttons-flex {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .btn-action {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 5px 10px;
+    border-radius: 6px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    cursor: pointer;
+    text-decoration: none;
+    border: 1px solid transparent;
+    transition: all 0.15s ease;
+  }
+
+  .btn-test {
+    background: #f1f5f9;
+    color: #334155;
+    border-color: #cbd5e1;
+  }
+  .btn-test:hover {
+    background: #e2e8f0;
+    color: #0f172a;
+  }
+
+  .btn-edit {
+    background: #e0f2fe;
+    color: #0284c7;
+    border-color: #bae6fd;
+  }
+  .btn-edit:hover {
+    background: #0284c7;
+    color: #ffffff;
+  }
+
+  .btn-delete {
+    background: #fee2e2;
+    color: #dc2626;
+    border-color: #fca5a5;
+    padding: 5px 8px;
+  }
+  .btn-delete:hover {
+    background: #dc2626;
+    color: #ffffff;
+  }
+
+  .empty-table-cell {
+    text-align: center;
+    padding: 3.5rem 1rem;
+  }
+
+  .empty-box {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    color: #64748b;
+  }
+
+  /* Modal */
+  .edit-modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(15, 23, 42, 0.6);
+    backdrop-filter: blur(4px);
+    z-index: 9999;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1.5rem;
+  }
+
+  .edit-modal-box {
+    background: #ffffff;
+    border-radius: 16px;
+    width: 100%;
+    max-width: 540px;
+    box-shadow: 0 20px 40px rgba(0,0,0,0.25);
+    overflow: hidden;
+    animation: modalIn 0.2s ease-out;
+  }
+
+  @keyframes modalIn {
+    from { opacity: 0; transform: scale(0.96); }
+    to { opacity: 1; transform: scale(1); }
+  }
+
+  .modal-header {
+    padding: 1.25rem 1.5rem;
+    background: #f8fafc;
+    border-bottom: 1px solid #e2e8f0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .modal-header h4 {
+    margin: 0;
+    font-size: 1.1rem;
+    font-weight: 800;
+    color: #0f172a;
+  }
+
+  .btn-modal-close {
+    background: transparent;
+    border: none;
+    font-size: 1.5rem;
+    color: #64748b;
+    cursor: pointer;
+    line-height: 1;
+  }
+  .btn-modal-close:hover { color: #0f172a; }
+
+  .modal-form {
+    padding: 1.5rem;
+  }
+
+  .modal-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    margin-top: 1.5rem;
+  }
+
+  @media (max-width: 1024px) {
+    .form-grid-3 {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>
