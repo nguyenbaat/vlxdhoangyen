@@ -251,6 +251,30 @@ if (post.title.toLowerCase().includes('thép') || post.slug.includes('thep')) {
             </div>
           </div>
 
+          <!-- 4. Featured Image (Hình Ảnh Đại Diện Ở Đầu Bài Viết Trên Mục Lục) -->
+          {post.featured_image && (
+            <figure class="article-featured-image-box">
+              <img
+                src={post.featured_image}
+                alt={`${post.title} - Siêu Thị VLXD Hoàng Yến Quảng Trị`}
+                width="800"
+                height="450"
+                loading="eager"
+                decoding="async"
+                class="article-featured-img"
+              />
+              <figcaption class="article-featured-caption">
+                {post.title} – Siêu Thị VLXD Hoàng Yến Quảng Trị
+              </figcaption>
+            </figure>
+          )}
+
+          {post.summary && (
+            <div class="article-lead-sapo">
+              <p>{post.summary}</p>
+            </div>
+          )}
+
           <!-- 5. Table of Contents (Mục Lục Tự Động) -->
           {tocItems.length > 0 && (
             <div class="article-toc-box" id="article-toc">
@@ -700,30 +724,52 @@ if (post.title.toLowerCase().includes('thép') || post.slug.includes('thep')) {
     color: #cbd5e1;
   }
 
-  /* 4. Hero Featured Image */
+  /* 4. Hero Featured Image & Sapo */
+  .article-featured-image-box,
   .article-hero-figure {
-    margin: 0 0 var(--space-8) 0;
-    border-radius: var(--radius-xs);
+    margin: 0 0 var(--space-6) 0;
+    border-radius: 12px;
     overflow: hidden;
     border: 1px solid #e2e8f0;
-    background-color: #f1f5f9;
+    background-color: #ffffff;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.04);
   }
 
+  .article-featured-img,
   .article-hero-figure img {
     width: 100%;
+    height: auto;
+    max-height: 480px;
     aspect-ratio: 16 / 9;
     object-fit: cover;
     display: block;
   }
 
+  .article-featured-caption,
   .article-hero-figure figcaption {
-    font-size: 0.8125rem;
+    font-size: 0.85rem;
     color: #64748b;
     font-style: italic;
-    padding: 8px 14px;
+    padding: 10px 16px;
     background-color: #f8fafc;
     border-top: 1px solid #f1f5f9;
     text-align: center;
+  }
+
+  .article-lead-sapo {
+    background-color: #f8fafc;
+    border-left: 4px solid var(--color-red);
+    padding: 14px 18px;
+    border-radius: 0 8px 8px 0;
+    margin-bottom: var(--space-6);
+    font-size: 1.05rem;
+    line-height: 1.65;
+    color: #1e293b;
+    font-weight: 500;
+  }
+
+  .article-lead-sapo p {
+    margin: 0;
   }
 
   /* 5. Table of Contents */
