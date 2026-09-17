@@ -446,9 +446,11 @@ if (activeFaqs && activeFaqs.length > 0) {
     padding: 36px 40px;
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04);
     display: grid;
-    grid-template-columns: 1fr 280px;
+    grid-template-columns: minmax(0, 1fr) 280px;
     gap: 40px;
     align-items: center;
+    width: 100%;
+    box-sizing: border-box;
   }
 
   .brand-hero-left {
@@ -643,8 +645,10 @@ if (activeFaqs && activeFaqs.length > 0) {
 
   .profile-layout-grid {
     display: grid;
-    grid-template-columns: 1fr 320px;
+    grid-template-columns: minmax(0, 1fr) 320px;
     gap: 32px;
+    width: 100%;
+    box-sizing: border-box;
   }
 
   .section-header-compact {

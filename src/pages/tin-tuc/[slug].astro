@@ -591,17 +591,26 @@ if (post.title.toLowerCase().includes('thép') || post.slug.includes('thep')) {
     background-color: #f8fafc;
     padding-top: var(--space-8);
     padding-bottom: var(--space-20);
+    overflow-x: hidden;
+    width: 100%;
+    box-sizing: border-box;
   }
 
   .article-main-container {
     max-width: 1240px;
+    width: 100%;
+    box-sizing: border-box;
+    margin-left: auto;
+    margin-right: auto;
   }
 
   .article-layout {
     display: grid;
-    grid-template-columns: 1fr 360px;
+    grid-template-columns: minmax(0, 1fr) 360px;
     gap: var(--space-8);
     align-items: flex-start;
+    width: 100%;
+    max-width: 100%;
   }
 
   .article-sidebar-column {
@@ -610,8 +619,8 @@ if (post.title.toLowerCase().includes('thép') || post.slug.includes('thep')) {
     gap: var(--space-5);
     position: sticky;
     top: 90px;
+    min-width: 0;
   }
-
 
   .article-primary-column {
     background-color: #ffffff;
@@ -619,6 +628,11 @@ if (post.title.toLowerCase().includes('thép') || post.slug.includes('thep')) {
     border-radius: var(--radius-sm);
     padding: var(--space-8) var(--space-10);
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+    min-width: 0;
+    max-width: 100%;
+    box-sizing: border-box;
+    overflow-wrap: break-word;
+    word-break: break-word;
   }
 
   /* 1. Category Tag Badge */
@@ -2078,7 +2092,7 @@ if (post.title.toLowerCase().includes('thép') || post.slug.includes('thep')) {
 
   @media (max-width: 1024px) {
     .article-layout {
-      grid-template-columns: 1fr 300px;
+      grid-template-columns: minmax(0, 1fr) 300px;
       gap: var(--space-6);
     }
     .related-products-grid {
@@ -2088,69 +2102,130 @@ if (post.title.toLowerCase().includes('thép') || post.slug.includes('thep')) {
 
   @media (max-width: 900px) {
     .article-layout {
-      grid-template-columns: 1fr;
+      grid-template-columns: minmax(0, 1fr);
       gap: var(--space-8);
     }
     .article-sidebar-column {
       position: static;
+      min-width: 0;
+      max-width: 100%;
     }
   }
 
   @media (max-width: 640px) {
     .article-page-wrapper {
-      padding-top: var(--space-4);
+      padding-top: var(--space-3);
       padding-bottom: var(--space-12);
+      overflow-x: hidden;
+      width: 100%;
+    }
+    .article-main-container {
+      padding-left: 10px;
+      padding-right: 10px;
+      width: 100%;
+      box-sizing: border-box;
     }
     .article-primary-column {
-      padding: 18px 14px;
+      padding: 16px 12px;
       border-radius: 12px;
+      width: 100%;
+      max-width: 100%;
+      box-sizing: border-box;
+      margin: 0 auto;
     }
     .article-title {
-      font-size: 1.4rem;
+      font-size: 1.35rem;
       line-height: 1.35;
       margin-bottom: 12px;
+      word-break: break-word;
     }
     .article-meta-bar {
-      font-size: 0.8rem;
-      gap: 8px;
+      font-size: 0.78rem;
+      gap: 6px 12px;
       margin-bottom: 16px;
-      padding-bottom: 14px;
+      padding-bottom: 12px;
+    }
+    .meta-separator {
+      display: none;
+    }
+    .meta-author, .meta-date {
+      width: 100%;
+      gap: 6px;
     }
     .article-hero-figure {
-      margin-bottom: 20px;
+      margin-bottom: 18px;
       border-radius: 8px;
     }
     .article-toc-box {
-      padding: 14px;
-      margin-bottom: 24px;
-      border-radius: 10px;
+      padding: 12px 10px;
+      margin-bottom: 20px;
+      border-radius: 8px;
+      width: 100%;
+      box-sizing: border-box;
     }
     .toc-main-title {
-      font-size: 0.95rem;
+      font-size: 0.9rem;
+    }
+    .toc-ordered-list {
+      padding-left: 0;
+      margin-left: 0;
+    }
+    .toc-level-3 {
+      margin-left: 0.75rem;
+      padding-left: 8px;
     }
     .toc-link {
-      font-size: 0.875rem;
+      font-size: 0.84rem;
+      word-break: break-word;
     }
     .prose-industrial {
-      font-size: 0.975rem;
+      font-size: 0.95rem;
       line-height: 1.75;
+      word-break: break-word;
+      overflow-wrap: break-word;
+    }
+    :global(.prose-industrial .article-lead) {
+      padding: 12px 14px !important;
+      font-size: 0.92rem !important;
+      line-height: 1.65 !important;
+      margin-bottom: 20px !important;
     }
     :global(.prose-industrial h2) {
-      font-size: 1.25rem;
-      margin-top: 26px;
+      font-size: 1.2rem;
+      margin-top: 24px;
       margin-bottom: 12px;
       line-height: 1.35;
+      word-break: break-word;
     }
     :global(.prose-industrial h3) {
-      font-size: 1.1rem;
+      font-size: 1.05rem;
       margin-top: 18px;
       margin-bottom: 10px;
       line-height: 1.4;
+      word-break: break-word;
     }
     :global(.prose-industrial .callout-box) {
-      padding: 14px 16px !important;
+      padding: 12px 14px !important;
       font-size: 0.88rem !important;
       margin: 16px 0 !important;
+    }
+    :global(.table-responsive) {
+      width: 100%;
+      max-width: 100%;
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+      display: block;
+      box-sizing: border-box;
+      margin: 16px 0;
+      border-radius: 6px;
+    }
+    :global(.table-industrial), :global(.prose-industrial table) {
+      min-width: 480px;
+      font-size: 0.8125rem;
+    }
+    :global(.table-industrial th), :global(.table-industrial td),
+    :global(.prose-industrial table th), :global(.prose-industrial table td) {
+      padding: 8px 10px;
     }
     .related-products-grid {
       grid-template-columns: repeat(2, 1fr);
@@ -2169,7 +2244,7 @@ if (post.title.toLowerCase().includes('thép') || post.slug.includes('thep')) {
       justify-content: center;
     }
     .article-cta-box {
-      padding: 20px 16px;
+      padding: 18px 14px;
       border-radius: 12px;
     }
     .sidebar-card {
