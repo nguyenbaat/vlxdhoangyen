@@ -108,7 +108,7 @@ function adaptSql(sql: string, mysqlMode: boolean): string {
     let i = 0;
     const pgSql = sql.replace(/INSERT IGNORE INTO/gi, 'INSERT INTO');
     const conflictSql = sql.includes('INSERT IGNORE INTO') ? pgSql + ' ON CONFLICT DO NOTHING' : pgSql;
-    return conflictSql.replace(/\?/g, () => `${++i}`);
+    return conflictSql.replace(/\?/g, () => `$${++i}`);
   }
 }
 

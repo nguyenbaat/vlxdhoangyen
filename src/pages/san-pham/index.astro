@@ -1,7 +1,7 @@
 ---
 import Layout from '../../layouts/Layout.astro';
 import ProductCard from '../../components/ProductCard.astro';
-import { CategoryRepo, ProductRepo, BrandRepo } from '../../server/db/repo.js';
+import { CategoryRepo, ProductRepo, BrandRepo, SettingsRepo } from '../../server/db/repo.js';
 
 const url = Astro.url;
 const search = url.searchParams.get('q') || '';
@@ -16,18 +16,19 @@ if (brandSlug) {
   return Astro.redirect(`/san-pham/${brandSlug}/`, 301);
 }
 
+const settings = await SettingsRepo.getAll();
 const brands = await BrandRepo.getAll();
 const vlxdCategories = await CategoryRepo.getMainCategories('vlxd');
 const noiThatCategories = await CategoryRepo.getMainCategories('noi-that');
 
-const vlxdWithCounts = await Promise.all(vlxdCategories.map(async cat => ({
+const vlxdWithCounts = vlxdCategories.map(cat => ({
   ...cat,
-  count: (await ProductRepo.getByCategory(cat.id)).length
-})));
-const noiThatWithCounts = await Promise.all(noiThatCategories.map(async cat => ({
+  count: cat.product_count || 0
+}));
+const noiThatWithCounts = noiThatCategories.map(cat => ({
   ...cat,
-  count: (await ProductRepo.getByCategory(cat.id)).length
-})));
+  count: cat.product_count || 0
+}));
 
 // Filter products using search
 const result = await ProductRepo.getAll({
@@ -35,7 +36,7 @@ const result = await ProductRepo.getAll({
   limit: 100
 });
 const products = result.products;
-const totalProducts = (await ProductRepo.getAll()).total;
+const totalProducts = result.total;
 
 const pageTitle = "Danh Mục Sản Phẩm & Vật Liệu Xây Dựng | VLXD Hoàng Yến Quảng Trị";
 const pageDesc = "Cung cấp vật liệu xây thô và thiết bị vệ sinh tại Quảng Trị. Thép Hòa Phát, xi măng Sông Gianh, Bỉm Sơn, tôn Đông Á, gạch tuynel. Hơn 20 năm kinh nghiệm đồng hành cùng 1.250+ nhà thầu.";
