@@ -642,6 +642,12 @@ if (isCategory && category) {
               <h3 class="quote-box-title">Nhận Báo Giá Nhanh Cho Sản Phẩm Này</h3>
               <form id="product-inquiry-form" class="inline-inquiry-form">
                 <input type="hidden" name="product_name" value={product.name} />
+                
+                <!-- Anti-spam Honeypot -->
+                <div style="position: absolute; left: -9999px; top: -9999px; opacity: 0; pointer-events: none;" aria-hidden="true">
+                  <input type="text" name="company_website" tabindex="-1" autocomplete="off" />
+                </div>
+
                 <div class="form-row">
                   <input type="text" name="customer_name" required placeholder="Họ tên / Đơn vị *" class="form-input" />
                   <input type="tel" name="customer_phone" required placeholder="Số điện thoại / Zalo *" class="form-input" />
@@ -2008,7 +2014,8 @@ if (isCategory && category) {
         customer_name: formData.get('customer_name'),
         customer_phone: formData.get('customer_phone'),
         notes: formData.get('notes'),
-        product_name: formData.get('product_name')
+        product_name: formData.get('product_name'),
+        company_website: formData.get('company_website')
       };
 
       try {

@@ -319,6 +319,12 @@ const websiteSchema = {
         <div class="quote-form-card">
           <form id="home-quote-form" class="industrial-form">
             <h3 class="form-title">Gửi Yêu Cầu Báo Giá Vật Tư</h3>
+
+            <!-- Anti-spam Honeypot (hidden from human users) -->
+            <div style="position: absolute; left: -9999px; top: -9999px; opacity: 0; pointer-events: none;" aria-hidden="true">
+              <label for="q-hp-url">Bỏ trống ô này</label>
+              <input type="text" id="q-hp-url" name="company_website" tabindex="-1" autocomplete="off" />
+            </div>
             
             <div class="form-group">
               <label class="form-label" for="q-name">Họ và tên / Tên đơn vị *</label>
@@ -2103,7 +2109,8 @@ const websiteSchema = {
         customer_phone: formData.get('customer_phone'),
         address: formData.get('address'),
         notes: formData.get('notes'),
-        product_name: 'Báo Giá Tổng Hợp Dự Án'
+        product_name: 'Báo Giá Tổng Hợp Dự Án',
+        company_website: formData.get('company_website')
       };
 
       try {

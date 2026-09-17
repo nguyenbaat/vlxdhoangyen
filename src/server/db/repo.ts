@@ -408,7 +408,9 @@ export const ProductRepo = {
     const params: any[] = [];
 
     const statusFilter = options?.status !== undefined ? options.status : 'published';
-    if (statusFilter && statusFilter !== 'all') {
+    if (statusFilter === 'all') {
+      whereClauses.push("p.status != 'trash'");
+    } else if (statusFilter && statusFilter !== 'all_with_trash') {
       whereClauses.push('p.status = ?');
       params.push(statusFilter);
     }

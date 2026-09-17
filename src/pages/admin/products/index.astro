@@ -81,7 +81,7 @@ const { products, total } = await ProductRepo.getAll({
   categorySlug: catFilter,
   search: search,
   limit: 300,
-  status: statusTab === 'all' ? undefined : (statusTab === 'active' ? '' : statusTab)
+  status: statusTab === 'all' ? 'all' : (statusTab === 'active' ? 'published' : statusTab)
 });
 
 const displayProducts = statusTab === 'trash' 

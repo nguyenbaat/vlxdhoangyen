@@ -121,6 +121,11 @@ const breadcrumbs = [
               <h3>Tiếp Nhận Bản Vẽ & Báo Giá Dự Toán</h3>
               <p class="form-subtext">Điền khối lượng hoặc thông số vật tư để nhân viên tiếp nhận và gửi báo giá.</p>
               <form id="contact-page-form" class="industrial-form">
+                <!-- Anti-spam Honeypot -->
+                <div style="position: absolute; left: -9999px; top: -9999px; opacity: 0; pointer-events: none;" aria-hidden="true">
+                  <input type="text" id="c-hp-url" name="company_website" tabindex="-1" autocomplete="off" />
+                </div>
+
                 <div class="form-group">
                   <label class="form-label" for="c-name">Họ và tên / Nhà thầu thi công *</label>
                   <input type="text" id="c-name" name="customer_name" required class="form-input" placeholder="Ví dụ: Kỹ sư Nguyễn Văn A / Đội thi công..." />
@@ -464,7 +469,8 @@ const breadcrumbs = [
         customer_email: formData.get('customer_email'),
         address: formData.get('address'),
         notes: formData.get('notes'),
-        product_name: 'Liên Hệ Trực Tiếp Website'
+        product_name: 'Liên Hệ Trực Tiếp Website',
+        company_website: formData.get('company_website')
       };
 
       try {
