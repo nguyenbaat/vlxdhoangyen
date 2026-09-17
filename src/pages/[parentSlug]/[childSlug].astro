@@ -1,9 +1,28 @@
 ---
 import Layout from '../../layouts/Layout.astro';
 import ProductCard from '../../components/ProductCard.astro';
-import { CategoryRepo, ProductRepo, SettingsRepo } from '../../server/db/repo.js';
+import { CategoryRepo, ProductRepo, BrandRepo, SettingsRepo } from '../../server/db/repo.js';
 
 const { parentSlug, childSlug } = Astro.params;
+
+// If URL has /san-pham/[childSlug] or /thuong-hieu/[childSlug], redirect to proper destination
+if (parentSlug === 'san-pham' || parentSlug === 'thuong-hieu') {
+  if (childSlug) {
+    const brand = await BrandRepo.getBySlug(childSlug);
+    if (brand) {
+      return Astro.redirect(`/san-pham/${brand.slug}/`, 301);
+    }
+    const product = await ProductRepo.getBySlug(childSlug);
+    if (product) {
+      return Astro.redirect(`/${product.slug}/`, 301);
+    }
+    const category = await CategoryRepo.getBySlug(childSlug);
+    if (category) {
+      return Astro.redirect(`/${category.slug}/`, 301);
+    }
+  }
+  return Astro.redirect('/san-pham/', 301);
+}
 
 // 1. Fetch parent and child categories
 const parentCategory = parentSlug ? await CategoryRepo.getBySlug(parentSlug) : null;

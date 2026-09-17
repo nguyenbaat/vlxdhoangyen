@@ -11,6 +11,18 @@ const settings = await SettingsRepo.getAll();
 if (slug === 'trang-chu' || slug === 'home' || slug === 'index' || slug === 'index.html' || slug === 'index.php') {
   return Astro.redirect('/', 301);
 }
+if (slug === 'san-pham') {
+  return Astro.redirect('/san-pham/', 301);
+}
+if (slug === 'tin-tuc') {
+  return Astro.redirect('/tin-tuc/', 301);
+}
+if (slug === 'gioi-thieu') {
+  return Astro.redirect('/gioi-thieu/', 301);
+}
+if (slug === 'lien-he') {
+  return Astro.redirect('/lien-he/', 301);
+}
 
 // Check if slug is a category, product, or brand
 const category = slug ? await CategoryRepo.getBySlug(slug) : null;
