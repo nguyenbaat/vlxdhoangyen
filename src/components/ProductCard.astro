@@ -123,24 +123,28 @@ if (badges.length === 0) {
   /* Image Container */
   .card-image-wrap {
     position: relative;
-    display: block;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     width: 100%;
-    aspect-ratio: 4 / 3;
-    background-color: var(--color-concrete-light);
+    height: 210px;
+    background-color: #ffffff;
     overflow: hidden;
-    border-bottom: 1px solid var(--color-border);
+    border-bottom: 1px solid #f1f5f9;
   }
 
   .card-img {
     width: 100%;
     height: 100%;
+    max-height: 190px;
     object-fit: contain;
-    padding: var(--space-4);
+    padding: 8px 12px;
+    mix-blend-mode: multiply;
     transition: transform var(--transition-normal);
   }
 
   .product-industrial-card:hover .card-img {
-    transform: scale(1.04);
+    transform: scale(1.06);
   }
 
   .card-badges {
