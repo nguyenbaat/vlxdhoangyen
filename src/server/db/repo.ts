@@ -491,7 +491,8 @@ export const ProductRepo = {
        LEFT JOIN brands b ON p.brand_id = b.id
        JOIN product_categories pc ON p.id = pc.product_id
        JOIN categories c ON pc.category_id = c.id
-       WHERE (pc.category_id = ? OR pc.category_id IN (SELECT id FROM categories WHERE parent_id = ?)) AND p.status = 'published'
+       WHERE (pc.category_id = ? OR pc.category_id IN (SELECT id FROM categories WHERE parent_id = ?)) 
+         AND (p.status = 'published' OR p.status = 'active' OR p.status IS NULL OR p.status = '')
        ORDER BY p.is_featured DESC, p.id DESC`,
       [categoryId, categoryId]
     );
@@ -505,7 +506,8 @@ export const ProductRepo = {
        LEFT JOIN brands b ON p.brand_id = b.id
        LEFT JOIN product_categories pc ON p.id = pc.product_id
        LEFT JOIN categories c ON pc.category_id = c.id
-       WHERE p.brand_id = ? AND p.status = 'published'
+       WHERE p.brand_id = ? 
+         AND (p.status = 'published' OR p.status = 'active' OR p.status IS NULL OR p.status = '')
        ORDER BY p.is_featured DESC, p.id DESC`,
       [brandId]
     );
@@ -513,7 +515,9 @@ export const ProductRepo = {
   },
 
   async getBySlug(slug: string, publicOnly = true): Promise<Product | null> {
-    const whereSql = publicOnly ? "WHERE p.slug = ? AND p.status = 'published'" : "WHERE p.slug = ?";
+    const whereSql = publicOnly 
+      ? "WHERE p.slug = ? AND (p.status = 'published' OR p.status = 'active' OR p.status IS NULL OR p.status = '')" 
+      : "WHERE p.slug = ?";
     const p = await db.queryOne<Product>(
       `SELECT p.*, b.name as brand_name, b.slug as brand_slug, c.id as category_id, c.name as category_name, c.slug as category_slug
        FROM products p
