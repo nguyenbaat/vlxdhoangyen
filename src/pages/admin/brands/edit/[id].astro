@@ -37,6 +37,7 @@ if (initialFaqs.length === 0 && brandSEO?.faqs) {
 }
 
 let errorMsg = '';
+const isSaved = Astro.url.searchParams.get('saved') === '1';
 
 if (Astro.request.method === 'POST') {
   try {
@@ -68,7 +69,7 @@ if (Astro.request.method === 'POST') {
       is_featured
     });
 
-    return Astro.redirect('/admin/brands');
+    return Astro.redirect(`/admin/brands/edit/${brandId}?saved=1`);
   } catch (err: any) {
     errorMsg = err.message;
   }
@@ -82,6 +83,7 @@ if (Astro.request.method === 'POST') {
       <a href={`/san-pham/${brand.slug}/`} target="_blank" class="btn btn-navy btn-sm">Xem trang ngoài web</a>
     </div>
 
+    {isSaved && <div class="alert alert-success" style="background: #ecfdf5; color: #065f46; border: 1px solid #a7f3d0; padding: 0.85rem 1.25rem; border-radius: 8px; margin-bottom: 1.5rem; font-weight: 600; display: flex; align-items: center; gap: 8px;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg> Đã cập nhật thương hiệu thành công!</div>}
     {errorMsg && <div class="error-box">{errorMsg}</div>}
 
     <form method="POST" id="brand-edit-form" class="admin-form-card">

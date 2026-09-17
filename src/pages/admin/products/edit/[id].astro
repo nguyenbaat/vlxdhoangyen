@@ -102,12 +102,13 @@ if (Astro.request.method === 'POST') {
       images: imageItems
     });
 
-    return Astro.redirect('/admin/products');
+    return Astro.redirect(`/admin/products/edit/${prodId}?saved=1`);
   } catch (err: any) {
     errorMsg = err.message;
   }
 }
 
+const isSaved = Astro.url.searchParams.get('saved') === '1';
 const categories = await CategoryRepo.getAll(false);
 const brands = await BrandRepo.getAll();
 const existingProductImages = await ProductRepo.getImages(product.id);
@@ -144,6 +145,7 @@ const galleryString = product.images ? product.images.join('\n') : product.featu
       </div>
     </div>
 
+    {isSaved && <div class="alert alert-success" style="background: #ecfdf5; color: #065f46; border: 1px solid #a7f3d0; padding: 0.85rem 1.25rem; border-radius: 8px; margin-bottom: 1.5rem; font-weight: 600; display: flex; align-items: center; gap: 8px;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg> Đã cập nhật sản phẩm thành công!</div>}
     {errorMsg && <div class="error-box">{errorMsg}</div>}
 
     <form method="POST" class="admin-form-card" id="product-form">
