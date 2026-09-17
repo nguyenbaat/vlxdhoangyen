@@ -805,11 +805,20 @@ export const PostRepo = {
     if (data.seo_description !== undefined) { fields.push('seo_description = ?'); params.push(data.seo_description || ''); }
     if (data.status !== undefined) { fields.push('status = ?'); params.push(data.status || 'published'); }
     if (data.author_id !== undefined) { fields.push('author_id = ?'); params.push(data.author_id); }
+    if (data.category_slug !== undefined) { fields.push('category_slug = ?'); params.push(data.category_slug || ''); }
 
-    if (fields.length === 0) return;
+    if (fields.length > 0) {
+      params.push(id);
+      await db.execute(`UPDATE posts SET ${fields.join(', ')} WHERE id = ?`, params);
+    }
 
-    params.push(id);
-    return db.execute(`UPDATE posts SET ${fields.join(', ')} WHERE id = ?`, params);
+    if (data.category_slug) {
+      const cat = await db.queryOne<{ id: number }>('SELECT id FROM post_categories WHERE slug = ?', [data.category_slug]);
+      if (cat) {
+        await db.execute('DELETE FROM post_category_rel WHERE post_id = ?', [id]);
+        await db.execute('INSERT INTO post_category_rel (post_id, category_id) VALUES (?, ?)', [id, cat.id]);
+      }
+    }
   },
 
   async delete(id: number) {

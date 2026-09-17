@@ -18,6 +18,7 @@ if (!post) {
 }
 
 let errorMsg = '';
+const isSaved = Astro.url.searchParams.get('saved') === '1';
 
 if (Astro.request.method === 'POST') {
   try {
@@ -30,6 +31,7 @@ if (Astro.request.method === 'POST') {
     const seo_title = formData.get('seo_title')?.toString().trim() || title;
     const seo_description = formData.get('seo_description')?.toString().trim() || summary;
     const status = formData.get('status')?.toString() || 'published';
+    const category_slug = formData.get('category_slug')?.toString() || '';
 
     if (!title) throw new Error('Vui lòng nhập tiêu đề bài viết.');
     if (!slug) slug = post.slug;
@@ -42,10 +44,11 @@ if (Astro.request.method === 'POST') {
       featured_image,
       seo_title,
       seo_description,
-      status
+      status,
+      category_slug
     });
 
-    return Astro.redirect('/admin/posts');
+    return Astro.redirect(`/admin/posts/edit/${postId}?saved=1`);
   } catch (err: any) {
     errorMsg = err.message;
   }
@@ -79,6 +82,7 @@ if (Astro.request.method === 'POST') {
       </div>
     </div>
 
+    {isSaved && <div class="alert alert-success" style="background: #ecfdf5; color: #065f46; border: 1px solid #a7f3d0; padding: 0.85rem 1.25rem; border-radius: 8px; margin-bottom: 1.5rem; font-weight: 600; display: flex; align-items: center; gap: 8px;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg> Đã cập nhật bài viết thành công!</div>}
     {errorMsg && <div class="alert alert-error">{errorMsg}</div>}
 
     <!-- WordPress 2-Column Form Layout -->

@@ -311,6 +311,8 @@ const {
     function syncContent() {
       if (!isHtmlMode && canvas && textarea) {
         textarea.value = canvas.innerHTML;
+      } else if (isHtmlMode && canvas && textarea) {
+        canvas.innerHTML = textarea.value;
       }
     }
 
@@ -318,14 +320,27 @@ const {
     canvas.addEventListener('keyup', syncContent);
     canvas.addEventListener('blur', syncContent);
     canvas.addEventListener('change', syncContent);
+    canvas.addEventListener('paste', () => setTimeout(syncContent, 100));
 
-    // Ensure sync on closest form submit
-    const parentForm = wrapper.closest('form') || textarea.closest('form');
+    if (textarea) {
+      textarea.addEventListener('input', syncContent);
+      textarea.addEventListener('keyup', syncContent);
+      textarea.addEventListener('change', syncContent);
+    }
+
+    // Ensure sync on closest form submit & on all submit buttons
+    const parentForm = wrapper.closest('form') || (textarea && textarea.form) || document.querySelector('form');
     if (parentForm) {
       parentForm.addEventListener('submit', () => {
         syncContent();
       });
     }
+
+    document.querySelectorAll('button[type="submit"], input[type="submit"]').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        syncContent();
+      });
+    });
 
     // Mode Toggle
     btnVisual.addEventListener('click', () => {
@@ -387,8 +402,8 @@ const {
       const validFiles = Array.from(files).filter(f => f.type && f.type.startsWith('image/'));
       if (validFiles.length === 0) return;
 
-      const titleFallback = (document.getElementById('post_title') as HTMLInputElement)?.value || 
-                            (document.getElementById('name') as HTMLInputElement)?.value || 
+      const titleFallback = document.getElementById('post_title')?.value || 
+                            document.getElementById('name')?.value || 
                             'Vật liệu xây dựng Hoàng Yến Quảng Trị';
 
       for (const file of validFiles) {
@@ -427,7 +442,7 @@ const {
     }
 
     // Direct Image Upload Button
-    const imgFileInput = document.getElementById(`tb_img_file_${id}`) as HTMLInputElement;
+    const imgFileInput = document.getElementById(`tb_img_file_${id}`);
     const imgBtn = document.getElementById(`tb_img_btn_${id}`);
     const imgUrlBtn = document.getElementById(`tb_img_url_${id}`);
 
@@ -449,8 +464,8 @@ const {
       imgUrlBtn.addEventListener('click', () => {
         const url = prompt('Nhập URL hình ảnh (https://...):');
         if (url && url.trim()) {
-          const titleFallback = (document.getElementById('post_title') as HTMLInputElement)?.value || 
-                                (document.getElementById('name') as HTMLInputElement)?.value || 
+          const titleFallback = document.getElementById('post_title')?.value || 
+                                document.getElementById('name')?.value || 
                                 'Vật liệu xây dựng Hoàng Yến';
           const defaultAlt = `${titleFallback} - VLXD Hoàng Yến`;
           const alt = prompt('Nhập thẻ ALT Text chuẩn SEO cho hình ảnh:', defaultAlt) || defaultAlt;
